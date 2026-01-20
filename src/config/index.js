@@ -8,5 +8,13 @@ export const CONFIG = {
   port: process.env.PORT || 3000,
   firebaseProjectId: process.env.FIREBASE_PROJECT_ID,
   firebaseClientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-  firebasePrivateKey: process.env.FIREBASE_PRIVATE_KEY
+  firebasePrivateKey: process.env.FIREBASE_PRIVATE_KEY,
+  firebaseStorageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+};
+
+export const log = {
+  success: (msg) => console.log(`✅ ${msg}`),
+  error: (msg) => console.error(`🔺 ${msg}`),
+  info: (msg) => console.log(`ℹ️ ${msg}`),
+  fatal: (msg) => console.error(`❌ ${msg}`),
 };

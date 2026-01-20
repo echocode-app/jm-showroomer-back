@@ -1,15 +1,29 @@
-import admin from "firebase-admin";
-import { CONFIG } from "./index.js";
+import { initializeApp, cert, getApps } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
+import { CONFIG, log } from "./index.js";
 
-if (!admin.apps.length) {
-    admin.initializeApp({
-        credential: admin.credential.cert({
-            projectId: CONFIG.firebaseProjectId,
-            clientEmail: CONFIG.firebaseClientEmail,
-            privateKey: CONFIG.firebasePrivateKey.replace(/\\n/g, "\n"),
-        }),
-    });
-    console.log("Firebase initialized ✅");
+let auth, db, storage;
+
+export function initFirebase() {
+    if (!getApps().length) {
+        initializeApp({
+            credential: cert({
+                projectId: process.env.FIREBASE_PROJECT_ID,
+                clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+            }),
+            storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+        });
+        log.success("Firebase initialized");
+    }
+
+    auth = getAuth();
+    db = getFirestore();
+    storage = getStorage();
 }
 
-export default admin;
+export const getAuthInstance = () => auth;
+export const getFirestoreInstance = () => db;
+export const getStorageInstance = () => storage;
