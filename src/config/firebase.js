@@ -2,7 +2,8 @@ import { initializeApp, cert, getApps } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
-import { CONFIG, log } from "./index.js";
+import { CONFIG } from "./index.js";
+import { log } from "./logger.js";
 
 let auth, db, storage;
 

@@ -22,3 +22,7 @@ export function fail(res, code, message, status = 400) {
         },
     });
 }
+
+export function error(res, code = "INTERNAL_ERROR", message = "Internal error", status = 500) {
+    return res.status(status).json({ error: { code, message } });
+}

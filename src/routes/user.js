@@ -7,6 +7,7 @@ const router = Router();
 // GET /users
 router.get("/", (req, res) => {
   res.json({ message: "User route works ✅" });
+  // throw new Error("Test critical error");
 });
 
 
