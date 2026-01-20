@@ -1,0 +1,33 @@
+{
+  "name": "jm-showroomer-back",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "NODE_ENV=dev nodemon src/core/server.js",
+    "start": "NODE_ENV=prod node src/core/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/echocode-app/jm-showroomer-back.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/echocode-app/jm-showroomer-back/issues"
+  },
+  "homepage": "https://github.com/echocode-app/jm-showroomer-back#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "firebase-admin": "^13.6.0",
+    "morgan": "^1.10.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}
