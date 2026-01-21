@@ -12,6 +12,9 @@ app.use(express.json());
 app.use(morgan("dev"));
 
 app.use("/", routes);
+app.get("/", (req, res) => {
+  res.json({ service: "JM Showroomer API", status: "🚀running" });
+});
 app.use(errorHandler);
 
 export default app;
