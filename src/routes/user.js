@@ -6,8 +6,8 @@ const router = Router();
 
 // GET /users
 router.get("/", (req, res) => {
-  res.json({ message: "User route works ✅" });
   // throw new Error("Test critical error");
+  res.json({ message: "User route works ✅" });
 });
 
 
@@ -15,3 +15,5 @@ router.get("/", (req, res) => {
 router.post("/dev/register-test", registerTestUser);
 
 export default router;
+
+// curl -X POST https://jm-showroomer-back.onrender.com/users/dev/register-test

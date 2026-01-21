@@ -13,3 +13,5 @@ router.get("/", (req, res) => {
 });
 
 export default router;
+
+// curl https://jm-showroomer-back.onrender.com/health
