@@ -11,7 +11,6 @@ https://<BACKEND_URL>/api/v1
 - OAuth via Google. Apple OAuth - coming soon (client ID/secret)
 - Use header for protected routes:
 
-```http
 Authorization: Bearer <ID_TOKEN>
 
 - Guests (GUEST) can view content and add favorites locally (mobile storage).
