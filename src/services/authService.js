@@ -4,37 +4,62 @@ export async function verifyOAuthToken(idToken) {
     const auth = getAuthInstance();
     const db = getFirestoreInstance();
 
-    let decoded;
+    if (!idToken) {
+        const err = new Error("Missing idToken");
+        err.status = 400;
+        throw err;
+    }
 
+    let decoded;
     try {
         decoded = await auth.verifyIdToken(idToken);
     } catch (e) {
         const err = new Error("Invalid token");
         err.status = 401;
-        err.code = "INVALID_TOKEN";
         throw err;
     }
 
     const { uid, email, name, picture } = decoded;
 
-    const ref = db.collection("users").doc(uid);
-    const snap = await ref.get();
+    const userRef = db.collection("users").doc(uid);
+    const snap = await userRef.get();
+
+    let firestoreUser;
 
     if (!snap.exists) {
-        await ref.set({
+        const now = new Date().toISOString();
+        firestoreUser = {
             uid,
             email: email || null,
             name: name || null,
             avatar: picture || null,
             role: "user",
+            roles: ["user"],
+            status: "active",
             onboardingState: "new",
+
             createdAt: new Date().toISOString(),
-        });
+            updatedAt: new Date().toISOString(),
+        };
+        await userRef.set(firestoreUser);
+    } else {
+        firestoreUser = snap.data();
     }
 
-    return {
-        uid,
-        email,
-        name,
-    };
+    return firestoreUser;
 }
+
+// {
+//   "uid": "<uid>",
+//   "email": "<email>",
+//   "name": "<name|null>",
+//   "avatar": "<picture|null>",
+//   "role": "user", 
+//   "roles": ["user"],
+//   "status": "active",    // active / suspended / banned
+//   "onboardingState": "new",  // new / completed
+//   "createdAt": "<ISO>",
+//   "updatedAt": "<ISO>"
+// }
+
+

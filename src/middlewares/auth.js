@@ -1,4 +1,4 @@
-import { getAuthInstance } from "../config/firebase.js";
+import { getAuthInstance, getFirestoreInstance } from "../config/firebase.js";
 import { fail } from "../utils/apiResponse.js";
 
 export async function authMiddleware(req, res, next) {
@@ -13,7 +13,7 @@ export async function authMiddleware(req, res, next) {
         const token = header.split(" ")[1];
         const decoded = await auth.verifyIdToken(token);
 
-        req.user = decoded;
+        req.auth = decoded;
         next();
     } catch (err) {
         return fail(res, "AUTH_INVALID", "Invalid or expired token", 401);

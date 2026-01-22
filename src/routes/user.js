@@ -16,4 +16,5 @@ router.post("/dev/register-test", registerTestUser);
 
 export default router;
 
-// curl -X POST https://jm-showroomer-back.onrender.com/users/dev/register-test
+// NODE_ENV=prod node src/core/server.js
+// curl -X POST https://jm-showroomer-back.onrender.com/api/v1/users/dev/register-test
