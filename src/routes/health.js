@@ -16,3 +16,5 @@ export default router;
 
 // NODE_ENV=prod node src/core/server.js
 // curl https://jm-showroomer-back.onrender.com/api/v1/health
+
+// curl http://localhost:3005/api/v1/health

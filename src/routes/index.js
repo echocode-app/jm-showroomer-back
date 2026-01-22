@@ -1,4 +1,5 @@
 import { Router } from "express";
+
 import healthRouter from "./health.js";
 import userRouter from "./user.js";
 import authRouter from "./auth.js";
@@ -7,6 +8,7 @@ import lookbooksRouter from "./lookbooks.js";
 
 const router = Router();
 
+// Public routes
 router.use("/health", healthRouter);
 router.use("/users", userRouter);
 router.use("/auth", authRouter);
