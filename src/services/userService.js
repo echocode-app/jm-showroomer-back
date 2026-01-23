@@ -1,24 +1,55 @@
-import { getAuthInstance, getFirestoreInstance, getStorageInstance } from "../config/firebase.js";
+import { getFirestoreInstance } from "../config/firebase.js";
+import { ROLES } from "../constants/roles.js";
 
-export async function createTestUser() {
-  const auth = getAuthInstance();
-  const db = getFirestoreInstance();
-  const bucket = getStorageInstance().bucket();
+/**
+ * USER → OWNER role request
+ */
+export async function requestOwnerRole(userId) {
+    const db = getFirestoreInstance();
+    const ref = db.collection("users").doc(userId);
 
-  const email = `test_${Date.now()}@jm.dev`;
-  const password = "Test12345!";
+    await ref.update({
+        roleRequest: {
+            role: ROLES.OWNER,
+            status: "pending",
+            requestedAt: new Date().toISOString(),
+            reviewedAt: null,
+            reviewedBy: null,
+            reason: null,
+        },
+        updatedAt: new Date().toISOString(),
+    });
+}
 
-  const user = await auth.createUser({ email, password });
+/**
+ * ADMIN → approve OWNER request
+ * (controller буде додано пізніше)
+ */
+export async function approveOwnerRole(userId, adminId) {
+    const db = getFirestoreInstance();
+    const ref = db.collection("users").doc(userId);
 
-  await db.collection("users").doc(user.uid).set({
-    uid: user.uid,
-    email,
-    role: "test",
-    createdAt: new Date().toISOString(),
-  });
+    await ref.update({
+        role: ROLES.OWNER,
+        "roleRequest.status": "approved",
+        "roleRequest.reviewedAt": new Date().toISOString(),
+        "roleRequest.reviewedBy": adminId,
+        updatedAt: new Date().toISOString(),
+    });
+}
 
-  const file = bucket.file(`test/${user.uid}.txt`);
-  await file.save("JM Showroomer Firebase OK");
+/**
+ * ADMIN → reject OWNER request
+ */
+export async function rejectOwnerRole(userId, adminId, reason = null) {
+    const db = getFirestoreInstance();
+    const ref = db.collection("users").doc(userId);
 
-  return { uid: user.uid, email };
+    await ref.update({
+        "roleRequest.status": "rejected",
+        "roleRequest.reviewedAt": new Date().toISOString(),
+        "roleRequest.reviewedBy": adminId,
+        "roleRequest.reason": reason,
+        updatedAt: new Date().toISOString(),
+    });
 }

@@ -8,7 +8,7 @@ import lookbooksRouter from "./lookbooks.js";
 
 const router = Router();
 
-// Public routes
+// Routes
 router.use("/health", healthRouter);
 router.use("/users", userRouter);
 router.use("/auth", authRouter);

@@ -2,7 +2,10 @@ export const ROLES = {
     GUEST: "guest",
     USER: "user",
     OWNER: "owner",
-    STYLIST: "stylist",
+
+    // future
     MANAGER: "manager",
+    STYLIST: "stylist",
+
     ADMIN: "admin",
 };

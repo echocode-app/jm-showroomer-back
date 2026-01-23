@@ -1,11 +1,14 @@
-import { createTestUser } from "../services/userService.js";
+import { requestOwnerRole as requestOwnerRoleService } from "../services/userService.js";
 import { ok } from "../utils/apiResponse.js";
 
-export async function registerTestUser(req, res, next) {
-    try {
-        const user = await createTestUser();
-        return ok(res, { user });
-    } catch (err) {
-        next(err);
-    }
+export async function getMyProfile(req, res) {
+    return ok(res, req.user);
+}
+
+export async function requestOwnerRole(req, res) {
+    await requestOwnerRoleService(req.user.uid);
+
+    return ok(res, {
+        message: "Owner role request submitted",
+    });
 }
