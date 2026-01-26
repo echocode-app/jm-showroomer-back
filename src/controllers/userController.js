@@ -7,12 +7,26 @@ export async function getMyProfile(req, res) {
 }
 
 export async function requestOwnerRole(req, res) {
+    // DEV mode mock
+    if (process.env.NODE_ENV === "dev" && req.user?.uid === "dev-test-user-123") {
+        req.user.role = "pending_owner";
+        req.user.roles = ["user", "pending_owner"];
+        req.user.updatedAt = new Date().toISOString();
+
+        return ok(res, {
+            message: "Owner role request submitted (dev mock)",
+            user: req.user,
+        });
+    }
+
+    // Production logic
     await requestOwnerRoleService(req.user.uid);
 
     return ok(res, {
         message: "Owner role request submitted",
     });
 }
+
 
 export async function completeOnboarding(req, res) {
     try {

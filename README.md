@@ -92,18 +92,34 @@ Where `<ID_TOKEN>` is the Firebase token received after Google Sign-In.
 
 ## Onboarding endpoints
 
----
+**Auth & Onboarding Flow (Flutter)**
 
-| Scope | Method    | Endpoint                        | Roles / Notes                                                          |
+**Environments:**
+
+- **DEV** — mock user (`dev-test-user-123`) works without Firestore. `onboardingState` and `request-owner` flows are mocked. Use `TEST_ID_TOKEN` for protected endpoints.
+- **STAGE** — requires real Firebase token; behavior same as PROD for auth and RBAC.
+- **PROD** — requires real Firebase token; public endpoints available without token.
+
+**Endpoints & Roles:**  
+| Scope | Method | Endpoint | Roles / Notes |
 | ----- | --------- | ------------------------------- | ---------------------------------------------------------------------- |
-| TRUE  | Protected | POST /users/complete-onboarding | Marks onboarding as completed (`onboardingState = completed`)          |
-| TRUE  | Protected | GET /users/me                   | Returns user profile including `onboardingState` (`new` / `completed`) |
+| TRUE | Protected | GET /users/me | Returns user profile including `onboardingState` (`new` / `completed`) |
+| TRUE | Protected | POST /users/complete-onboarding | Marks onboarding as completed (`onboardingState = completed`) |
+| TRUE | Protected | POST /users/request-owner | Requests OWNER role; in DEV mock returns `"pending_owner"` immediately |
+| TRUE | Dev-only | POST /users/dev/register-test | Creates a test user |
 
----
+**Roles & Permissions:**
 
-## Flutter Notes
+- `GUEST` — unauthenticated, browse only
+- `USER` — default after login; can request OWNER
+- `OWNER` — business user; can create showrooms and lookbooks
+- `ADMIN`, `MANAGER`, `STYLIST` — future roles
 
-1. Always fetch `/users/me` after login to get current onboarding state.
+**Flutter Notes:**
+
+1. Always fetch `GET /users/me` after login to get current `onboardingState`.
 2. Do not assume onboarding is completed locally.
-3. Call `POST /users/complete-onboarding` when user finishes onboarding.
-4. The `onboardingState` is integrated with roles but does not change role permissions.
+3. Call `POST /users/complete-onboarding` when onboarding is finished.
+4. Use `idToken` in all protected requests.
+5. DEV mock returns `"pending_owner"` for OWNER requests for UI testing without Firestore.
+6. `onboardingState` is linked to roles but does not change permissions directly.
