@@ -7,6 +7,7 @@ import { ROLES } from "../constants/roles.js";
 import {
   getMyProfile,
   requestOwnerRole,
+  completeOnboarding,
 } from "../controllers/userController.js";
 
 import { registerTestUser } from "../controllers/testUserController.js";
@@ -35,6 +36,16 @@ router.post(
 );
 
 /**
+ * POST /users/complete-onboarding
+ */
+router.post(
+  "/complete-onboarding",
+  authMiddleware,
+  loadUser,
+  completeOnboarding
+);
+
+/**
  * DEV: create test user
  */
 router.post(
@@ -43,7 +54,6 @@ router.post(
 );
 
 export default router;
-
 
 // {
 //   "success": true,
@@ -56,7 +66,7 @@ export default router;
 //       "role": "user",
 //       "roles": ["user"],
 //       "status": "active",
-//       "onboardingState": "new",
+//       "onboardingState": "new", // POST /users/complete-onboarding → onboardingState = "completed".
 //       "createdAt": "...",
 //       "updatedAt": "..."
 //     }

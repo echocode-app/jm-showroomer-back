@@ -163,7 +163,7 @@ paths:
   /users/me:
     get:
       tags: [Users]
-      summary: Get current authenticated user profile
+      summary: Get current authenticated user profile (includes onboardingState)
       security:
         - bearerAuth: []
       responses:
@@ -211,6 +211,27 @@ paths:
                 $ref: "#/components/schemas/ApiError"
         "403":
           description: FORBIDDEN (role not USER)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /users/complete-onboarding:
+    post:
+      tags: [Users]
+      summary: Mark onboarding as completed
+      description: Updates user.onboardingState to "completed"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Onboarding marked as completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiSuccess"
+        "401":
+          description: AUTH_MISSING / AUTH_INVALID
           content:
             application/json:
               schema:
