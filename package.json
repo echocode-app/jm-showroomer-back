@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "mocha --recursive src/test/**/*.test.js --timeout 5000",
     "dev": "NODE_ENV=dev nodemon src/core/server.js",
     "start": "NODE_ENV=prod node src/core/server.js"
   },
@@ -32,6 +32,10 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.11"
+    "chai": "^6.2.2",
+    "cross-env": "^10.1.0",
+    "mocha": "^11.7.5",
+    "nodemon": "^3.1.11",
+    "supertest": "^7.2.2"
   }
 }

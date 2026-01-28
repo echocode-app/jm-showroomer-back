@@ -128,11 +128,25 @@ Where `<ID_TOKEN>` is the Firebase token received after Google Sign-In.
 
 ## Showroom CRUD – Backend
 
-- Firebase integrated
-- Create showroom (`POST /showrooms/create`) – OWNER/manager
-- List showrooms (`GET /showrooms`) – public
-- Favorite showroom (`POST /showrooms/:id/favorite`) – protected, stub
-- Validation:
-  - Unique name per owner
-  - Blocked countries
-  - Null-safe fields (`contacts`, `location`)
+- **Firebase Firestore** integrated
+- **Create showroom** (`POST /showrooms`) – OWNER only
+- **List showrooms** (`GET /showrooms`) – public
+- **Get showroom by ID** (`GET /showrooms/{id}`) – protected for owner/admin, public if status=approved
+- **Update showroom** (`PATCH /showrooms/{id}`) – OWNER only (draft/rejected)
+- **Favorite showroom** (`POST /showrooms/:id/favorite`) – protected, stub
+
+### Validation rules
+
+- **Unique name** per owner
+- **Blocked countries**: Russia, Belarus
+- **Edit tracking**: `editCount`, `editHistory` with editor UID, role, timestamp
+- **Null-safe fields**: `contacts`, `location`
+
+### Roles
+
+| Role  | Permissions                               |
+| ----- | ----------------------------------------- |
+| OWNER | Create, update showrooms (draft/rejected) |
+| USER  | Browse only                               |
+| ADMIN | Internal / moderation (future)            |
+| GUEST | Unauthenticated, browse only              |

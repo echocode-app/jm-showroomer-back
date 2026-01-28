@@ -50,40 +50,61 @@ request() {
 # LOCAL DEV TESTS (MOCK USER)
 #####################################
 
-print_section "LOCAL DEV — Auth & Onboarding (mock user)"
+print_section "LOCAL DEV — Auth, Onboarding & Showroom CRUD (mock user)"
 
-request "Health check" 200 \
-  "${DEV_BASE_URL}/health"
+# Health & public endpoints
+request "Health check" 200 "${DEV_BASE_URL}/health"
+request "Public lookbooks" 200 "${DEV_BASE_URL}/lookbooks"
+request "Public showrooms" 200 "${DEV_BASE_URL}/showrooms"
 
-request "Public lookbooks" 200 \
-  "${DEV_BASE_URL}/lookbooks"
+# Auth & onboarding
+request "GET /users/me (mock auth)" 200 "${AUTH_HEADER_DEV[@]}" "${DEV_BASE_URL}/users/me"
+request "POST /users/complete-onboarding (mock)" 200 -X POST "${AUTH_HEADER_DEV[@]}" "${DEV_BASE_URL}/users/complete-onboarding"
+request "POST /users/request-owner (mock, no Firestore)" 200 -X POST "${AUTH_HEADER_DEV[@]}" "${DEV_BASE_URL}/users/request-owner"
 
-request "Public showrooms" 200 \
-  "${DEV_BASE_URL}/showrooms"
+# Showroom CRUD
+# CREATE showroom
+SHOWROOM_CREATE_BODY=$(
+cat <<EOF
+{
+  "name": "Test Showroom",
+  "type": "Мультибренд шоурум",
+  "availability": "вільний доступ",
+  "address": "Kyiv, Ukraine",
+  "country": "Ukraine",
+  "contacts": {"phone": "+380999999999","instagram": "https://instagram.com/testshowroom"},
+  "location": {"lat": 50.45,"lng": 30.523}
+}
+EOF
+)
 
-request "GET /users/me (mock auth)" 200 \
-  "${AUTH_HEADER_DEV[@]}" \
-  "${DEV_BASE_URL}/users/me"
+SHOWROOM_ID=$(curl -s -X POST "${DEV_BASE_URL}/showrooms/create" \
+  -H "Authorization: Bearer ${DEV_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d "$SHOWROOM_CREATE_BODY" | jq -r '.data.showroom.id')
 
-request "POST /users/complete-onboarding (mock)" 200 \
-  -X POST \
-  "${AUTH_HEADER_DEV[@]}" \
-  "${DEV_BASE_URL}/users/complete-onboarding"
+if [[ "$SHOWROOM_ID" != "null" && -n "$SHOWROOM_ID" ]]; then
+  echo "✔ Created showroom with ID: $SHOWROOM_ID"
+else
+  echo "✖ Failed to create showroom"
+fi
 
-request "POST /users/request-owner (dev mock, no Firestore)" 200 \
-  -X POST \
-  "${AUTH_HEADER_DEV[@]}" \
-  "${DEV_BASE_URL}/users/request-owner"
+# GET showroom by ID
+request "GET /showrooms/{id}" 200 "${AUTH_HEADER_DEV[@]}" "${DEV_BASE_URL}/showrooms/${SHOWROOM_ID}"
 
-request "POST /showrooms/create (RBAC forbidden)" 403 \
-  -X POST \
-  "${AUTH_HEADER_DEV[@]}" \
-  "${DEV_BASE_URL}/showrooms/create"
+# PATCH / update showroom
+SHOWROOM_UPDATE_BODY='{ "name": "Updated Showroom Name" }'
+request "PATCH /showrooms/{id}" 200 -X PATCH "${AUTH_HEADER_DEV[@]}" -H "Content-Type: application/json" -d "$SHOWROOM_UPDATE_BODY" "${DEV_BASE_URL}/showrooms/${SHOWROOM_ID}"
 
-request "POST /lookbooks/create (RBAC forbidden)" 403 \
-  -X POST \
-  "${AUTH_HEADER_DEV[@]}" \
-  "${DEV_BASE_URL}/lookbooks/create"
+# POST /showrooms/{id}/favorite
+request "POST /showrooms/{id}/favorite" 200 -X POST "${AUTH_HEADER_DEV[@]}" "${DEV_BASE_URL}/showrooms/${SHOWROOM_ID}/favorite"
+
+# CREATE showroom in blocked country
+SHOWROOM_BLOCKED_BODY='{"name":"Blocked Showroom","type":"Мультибренд шоурум","availability":"вільний доступ","address":"Somewhere","country":"Russia"}'
+request "POST /showrooms/create (blocked country)" 400 -X POST "${AUTH_HEADER_DEV[@]}" -H "Content-Type: application/json" -d "$SHOWROOM_BLOCKED_BODY" "${DEV_BASE_URL}/showrooms/create"
+
+# RBAC forbidden actions
+request "POST /lookbooks/create (RBAC forbidden)" 403 -X POST "${AUTH_HEADER_DEV[@]}" "${DEV_BASE_URL}/lookbooks/create"
 
 #####################################
 # PROD TESTS (NO REAL TOKEN)
@@ -91,14 +112,9 @@ request "POST /lookbooks/create (RBAC forbidden)" 403 \
 
 print_section "PROD — Public API only (no token)"
 
-request "Health check" 200 \
-  "${PROD_BASE_URL}/health"
-
-request "Public lookbooks" 200 \
-  "${PROD_BASE_URL}/lookbooks"
-
-request "Public showrooms" 200 \
-  "${PROD_BASE_URL}/showrooms"
+request "Health check" 200 "${PROD_BASE_URL}/health"
+request "Public lookbooks" 200 "${PROD_BASE_URL}/lookbooks"
+request "Public showrooms" 200 "${PROD_BASE_URL}/showrooms"
 
 echo
 echo "Protected endpoints skipped (require real Firebase idToken)"
@@ -113,5 +129,6 @@ print_section "RESULT"
 echo "✔ Auth middleware stable"
 echo "✔ DEV mock user works without Firestore"
 echo "✔ Onboarding flow stable"
+echo "✔ Showroom CRUD verified"
 echo "✔ RBAC enforced"
 echo "✔ Server restart-safe (no re-registration)"
