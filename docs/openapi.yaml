@@ -1,18 +1,15 @@
 openapi: 3.0.3
-
 info:
   title: JM Showroomer API
   description: Backend API for Flutter and Web clients
-  version: "1.0.1"
-  license:
-    name: Proprietary
-    url: https://jm-showroomer.com/license
+  version: "1.0.3"
 
 servers:
   - url: https://jm-showroomer-back.onrender.com/api/v1
-    description: Production
+    description: Production / Render
   - url: http://localhost:3005/api/v1
-    description: Local development
+    description: Local dev
+    x-internal: true
 
 tags:
   - name: Health
@@ -23,6 +20,8 @@ tags:
     description: User profile and onboarding
   - name: Showrooms
     description: Business showroom management
+  - name: Lookbooks
+    description: Lookbooks and RSVPs
 
 security:
   - bearerAuth: []
@@ -56,10 +55,8 @@ components:
           properties:
             code:
               type: string
-              example: SOME_ERROR_CODE
             message:
               type: string
-              example: Human readable message
 
     User:
       type: object
@@ -78,9 +75,26 @@ components:
         role:
           type: string
           enum: [user, owner, admin]
+        roles:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [active, suspended, banned]
         onboardingState:
           type: string
           enum: [new, completed]
+        roleRequest:
+          type: object
+          nullable: true
+          properties:
+            role:
+              type: string
+              example: owner
+            status:
+              type: string
+              enum: [pending, approved, rejected]
         createdAt:
           type: string
           format: date-time
@@ -97,12 +111,6 @@ components:
         instagram:
           type: string
           nullable: true
-        website:
-          type: string
-          nullable: true
-        telegram:
-          type: string
-          nullable: true
 
     Showroom:
       type: object
@@ -115,24 +123,14 @@ components:
           type: string
         type:
           type: string
+          enum: ["Мультибренд шоурум", "Унікальний шоурум"]
         availability:
           type: string
-          nullable: true
-        category:
-          type: string
-          nullable: true
-        brands:
-          type: array
-          items:
-            type: string
+          enum: ["вільний доступ", "по передзапису"]
         address:
           type: string
-          nullable: true
         country:
           type: string
-        city:
-          type: string
-          nullable: true
         contacts:
           $ref: "#/components/schemas/Contacts"
         location:
@@ -145,23 +143,7 @@ components:
               type: number
         status:
           type: string
-          enum: [draft, pending, approved, rejected, deleted]
-        editCount:
-          type: integer
-        editHistory:
-          type: array
-          items:
-            type: object
-            properties:
-              editorUid:
-                type: string
-              editorRole:
-                type: string
-              timestamp:
-                type: string
-                format: date-time
-              changes:
-                type: object
+          enum: ["draft", "pending", "approved", "rejected"]
         createdAt:
           type: string
           format: date-time
@@ -174,33 +156,37 @@ paths:
     get:
       tags: [Health]
       summary: Health check
+      operationId: getHealth
       security: []
-      operationId: healthCheck
       responses:
         "200":
           description: Service is running
+        "4XX":
+          description: Client error
         "500":
-          description: Service unavailable
+          description: Internal server error
 
   /auth/oauth:
     post:
       tags: [Auth]
       summary: Google OAuth login (Firebase)
+      operationId: authOAuthLogin
       security: []
-      operationId: authGoogle
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [idToken]
+              required:
+                - idToken
               properties:
                 idToken:
                   type: string
+                  description: Firebase idToken
       responses:
         "200":
-          description: Auth success
+          description: User profile
           content:
             application/json:
               schema:
@@ -208,22 +194,49 @@ paths:
                   - $ref: "#/components/schemas/ApiSuccess"
                   - properties:
                       data:
+                        type: object
                         properties:
                           user:
                             $ref: "#/components/schemas/User"
         "400":
-          description: Invalid request
+          description: Missing token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "401":
           description: Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /auth/apple:
+    post:
+      tags: [Auth]
+      summary: Apple OAuth (stub)
+      operationId: authAppleLogin
+      security: []
+      responses:
+        "200":
+          description: Success (stub)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiSuccess"
+        "501":
+          description: Apple OAuth coming soon
 
   /users/me:
     get:
       tags: [Users]
-      summary: Get current user profile
-      operationId: getMe
+      summary: Get current authenticated user profile
+      operationId: getCurrentUser
+      security:
+        - bearerAuth: []
       responses:
         "200":
-          description: User profile
+          description: Current user profile
           content:
             application/json:
               schema:
@@ -237,15 +250,57 @@ paths:
         "404":
           description: USER_NOT_FOUND
 
+  /users/request-owner:
+    post:
+      tags: [Users]
+      summary: Request OWNER role
+      operationId: requestOwnerRole
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Owner role request submitted
+        "401":
+          description: AUTH_MISSING / AUTH_INVALID
+        "403":
+          description: FORBIDDEN (role not USER)
+
+  /users/complete-onboarding:
+    post:
+      tags: [Users]
+      summary: Mark onboarding as completed
+      operationId: completeOnboarding
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Onboarding marked as completed
+        "401":
+          description: Unauthorized
+        "4XX":
+          description: Client error
+
+  /users/dev/register-test:
+    post:
+      tags: [Users]
+      summary: Dev only — create test user
+      operationId: registerTestUser
+      security: []
+      responses:
+        "200":
+          description: Test user created
+        "4XX":
+          description: Client error
+
   /showrooms:
     get:
       tags: [Showrooms]
-      summary: List showrooms
-      security: []
+      summary: List all showrooms
       operationId: listShowrooms
+      security: []
       responses:
         "200":
-          description: List of approved showrooms
+          description: List of showrooms
           content:
             application/json:
               schema:
@@ -256,44 +311,113 @@ paths:
                         type: array
                         items:
                           $ref: "#/components/schemas/Showroom"
-        "400":
-          description: Bad request
+        "4XX":
+          description: Client error
 
-  /showrooms/create:
-    post:
+  /showrooms/{id}:
+    get:
       tags: [Showrooms]
-      summary: Create showroom
-      operationId: createShowroom
+      summary: Get showroom by id
+      operationId: getShowroomById
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Showroom details
+        "404":
+          description: Showroom not found
+
+    patch:
+      tags: [Showrooms]
+      summary: Update showroom
+      operationId: updateShowroom
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [name, type, country]
               properties:
                 name:
                   type: string
                 type:
                   type: string
+                  enum: ["Мультибренд шоурум", "Унікальний шоурум"]
                 availability:
                   type: string
-                category:
-                  type: string
-                brands:
-                  type: array
-                  items:
-                    type: string
+                  enum: ["вільний доступ", "по передзапису"]
                 address:
                   type: string
                 country:
-                  type: string
-                city:
                   type: string
                 contacts:
                   $ref: "#/components/schemas/Contacts"
                 location:
                   type: object
+                  nullable: true
+                  properties:
+                    lat:
+                      type: number
+                    lng:
+                      type: number
+      responses:
+        "200":
+          description: Showroom updated
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /showrooms/create:
+    post:
+      tags: [Showrooms]
+      summary: Create showroom
+      operationId: createShowroom
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - type
+                - availability
+                - address
+                - country
+              properties:
+                name:
+                  type: string
+                type:
+                  type: string
+                  enum: ["Мультибренд шоурум", "Унікальний шоурум"]
+                availability:
+                  type: string
+                  enum: ["вільний доступ", "по передзапису"]
+                address:
+                  type: string
+                country:
+                  type: string
+                contacts:
+                  $ref: "#/components/schemas/Contacts"
+                location:
+                  type: object
+                  nullable: true
                   properties:
                     lat:
                       type: number
@@ -302,79 +426,72 @@ paths:
       responses:
         "200":
           description: Showroom created
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiSuccess"
-                  - properties:
-                      data:
-                        $ref: "#/components/schemas/Showroom"
-        "400":
-          description: Validation error
         "401":
-          description: AUTH_MISSING / AUTH_INVALID
+          description: Unauthorized
         "403":
-          description: FORBIDDEN (not OWNER)
+          description: Forbidden
 
-  /showrooms/{id}:
+  /showrooms/{id}/favorite:
+    post:
+      tags: [Showrooms]
+      summary: Add showroom to favorites
+      operationId: favoriteShowroom
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Added to favorites
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /lookbooks:
     get:
-      tags: [Showrooms]
-      summary: Get showroom by id
+      tags: [Lookbooks]
+      summary: List all lookbooks
+      operationId: listLookbooks
       security: []
-      operationId: getShowroomById
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
       responses:
         "200":
-          description: Showroom
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiSuccess"
-                  - properties:
-                      data:
-                        $ref: "#/components/schemas/Showroom"
-        "403":
-          description: ACCESS_DENIED
-        "404":
-          description: SHOWROOM_NOT_FOUND
+          description: List of lookbooks
+        "4XX":
+          description: Client error
 
-    patch:
-      tags: [Showrooms]
-      summary: Update showroom (edit tracking)
-      operationId: updateShowroom
+  /lookbooks/create:
+    post:
+      tags: [Lookbooks]
+      summary: Create lookbook
+      operationId: createLookbook
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Lookbook created
+        "4XX":
+          description: Client error
+
+  /lookbooks/{id}/rsvp:
+    post:
+      tags: [Lookbooks]
+      summary: RSVP to lookbook event
+      operationId: rsvpLookbook
+      security:
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
           required: true
           schema:
             type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
       responses:
         "200":
-          description: Showroom updated
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiSuccess"
-                  - properties:
-                      data:
-                        $ref: "#/components/schemas/Showroom"
-        "400":
-          description: SHOWROOM_NOT_EDITABLE / NO_FIELDS_TO_UPDATE
-        "403":
-          description: ACCESS_DENIED
-        "404":
-          description: SHOWROOM_NOT_FOUND
+          description: RSVP success
+        "4XX":
+          description: Client error
