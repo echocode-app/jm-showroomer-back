@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: JM Showroomer API
   description: Backend API for Flutter and Web clients
-  version: "1.0.0"
+  version: "1.0.1"
 
 servers:
   - url: http://localhost:3005/api/v1
@@ -89,6 +89,55 @@ components:
             status:
               type: string
               enum: [pending, approved, rejected]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Contacts:
+      type: object
+      properties:
+        phone:
+          type: string
+          nullable: true
+        instagram:
+          type: string
+          nullable: true
+
+    Showroom:
+      type: object
+      properties:
+        id:
+          type: string
+        ownerUid:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: ["Мультибренд шоурум", "Унікальний шоурум"]
+        availability:
+          type: string
+          enum: ["вільний доступ", "по передзапису"]
+        address:
+          type: string
+        country:
+          type: string
+        contacts:
+          $ref: "#/components/schemas/Contacts"
+        location:
+          type: object
+          nullable: true
+          properties:
+            lat:
+              type: number
+            lng:
+              type: number
+        status:
+          type: string
+          enum: ["draft", "pending", "approved", "rejected"]
         createdAt:
           type: string
           format: date-time
@@ -220,7 +269,6 @@ paths:
     post:
       tags: [Users]
       summary: Mark onboarding as completed
-      description: Updates user.onboardingState to "completed"
       security:
         - bearerAuth: []
       responses:
@@ -230,12 +278,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiSuccess"
-        "401":
-          description: AUTH_MISSING / AUTH_INVALID
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiError"
 
   /users/dev/register-test:
     post:
@@ -261,25 +303,92 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiSuccess"
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Showroom"
 
   /showrooms/create:
-    post:
-      tags: [Showrooms]
-      summary: Create showroom
-      security:
-        - bearerAuth: []
-      responses:
-        "200":
-          description: Showroom created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiSuccess"
-        "401":
-          description: AUTH_MISSING / AUTH_INVALID
-        "403":
-          description: FORBIDDEN (role not OWNER)
+  post:
+    tags: [Showrooms]
+    summary: Create showroom
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - name
+              - type
+              - availability
+              - address
+              - country
+            properties:
+              name:
+                type: string
+                example: "MyTestShowroom"
+              type:
+                type: string
+                enum: ["Мультибренд шоурум", "Унікальний шоурум"]
+                example: "Мультибренд шоурум"
+              availability:
+                type: string
+                enum: ["вільний доступ", "по передзапису"]
+                example: "вільний доступ"
+              address:
+                type: string
+                example: "Kyiv, Ukraine"
+              country:
+                type: string
+                example: "Ukraine"
+              contacts:
+                type: object
+                properties:
+                  phone:
+                    type: string
+                    example: "+380999999999"
+                  instagram:
+                    type: string
+                    example: "https://www.instagram.com/myshowroom/"
+              location:
+                type: object
+                nullable: true
+                properties:
+                  lat:
+                    type: number
+                    example: 50.4501
+                  lng:
+                    type: number
+                    example: 30.5234
+    responses:
+      "200":
+        description: Showroom created
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/ApiSuccess"
+                - properties:
+                    data:
+                      $ref: "#/components/schemas/Showroom"
+      "401":
+        description: AUTH_MISSING / AUTH_INVALID
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApiError"
+      "403":
+        description: FORBIDDEN (role not OWNER)
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApiError"
 
   /showrooms/{id}/favorite:
     post:
@@ -331,10 +440,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiSuccess"
-        "401":
-          description: AUTH_MISSING / AUTH_INVALID
-        "403":
-          description: FORBIDDEN (role not OWNER)
 
   /lookbooks/{id}/rsvp:
     post:
@@ -355,7 +460,3 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiSuccess"
-        "401":
-          description: AUTH_MISSING / AUTH_INVALID
-        "403":
-          description: FORBIDDEN (role not allowed)

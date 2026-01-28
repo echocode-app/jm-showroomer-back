@@ -123,3 +123,16 @@ Where `<ID_TOKEN>` is the Firebase token received after Google Sign-In.
 4. Use `idToken` in all protected requests.
 5. DEV mock returns `"pending_owner"` for OWNER requests for UI testing without Firestore.
 6. `onboardingState` is linked to roles but does not change permissions directly.
+
+---
+
+## Showroom CRUD – Backend
+
+- Firebase integrated
+- Create showroom (`POST /showrooms/create`) – OWNER/manager
+- List showrooms (`GET /showrooms`) – public
+- Favorite showroom (`POST /showrooms/:id/favorite`) – protected, stub
+- Validation:
+  - Unique name per owner
+  - Blocked countries
+  - Null-safe fields (`contacts`, `location`)

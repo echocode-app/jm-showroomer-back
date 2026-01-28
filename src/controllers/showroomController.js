@@ -1,9 +1,14 @@
+import { createShowroom } from "../services/showroomService.js";
 import { ok } from "../utils/apiResponse.js";
 
-export async function createShowroom(req, res, next) {
+export async function createShowroomController(req, res, next) {
     try {
-        // TODO
-        return ok(res, { message: "Showroom created", user: req.user });
+        const ownerUid = req.user.uid;
+        const data = req.body;
+
+        const showroom = await createShowroom(data, ownerUid);
+
+        return ok(res, { showroom });
     } catch (err) {
         next(err);
     }
@@ -11,7 +16,11 @@ export async function createShowroom(req, res, next) {
 
 export async function listShowrooms(req, res, next) {
     try {
-        return ok(res, { showrooms: [] });
+        const db = getFirestoreInstance();
+        const snapshot = await db.collection("showrooms").get();
+        const showrooms = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        return ok(res, { showrooms });
     } catch (err) {
         next(err);
     }
@@ -19,7 +28,7 @@ export async function listShowrooms(req, res, next) {
 
 export async function favoriteShowroom(req, res, next) {
     try {
-        // TODO
+        // TODO: додати логіку фаворитів
         return ok(res, { message: "Added to favorites", user: req.user });
     } catch (err) {
         next(err);
