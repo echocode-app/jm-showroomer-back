@@ -1,16 +1,13 @@
 import request from "supertest";
 import { expect } from "chai";
 import app from "../core/app.js";
-import { getFirestoreInstance } from "../config/firebase.js";
 
-const db = getFirestoreInstance();
+let createdShowroomId;
 
 // mock tokens for different user roles
 const ownerToken = "OWNER_TEST_TOKEN";
 const adminToken = "ADMIN_TEST_TOKEN";
 const userToken = "USER_TEST_TOKEN";
-
-let createdShowroomId;
 
 describe("Showroom CRUD", function () {
   this.timeout(5000);
@@ -35,9 +32,9 @@ describe("Showroom CRUD", function () {
 
     expect(res.status).to.equal(200);
     expect(res.body.success).to.be.true;
-    expect(res.body.data.showroom).to.have.property("id");
+    expect(res.body.data).to.have.property("id");
 
-    createdShowroomId = res.body.data.showroom.id;
+    createdShowroomId = res.body.data.id; // store for later tests
   });
 
   // LIST SHOWROOMS
@@ -45,7 +42,7 @@ describe("Showroom CRUD", function () {
     const res = await request(app).get("/api/v1/showrooms");
     expect(res.status).to.equal(200);
     expect(res.body.success).to.be.true;
-    expect(res.body.data.showrooms).to.be.an("array");
+    expect(res.body.data).to.be.an("array");
   });
 
   // GET SHOWROOM BY ID
@@ -55,7 +52,7 @@ describe("Showroom CRUD", function () {
       .set("Authorization", `Bearer ${ownerToken}`);
 
     expect(res.status).to.equal(200);
-    expect(res.body.data.showroom).to.have.property("name", "Test Showroom");
+    expect(res.body.data).to.have.property("name", "Test Showroom");
   });
 
   // UPDATE SHOWROOM
@@ -66,9 +63,9 @@ describe("Showroom CRUD", function () {
       .send({ name: "Updated Showroom Name" });
 
     expect(res.status).to.equal(200);
-    expect(res.body.data.showroom.name).to.equal("Updated Showroom Name");
-    expect(res.body.data.showroom.editCount).to.equal(1);
-    expect(res.body.data.showroom.editHistory).to.be.an("array");
+    expect(res.body.data.name).to.equal("Updated Showroom Name");
+    expect(res.body.data.editCount).to.equal(1);
+    expect(res.body.data.editHistory).to.be.an("array");
   });
 
   // BLOCKED COUNTRY TEST
@@ -81,7 +78,7 @@ describe("Showroom CRUD", function () {
         type: "Мультибренд шоурум",
         availability: "вільний доступ",
         address: "Somewhere",
-        country: "Russia",
+        country: "Russia"
       });
 
     expect(res.status).to.equal(400);

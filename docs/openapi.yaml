@@ -1,12 +1,16 @@
 openapi: 3.0.3
+
 info:
   title: JM Showroomer API
   description: Backend API for Flutter and Web clients
-  version: "1.0.3"
+  version: "1.1.0"
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
 
 servers:
   - url: https://jm-showroomer-back.onrender.com/api/v1
-    description: Production / Render
+    description: Production
   - url: http://localhost:3005/api/v1
     description: Local dev
     x-internal: true
@@ -17,9 +21,9 @@ tags:
   - name: Auth
     description: Authentication and OAuth
   - name: Users
-    description: User profile and onboarding
+    description: User profile, roles, onboarding
   - name: Showrooms
-    description: Business showroom management
+    description: Showroom management
   - name: Lookbooks
     description: Lookbooks and RSVPs
 
@@ -37,21 +41,27 @@ components:
   schemas:
     ApiSuccess:
       type: object
+      required: [success, data]
       properties:
         success:
           type: boolean
           example: true
         data:
           type: object
+        meta:
+          type: object
+          nullable: true
 
     ApiError:
       type: object
+      required: [success, error]
       properties:
         success:
           type: boolean
           example: false
         error:
           type: object
+          required: [code, message]
           properties:
             code:
               type: string
@@ -60,6 +70,7 @@ components:
 
     User:
       type: object
+      required: [uid, role, status, onboardingState]
       properties:
         uid:
           type: string
@@ -72,29 +83,49 @@ components:
         avatar:
           type: string
           nullable: true
+
         role:
           type: string
-          enum: [user, owner, admin]
+          enum: [guest, user, owner, admin]
+
         roles:
           type: array
           items:
             type: string
+
         status:
           type: string
           enum: [active, suspended, banned]
+
         onboardingState:
           type: string
           enum: [new, completed]
+
         roleRequest:
           type: object
           nullable: true
           properties:
             role:
               type: string
-              example: owner
+              enum: [owner]
             status:
               type: string
               enum: [pending, approved, rejected]
+            requestedAt:
+              type: string
+              format: date-time
+              nullable: true
+            reviewedAt:
+              type: string
+              format: date-time
+              nullable: true
+            reviewedBy:
+              type: string
+              nullable: true
+            reason:
+              type: string
+              nullable: true
+
         createdAt:
           type: string
           format: date-time
@@ -111,28 +142,57 @@ components:
         instagram:
           type: string
           nullable: true
+        website:
+          type: string
+          nullable: true
+        telegram:
+          type: string
+          nullable: true
 
     Showroom:
       type: object
+      required: [id, ownerUid, name, type, country, status]
       properties:
         id:
           type: string
         ownerUid:
           type: string
+
         name:
           type: string
+
         type:
           type: string
-          enum: ["Мультибренд шоурум", "Унікальний шоурум"]
+          enum: [multibrand, unique]
+
         availability:
           type: string
-          enum: ["вільний доступ", "по передзапису"]
+          enum: [open, appointment]
+          nullable: true
+
+        category:
+          type: string
+          nullable: true
+
+        brands:
+          type: array
+          items:
+            type: string
+
         address:
           type: string
+          nullable: true
+
         country:
           type: string
+
+        city:
+          type: string
+          nullable: true
+
         contacts:
           $ref: "#/components/schemas/Contacts"
+
         location:
           type: object
           nullable: true
@@ -141,9 +201,14 @@ components:
               type: number
             lng:
               type: number
+
         status:
           type: string
-          enum: ["draft", "pending", "approved", "rejected"]
+          enum: [draft, pending, approved, rejected]
+
+        editCount:
+          type: integer
+
         createdAt:
           type: string
           format: date-time
@@ -151,26 +216,128 @@ components:
           type: string
           format: date-time
 
+    CreateShowroomInput:
+      type: object
+      required: [name, type, country]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [multibrand, unique]
+        availability:
+          type: string
+          enum: [open, appointment]
+        category:
+          type: string
+        brands:
+          type: array
+          items:
+            type: string
+        address:
+          type: string
+        country:
+          type: string
+        city:
+          type: string
+        contacts:
+          $ref: "#/components/schemas/Contacts"
+        location:
+          type: object
+          properties:
+            lat:
+              type: number
+            lng:
+              type: number
+
+    UpdateShowroomInput:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [multibrand, unique]
+        availability:
+          type: string
+          enum: [open, appointment]
+        category:
+          type: string
+        brands:
+          type: array
+          items:
+            type: string
+        address:
+          type: string
+        country:
+          type: string
+        city:
+          type: string
+        contacts:
+          $ref: "#/components/schemas/Contacts"
+        location:
+          type: object
+          properties:
+            lat:
+              type: number
+            lng:
+              type: number
+
 paths:
   /health:
     get:
       tags: [Health]
       summary: Health check
-      operationId: getHealth
+      operationId: healthCheck
       security: []
       responses:
         "200":
           description: Service is running
-        "4XX":
-          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiSuccess"
         "500":
-          description: Internal server error
+          description: Service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
 
   /auth/oauth:
     post:
       tags: [Auth]
       summary: Google OAuth login (Firebase)
-      operationId: authOAuthLogin
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [idToken]
+              properties:
+                idToken:
+                  type: string
+      responses:
+        "200":
+          description: Authenticated user
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            $ref: "#/components/schemas/User"
+  /auth/apple:
+    post:
+      tags: [Auth]
+      summary: Apple OAuth login (coming soon)
+      description: Endpoint for Apple OAuth login. Currently not implemented (returns 501).
       security: []
       requestBody:
         required: true
@@ -183,7 +350,22 @@ paths:
               properties:
                 idToken:
                   type: string
-                  description: Firebase idToken
+      responses:
+        "501":
+          description: Apple OAuth coming soon
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Apple OAuth coming soon"
+
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Get current user
       responses:
         "200":
           description: User profile
@@ -198,109 +380,52 @@ paths:
                         properties:
                           user:
                             $ref: "#/components/schemas/User"
-        "400":
-          description: Missing token
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiError"
-        "401":
-          description: Invalid token
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiError"
-
-  /auth/apple:
-    post:
-      tags: [Auth]
-      summary: Apple OAuth (stub)
-      operationId: authAppleLogin
-      security: []
-      responses:
-        "200":
-          description: Success (stub)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiSuccess"
-        "501":
-          description: Apple OAuth coming soon
-
-  /users/me:
-    get:
-      tags: [Users]
-      summary: Get current authenticated user profile
-      operationId: getCurrentUser
-      security:
-        - bearerAuth: []
-      responses:
-        "200":
-          description: Current user profile
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiSuccess"
-                  - properties:
-                      data:
-                        $ref: "#/components/schemas/User"
-        "401":
-          description: AUTH_MISSING / AUTH_INVALID
-        "404":
-          description: USER_NOT_FOUND
 
   /users/request-owner:
     post:
       tags: [Users]
       summary: Request OWNER role
-      operationId: requestOwnerRole
-      security:
-        - bearerAuth: []
       responses:
         "200":
-          description: Owner role request submitted
-        "401":
-          description: AUTH_MISSING / AUTH_INVALID
-        "403":
-          description: FORBIDDEN (role not USER)
+          description: Request submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiSuccess"
 
   /users/complete-onboarding:
     post:
       tags: [Users]
-      summary: Mark onboarding as completed
-      operationId: completeOnboarding
-      security:
-        - bearerAuth: []
+      summary: Complete onboarding
       responses:
         "200":
-          description: Onboarding marked as completed
-        "401":
-          description: Unauthorized
-        "4XX":
-          description: Client error
+          description: Onboarding completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiSuccess"
 
   /users/dev/register-test:
     post:
       tags: [Users]
-      summary: Dev only — create test user
-      operationId: registerTestUser
-      security: []
+      summary: Dev create test user
+      x-internal: true
       responses:
         "200":
           description: Test user created
-        "4XX":
-          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiSuccess"
 
   /showrooms:
     get:
       tags: [Showrooms]
-      summary: List all showrooms
-      operationId: listShowrooms
+      summary: List showrooms
       security: []
       responses:
         "200":
-          description: List of showrooms
+          description: Showrooms list
           content:
             application/json:
               schema:
@@ -308,190 +433,121 @@ paths:
                   - $ref: "#/components/schemas/ApiSuccess"
                   - properties:
                       data:
-                        type: array
-                        items:
-                          $ref: "#/components/schemas/Showroom"
-        "4XX":
-          description: Client error
-
-  /showrooms/{id}:
-    get:
-      tags: [Showrooms]
-      summary: Get showroom by id
-      operationId: getShowroomById
-      security: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Showroom details
-        "404":
-          description: Showroom not found
-
-    patch:
-      tags: [Showrooms]
-      summary: Update showroom
-      operationId: updateShowroom
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                type:
-                  type: string
-                  enum: ["Мультибренд шоурум", "Унікальний шоурум"]
-                availability:
-                  type: string
-                  enum: ["вільний доступ", "по передзапису"]
-                address:
-                  type: string
-                country:
-                  type: string
-                contacts:
-                  $ref: "#/components/schemas/Contacts"
-                location:
-                  type: object
-                  nullable: true
-                  properties:
-                    lat:
-                      type: number
-                    lng:
-                      type: number
-      responses:
-        "200":
-          description: Showroom updated
-        "401":
-          description: Unauthorized
-        "403":
-          description: Forbidden
+                        type: object
+                        properties:
+                          showrooms:
+                            type: array
+                            items:
+                              $ref: "#/components/schemas/Showroom"
 
   /showrooms/create:
     post:
       tags: [Showrooms]
       summary: Create showroom
-      operationId: createShowroom
       security:
         - bearerAuth: []
+      x-roles: [OWNER, MANAGER]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - name
-                - type
-                - availability
-                - address
-                - country
-              properties:
-                name:
-                  type: string
-                type:
-                  type: string
-                  enum: ["Мультибренд шоурум", "Унікальний шоурум"]
-                availability:
-                  type: string
-                  enum: ["вільний доступ", "по передзапису"]
-                address:
-                  type: string
-                country:
-                  type: string
-                contacts:
-                  $ref: "#/components/schemas/Contacts"
-                location:
-                  type: object
-                  nullable: true
-                  properties:
-                    lat:
-                      type: number
-                    lng:
-                      type: number
+              $ref: "#/components/schemas/CreateShowroomInput"
       responses:
         "200":
-          description: Showroom created
-        "401":
-          description: Unauthorized
+          description: Created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          showroom:
+                            $ref: "#/components/schemas/Showroom"
+
+  /showrooms/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      tags: [Showrooms]
+      summary: Get showroom by ID
+      operationId: getShowroomById
+      security: []
+      responses:
+        "200":
+          description: Showroom
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          showroom:
+                            $ref: "#/components/schemas/Showroom"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+    patch:
+      tags: [Showrooms]
+      summary: Update showroom
+      operationId: updateShowroom
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateShowroomInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiSuccess"
         "403":
           description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
 
   /showrooms/{id}/favorite:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+
     post:
       tags: [Showrooms]
       summary: Add showroom to favorites
       operationId: favoriteShowroom
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
       responses:
         "200":
-          description: Added to favorites
+          description: Added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiSuccess"
         "401":
           description: Unauthorized
-        "403":
-          description: Forbidden
-
-  /lookbooks:
-    get:
-      tags: [Lookbooks]
-      summary: List all lookbooks
-      operationId: listLookbooks
-      security: []
-      responses:
-        "200":
-          description: List of lookbooks
-        "4XX":
-          description: Client error
-
-  /lookbooks/create:
-    post:
-      tags: [Lookbooks]
-      summary: Create lookbook
-      operationId: createLookbook
-      security:
-        - bearerAuth: []
-      responses:
-        "200":
-          description: Lookbook created
-        "4XX":
-          description: Client error
-
-  /lookbooks/{id}/rsvp:
-    post:
-      tags: [Lookbooks]
-      summary: RSVP to lookbook event
-      operationId: rsvpLookbook
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: RSVP success
-        "4XX":
-          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"

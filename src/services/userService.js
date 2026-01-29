@@ -23,7 +23,6 @@ export async function requestOwnerRole(userId) {
 
 /**
  * ADMIN → approve OWNER request
- * (controller буде додано пізніше)
  */
 export async function approveOwnerRole(userId, adminId) {
     const db = getFirestoreInstance();

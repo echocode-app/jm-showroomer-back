@@ -7,7 +7,6 @@ set -euo pipefail
 
 DEV_BASE_URL="http://localhost:3005/api/v1"
 PROD_BASE_URL="https://jm-showroomer-back.onrender.com/api/v1"
-
 DEV_TOKEN="TEST_ID_TOKEN"
 
 AUTH_HEADER_DEV=(-H "Authorization: Bearer ${DEV_TOKEN}")
@@ -63,7 +62,6 @@ request "POST /users/complete-onboarding (mock)" 200 -X POST "${AUTH_HEADER_DEV[
 request "POST /users/request-owner (mock, no Firestore)" 200 -X POST "${AUTH_HEADER_DEV[@]}" "${DEV_BASE_URL}/users/request-owner"
 
 # Showroom CRUD
-# CREATE showroom
 SHOWROOM_CREATE_BODY=$(
 cat <<EOF
 {
@@ -81,7 +79,7 @@ EOF
 SHOWROOM_ID=$(curl -s -X POST "${DEV_BASE_URL}/showrooms/create" \
   -H "Authorization: Bearer ${DEV_TOKEN}" \
   -H "Content-Type: application/json" \
-  -d "$SHOWROOM_CREATE_BODY" | jq -r '.data.showroom.id')
+  -d "$SHOWROOM_CREATE_BODY" | jq -r '.data.id')
 
 if [[ "$SHOWROOM_ID" != "null" && -n "$SHOWROOM_ID" ]]; then
   echo "✔ Created showroom with ID: $SHOWROOM_ID"

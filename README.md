@@ -2,6 +2,77 @@
 
 Backend API for mobile (Flutter) and web clients.
 
+
+## Quick Start (Flutter)
+
+1. Authenticate via Google Sign-In and get `idToken` from Firebase.
+2. Call `GET /users/me` with header `Authorization: Bearer <ID_TOKEN>` to fetch user profile.
+3. Use protected endpoints only after successful authentication.
+4. Always check `onboardingState` and `role` in user profile response.
+
+Example (Dart/Flutter):
+
+```dart
+final response = await http.get(
+   Uri.parse('https://<BACKEND_URL>/api/v1/users/me'),
+   headers: {
+      'Authorization': 'Bearer $idToken',
+   },
+);
+```
+
+---
+
+## Example API Responses
+
+**User Profile:**
+```json
+{
+   "success": true,
+   "data": {
+      "uid": "abc123",
+      "email": "user@email.com",
+      "name": "John Don",
+      "avatar": "https://example.com/avatar.jpg",
+      "role": "user",
+      "roles": ["user"],
+      "status": "active",
+      "onboardingState": "new",
+      "roleRequest": null,
+      "createdAt": "2024-01-01T12:00:00Z",
+      "updatedAt": "2024-01-01T12:00:00Z"
+   }
+}
+```
+
+**Error Response:**
+```json
+{
+   "success": false,
+   "error": {
+      "code": "AUTH_INVALID",
+      "message": "Invalid token"
+   }
+}
+```
+
+---
+
+## OpenAPI/Swagger Documentation
+
+See full API schema in [`docs/openapi.yaml`](docs/openapi.yaml).
+You can use this file for model generation in Flutter (e.g. with [openapi-generator](https://openapi-generator.tech/)).
+
+---
+
+## Error Handling Scenarios (Flutter)
+
+- **401 AUTH_MISSING / AUTH_INVALID:** Prompt user to re-login.
+- **403 FORBIDDEN:** Show message "Insufficient permissions".
+- **404 USER_NOT_FOUND:** Prompt user to register or contact support.
+- **400 Validation error:** Show validation messages from response.
+- **500 Server error:** Show generic error and retry option.
+
 ---
 
 ## Base URL
@@ -129,7 +200,7 @@ Where `<ID_TOKEN>` is the Firebase token received after Google Sign-In.
 ## Showroom CRUD – Backend
 
 - **Firebase Firestore** integrated
-- **Create showroom** (`POST /showrooms`) – OWNER only
+- **Create showroom** (`POST /showrooms/create`) – OWNER only
 - **List showrooms** (`GET /showrooms`) – public
 - **Get showroom by ID** (`GET /showrooms/{id}`) – protected for owner/admin, public if status=approved
 - **Update showroom** (`PATCH /showrooms/{id}`) – OWNER only (draft/rejected)
@@ -138,7 +209,7 @@ Where `<ID_TOKEN>` is the Firebase token received after Google Sign-In.
 ### Validation rules
 
 - **Unique name** per owner
-- **Blocked countries**: Russia, Belarus
+- **Blocked countries**: russia, belarus
 - **Edit tracking**: `editCount`, `editHistory` with editor UID, role, timestamp
 - **Null-safe fields**: `contacts`, `location`
 
