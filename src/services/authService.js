@@ -1,14 +1,14 @@
 import { getAuthInstance, getFirestoreInstance } from "../config/firebase.js";
 
 export async function verifyOAuthToken(idToken) {
-    const auth = getAuthInstance();
-    const db = getFirestoreInstance();
-
     if (!idToken) {
         const err = new Error("Missing idToken");
         err.status = 400;
         throw err;
     }
+
+    const auth = getAuthInstance();
+    const db = getFirestoreInstance();
 
     let decoded;
     try {
@@ -37,9 +37,8 @@ export async function verifyOAuthToken(idToken) {
             roles: ["user"],
             status: "active",
             onboardingState: "new",
-
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: now,
+            updatedAt: now,
         };
         await userRef.set(firestoreUser);
     } else {
@@ -48,6 +47,7 @@ export async function verifyOAuthToken(idToken) {
 
     return firestoreUser;
 }
+
 
 // {
 //   "uid": "<uid>",

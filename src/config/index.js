@@ -11,4 +11,5 @@ export const CONFIG = {
   firebaseClientEmail: process.env.FIREBASE_CLIENT_EMAIL,
   firebasePrivateKey: process.env.FIREBASE_PRIVATE_KEY,
   firebaseStorageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+  allowedOrigins: process.env.ALLOWED_ORIGINS || "*",
 };
