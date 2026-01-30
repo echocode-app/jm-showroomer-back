@@ -221,3 +221,15 @@ Where `<ID_TOKEN>` is the Firebase token received after Google Sign-In.
 | USER  | Browse only                               |
 | ADMIN | Internal / moderation (future)            |
 | GUEST | Unauthenticated, browse only              |
+
+### Country Restrictions
+
+- Actions are blocked for users and showrooms in the following countries:
+  - Russia (`RU`)
+  - Belarus (`BY`)
+- Attempts to complete onboarding or create a showroom with a blocked country return `403 FORBIDDEN`.
+- Allowed countries (e.g., Ukraine, EU countries) succeed with `200 OK`.
+- Applies to:
+  - `POST /users/complete-onboarding` – onboarding with blocked country fails
+  - `POST /showrooms/create` – creating showrooms in blocked countries fails
+- OWNER role is required for creating showrooms; user registration is restricted regardless of role.

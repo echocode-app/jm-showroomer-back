@@ -65,6 +65,12 @@ components:
           properties:
             code:
               type: string
+              description: |
+                Possible values:
+                - AUTH_INVALID
+                - FORBIDDEN
+                - COUNTRY_BLOCKED
+                - VALIDATION_ERROR
             message:
               type: string
 
@@ -238,6 +244,10 @@ components:
           type: string
         country:
           type: string
+          description: |
+            Showroom country.
+            ❗ Russia (RU) and Belarus (BY) are blocked.
+          example: Ukraine
         city:
           type: string
         contacts:
@@ -397,6 +407,21 @@ paths:
     post:
       tags: [Users]
       summary: Complete onboarding
+      description: |
+        Completes user onboarding.
+        ❗ Users from blocked countries (Russia, Belarus) are not allowed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [country]
+              properties:
+                country:
+                  type: string
+                  example: Ukraine
+                  description: User country. RU and BY are blocked.
       responses:
         "200":
           description: Onboarding completed
@@ -404,6 +429,20 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiSuccess"
+        "403":
+          description: Country is blocked
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiError"
+                  - properties:
+                      error:
+                        properties:
+                          code:
+                            example: COUNTRY_BLOCKED
+                          message:
+                            example: Country is not allowed
 
   /users/dev/register-test:
     post:
@@ -444,6 +483,9 @@ paths:
     post:
       tags: [Showrooms]
       summary: Create showroom
+      description: |
+        Creates a new showroom.
+        ❗ Showrooms in blocked countries (Russia, Belarus) are not allowed.
       security:
         - bearerAuth: []
       x-roles: [OWNER, MANAGER]
@@ -459,14 +501,14 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiSuccess"
-                  - properties:
-                      data:
-                        type: object
-                        properties:
-                          showroom:
-                            $ref: "#/components/schemas/Showroom"
+                $ref: "#/components/schemas/ApiSuccess"
+        "403":
+          description: Forbidden (role or country restriction)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
 
   /showrooms/{id}:
     parameters:

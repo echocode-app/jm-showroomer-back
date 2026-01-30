@@ -2,6 +2,9 @@ import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth.js";
 import { loadUser } from "../middlewares/loadUser.js";
 import { requireRole } from "../middlewares/role.js";
+import { blockRestrictedCountries } from "../middlewares/countryRestriction.js";
+import { optionalAuth } from "../middlewares/optionalAuth.js";
+import { loadUserIfExists } from "../middlewares/loadUserIfExists.js";
 import { ROLES } from "../constants/roles.js";
 import {
     listShowrooms,
@@ -17,7 +20,7 @@ const router = Router();
 router.get("/", listShowrooms);
 
 // GET BY ID
-router.get("/:id", loadUser, getShowroomById);
+router.get("/:id", optionalAuth, loadUserIfExists, getShowroomById);
 
 // CREATE
 router.post(
@@ -25,6 +28,7 @@ router.post(
     authMiddleware,
     loadUser,
     requireRole([ROLES.OWNER, ROLES.MANAGER]),
+    blockRestrictedCountries,
     createShowroomController
 );
 
@@ -34,6 +38,7 @@ router.patch(
     authMiddleware,
     loadUser,
     requireRole([ROLES.OWNER]),
+    blockRestrictedCountries,
     updateShowroom
 );
 

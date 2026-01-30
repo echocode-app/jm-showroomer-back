@@ -1,4 +1,5 @@
 import { getAuthInstance, getFirestoreInstance } from "../config/firebase.js";
+import { isCountryBlocked } from "../constants/countries.js";
 
 export async function verifyOAuthToken(idToken) {
     if (!idToken) {
@@ -13,7 +14,7 @@ export async function verifyOAuthToken(idToken) {
     let decoded;
     try {
         decoded = await auth.verifyIdToken(idToken);
-    } catch (e) {
+    } catch {
         const err = new Error("Invalid token");
         err.status = 401;
         throw err;
@@ -28,6 +29,7 @@ export async function verifyOAuthToken(idToken) {
 
     if (!snap.exists) {
         const now = new Date().toISOString();
+
         firestoreUser = {
             uid,
             email: email || null,
@@ -35,11 +37,13 @@ export async function verifyOAuthToken(idToken) {
             avatar: picture || null,
             role: "user",
             roles: ["user"],
+            country: null,
             status: "active",
             onboardingState: "new",
             createdAt: now,
             updatedAt: now,
         };
+
         await userRef.set(firestoreUser);
     } else {
         firestoreUser = snap.data();
@@ -47,19 +51,3 @@ export async function verifyOAuthToken(idToken) {
 
     return firestoreUser;
 }
-
-
-// {
-//   "uid": "<uid>",
-//   "email": "<email>",
-//   "name": "<name|null>",
-//   "avatar": "<picture|null>",
-//   "role": "user", 
-//   "roles": ["user"],
-//   "status": "active",    // active / suspended / banned
-//   "onboardingState": "new",  // new / completed
-//   "createdAt": "<ISO>",
-//   "updatedAt": "<ISO>"
-// }
-
-
