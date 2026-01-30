@@ -54,21 +54,3 @@ router.post(
 );
 
 export default router;
-
-// {
-//   "success": true,
-//   "data": {
-//     "user": {
-//       "uid": "...",
-//       "email": "...",
-//       "name": "...",
-//       "avatar": "...",
-//       "role": "user",
-//       "roles": ["user"],
-//       "status": "active",
-//       "onboardingState": "new", // POST /users/complete-onboarding → onboardingState = "completed".
-//       "createdAt": "...",
-//       "updatedAt": "..."
-//     }
-//   }
-// }

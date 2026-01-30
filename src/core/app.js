@@ -5,6 +5,7 @@ import morgan from "morgan";
 import routes from "../routes/index.js";
 import { errorHandler } from "../middlewares/error.js";
 import { requestLogger } from "../middlewares/requestLogger.js";
+import { rateLimiter, sanitizeInput } from "../middlewares/rateLimit.js";
 import { CONFIG } from "../config/index.js";
 
 import swaggerUi from "swagger-ui-express";
@@ -19,6 +20,12 @@ const swaggerDocument = YAML.load(path.join(process.cwd(), "docs/openapi.yaml"))
 
 // Middleware Swagger UI
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+// Rate limiting (100 requests per 15 minutes)
+app.use(rateLimiter);
+
+// Input sanitization
+app.use(sanitizeInput);
 
 // middleware
 app.use(cors({

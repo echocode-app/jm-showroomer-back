@@ -25,7 +25,7 @@ tags:
   - name: Showrooms
     description: Showroom management
   - name: Lookbooks
-    description: Lookbooks and RSVPs
+    description: Lookbooks and RSVPs (WIP)
 
 security:
   - bearerAuth: []
@@ -68,9 +68,19 @@ components:
               description: |
                 Possible values:
                 - AUTH_INVALID
+                - AUTH_MISSING
                 - FORBIDDEN
                 - COUNTRY_BLOCKED
                 - VALIDATION_ERROR
+                - RATE_LIMIT_EXCEEDED
+                - SHOWROOM_NOT_FOUND
+                - SHOWROOM_NOT_EDITABLE
+                - NO_FIELDS_TO_UPDATE
+                - COUNTRY_REQUIRED
+                - SHOWROOM_NAME_REQUIRED
+                - SHOWROOM_TYPE_REQUIRED
+                - ACCESS_DENIED
+                - USER_NOT_FOUND
             message:
               type: string
 
@@ -132,6 +142,10 @@ components:
               type: string
               nullable: true
 
+        country:
+          type: string
+          nullable: true
+
         createdAt:
           type: string
           format: date-time
@@ -146,12 +160,6 @@ components:
           type: string
           nullable: true
         instagram:
-          type: string
-          nullable: true
-        website:
-          type: string
-          nullable: true
-        telegram:
           type: string
           nullable: true
 
@@ -246,7 +254,7 @@ components:
           type: string
           description: |
             Showroom country.
-            ❗ Russia (RU) and Belarus (BY) are blocked.
+            Russia (RU) and Belarus (BY) are blocked.
           example: Ukraine
         city:
           type: string
@@ -293,6 +301,24 @@ components:
             lng:
               type: number
 
+    Lookbook:
+      type: object
+      description: Lookbook (Work in Progress - not fully implemented)
+      properties:
+        id:
+          type: string
+        ownerUid:
+          type: string
+        name:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
 paths:
   /health:
     get:
@@ -306,19 +332,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiSuccess"
-        "500":
-          description: Service unavailable
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiError"
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  env:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
 
   /auth/oauth:
     post:
       tags: [Auth]
       summary: Google OAuth login (Firebase)
       security: []
+      description: Authenticates user with Firebase Google ID Token
       requestBody:
         required: true
         content:
@@ -329,6 +359,7 @@ paths:
               properties:
                 idToken:
                   type: string
+                  description: Firebase ID Token from Google Sign-In
       responses:
         "200":
           description: Authenticated user
@@ -343,11 +374,18 @@ paths:
                         properties:
                           user:
                             $ref: "#/components/schemas/User"
+        "401":
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /auth/apple:
     post:
       tags: [Auth]
       summary: Apple OAuth login (coming soon)
-      description: Endpoint for Apple OAuth login. Currently not implemented (returns 501).
+      description: Endpoint for Apple OAuth login. Currently not implemented.
       security: []
       requestBody:
         required: true
@@ -376,6 +414,9 @@ paths:
     get:
       tags: [Users]
       summary: Get current user
+      description: Returns the profile of the currently authenticated user
+      security:
+        - bearerAuth: []
       responses:
         "200":
           description: User profile
@@ -390,26 +431,57 @@ paths:
                         properties:
                           user:
                             $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
 
   /users/request-owner:
     post:
       tags: [Users]
       summary: Request OWNER role
+      description: |
+        Requests ownership role for the current user.
+        The request will be pending until reviewed by an admin.
       responses:
         "200":
-          description: Request submitted
+          description: Request submitted successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiSuccess"
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            example: "Owner role request submitted"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Forbidden - only users can request owner role
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
 
   /users/complete-onboarding:
     post:
       tags: [Users]
       summary: Complete onboarding
       description: |
-        Completes user onboarding.
-        ❗ Users from blocked countries (Russia, Belarus) are not allowed.
+        Completes user onboarding by setting the user country.
+        Users from blocked countries (Russia, Belarus) are not allowed.
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -421,14 +493,36 @@ paths:
                 country:
                   type: string
                   example: Ukraine
-                  description: User country. RU and BY are blocked.
+                  description: User country. Russia and Belarus are blocked.
       responses:
         "200":
-          description: Onboarding completed
+          description: Onboarding completed or already completed
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiSuccess"
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            enum:
+                              - "Onboarding completed"
+                              - "Onboarding already completed"
+        "400":
+          description: Country is required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "403":
           description: Country is blocked
           content:
@@ -440,14 +534,17 @@ paths:
                       error:
                         properties:
                           code:
+                            type: string
                             example: COUNTRY_BLOCKED
                           message:
-                            example: Country is not allowed
+                            type: string
+                            example: "Country is not supported"
 
   /users/dev/register-test:
     post:
       tags: [Users]
       summary: Dev create test user
+      description: Development endpoint for creating test users
       x-internal: true
       responses:
         "200":
@@ -461,7 +558,47 @@ paths:
     get:
       tags: [Showrooms]
       summary: List showrooms
+      description: |
+        Returns a list of approved showrooms.
+        Unauthenticated users see only approved showrooms.
+        Owners see their own showrooms.
+        Admins can filter by status.
       security: []
+      parameters:
+        - name: country
+          in: query
+          schema:
+            type: string
+          description: Filter by country
+        - name: city
+          in: query
+          schema:
+            type: string
+          description: Filter by city
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [multibrand, unique]
+          description: Filter by showroom type
+        - name: availability
+          in: query
+          schema:
+            type: string
+            enum: [open, appointment]
+          description: Filter by availability
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, pending, approved, rejected]
+          description: Filter by status (owner/admin only)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+          description: Maximum number of results
       responses:
         "200":
           description: Showrooms list
@@ -485,10 +622,12 @@ paths:
       summary: Create showroom
       description: |
         Creates a new showroom.
-        ❗ Showrooms in blocked countries (Russia, Belarus) are not allowed.
+        Showrooms in blocked countries (Russia, Belarus) are not allowed.
+        Requires OWNER or MANAGER role.
       security:
         - bearerAuth: []
-      x-roles: [OWNER, MANAGER]
+      x-roles: [owner, manager]
+      parameters: []
       requestBody:
         required: true
         content:
@@ -497,17 +636,46 @@ paths:
               $ref: "#/components/schemas/CreateShowroomInput"
       responses:
         "200":
-          description: Created
+          description: Showroom created successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiSuccess"
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          showroom:
+                            $ref: "#/components/schemas/Showroom"
+        "400":
+          description: Validation error (missing required fields)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "403":
           description: Forbidden (role or country restriction)
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiError"
+                allOf:
+                  - $ref: "#/components/schemas/ApiError"
+                  - properties:
+                      error:
+                        properties:
+                          code:
+                            type: string
+                            example: COUNTRY_BLOCKED
+                          message:
+                            type: string
+                            example: "Country is not supported"
 
 
   /showrooms/{id}:
@@ -517,11 +685,14 @@ paths:
         required: true
         schema:
           type: string
+        description: Showroom ID
 
     get:
       tags: [Showrooms]
       summary: Get showroom by ID
-      operationId: getShowroomById
+      description: |
+        Returns showroom details.
+        Non-approved showrooms are only visible to owners and admins.
       security: []
       responses:
         "200":
@@ -537,6 +708,18 @@ paths:
                         properties:
                           showroom:
                             $ref: "#/components/schemas/Showroom"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Forbidden - not approved and not owner/admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "404":
           description: Not found
           content:
@@ -547,7 +730,12 @@ paths:
     patch:
       tags: [Showrooms]
       summary: Update showroom
-      operationId: updateShowroom
+      description: |
+        Updates showroom details.
+        Only owners can update their showrooms.
+        Only draft or rejected showrooms can be edited.
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -556,13 +744,38 @@ paths:
               $ref: "#/components/schemas/UpdateShowroomInput"
       responses:
         "200":
-          description: Updated
+          description: Showroom updated successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiSuccess"
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          showroom:
+                            $ref: "#/components/schemas/Showroom"
+        "400":
+          description: Validation error or no fields to update
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "403":
-          description: Forbidden
+          description: Forbidden - not owner or showroom not editable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Showroom not found
           content:
             application/json:
               schema:
@@ -575,21 +788,150 @@ paths:
         required: true
         schema:
           type: string
+        description: Showroom ID
 
     post:
       tags: [Showrooms]
       summary: Add showroom to favorites
-      operationId: favoriteShowroom
+      description: Adds a showroom to user's favorites (stub implementation)
+      security:
+        - bearerAuth: []
       responses:
         "200":
-          description: Added
+          description: Added to favorites
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiSuccess"
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            example: "Added to favorites (stub)"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+
+  /lookbooks:
+    get:
+      tags: [Lookbooks]
+      summary: List lookbooks
+      description: Returns list of lookbooks (Work in Progress)
+      security: []
+      responses:
+        "200":
+          description: Lookbooks list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          lookbooks:
+                            type: array
+                            items:
+                              $ref: "#/components/schemas/Lookbook"
+
+  /lookbooks/create:
+    post:
+      tags: [Lookbooks]
+      summary: Create lookbook
+      description: |
+        Creates a new lookbook.
+        Requires OWNER or MANAGER role.
+        (Work in Progress - basic implementation)
+      security:
+        - bearerAuth: []
+      x-roles: [owner, manager]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  nullable: true
+                description:
+                  type: string
+                  nullable: true
+      responses:
+        "200":
+          description: Lookbook created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          lookbook:
+                            $ref: "#/components/schemas/Lookbook"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Forbidden - owner/manager role required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /lookbooks/{id}/rsvp:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Lookbook/Event ID
+
+    post:
+      tags: [Lookbooks]
+      summary: RSVP to event
+      description: |
+        RSVP to a lookbook/event.
+        (Work in Progress - basic implementation)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: RSVP confirmed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          eventId:
+                            type: string
+                          user:
+                            type: string
+                          status:
+                            type: string
+                            example: "RSVPed"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+

@@ -24,7 +24,7 @@ export async function requestOwnerRole(req, res) {
  */
 
 export async function completeOnboarding(req, res) {
-    const { country, ...rest } = req.body;
+    const { country } = req.body;
 
     if (!country) {
         return fail(res, "COUNTRY_REQUIRED", "Country is required", 400);
@@ -32,6 +32,10 @@ export async function completeOnboarding(req, res) {
 
     if (isCountryBlocked(country)) {
         return fail(res, "COUNTRY_BLOCKED", "Country is not supported", 403);
+    }
+
+    if (req.user.onboardingState === "completed") {
+        return ok(res, { message: "Onboarding already completed" });
     }
 
     const db = getFirestoreInstance();
@@ -43,5 +47,6 @@ export async function completeOnboarding(req, res) {
         updatedAt: new Date().toISOString(),
     });
 
-    return res.json({ success: true });
+    return ok(res, { message: "Onboarding completed" });
 }
+
