@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Firebase Login</title>
+  </head>
+  <body>
+    <h2>Firebase Google Login</h2>
+    <button id="login">Login with Google</button>
+
+    <pre id="output"></pre>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+      import {
+        getAuth,
+        signInWithPopup,
+        GoogleAuthProvider,
+      } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyCKG_oI5avZzeM56ZN7euSU7tP4jVLMCX0",
+        authDomain: "jm-showroom.firebaseapp.com",
+        projectId: "jm-showroom",
+        appId: "1:725198091196:web:500025b57d7fdc2e29f1b9",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+
+      document.getElementById("login").onclick = async () => {
+        const provider = new GoogleAuthProvider();
+        const result = await signInWithPopup(auth, provider);
+
+        const token = await result.user.getIdToken(true);
+
+        document.getElementById("output").textContent =
+          "🔥 FIREBASE ID TOKEN 🔥\n\n" + token;
+      };
+    </script>
+  </body>
+</html>

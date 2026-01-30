@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Firebase ID Token Generator (Production)</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .error { background: #fee; color: #c00; border: 1px solid #fcc; }
+        .success { background: #efe; color: #060; border: 1px solid #cfc; }
+        .info { background: #eef; color: #006; border: 1px solid #ccf; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; border-radius: 4px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #4285f4; color: white; border: none; border-radius: 4px; }
+        button:hover { background: #357abd; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        #token-output { display: none; }
+    </style>
+</head>
+<body>
+    <h1>🔥 Firebase ID Token Generator (Production)</h1>
+    
+    <div id="info" class="status info">
+        <strong>Production Config:</strong><br>
+        Project: jm-showroom<br>
+        Auth Domain: jm-showroom.firebaseapp.com
+    </div>
+
+    <button id="login">Login with Google (Get ID Token)</button>
+    
+    <div id="loading" class="status info" style="display: none;">
+        Processing...
+    </div>
+
+    <div id="token-output">
+        <h3>✅ Success! Your Firebase ID Token:</h3>
+        <pre id="token"></pre>
+        
+        <h4>Use this curl command:</h4>
+        <pre id="curl"></pre>
+        
+        <button onclick="copyToken()">Copy Token</button>
+        <button onclick="copyCurl()">Copy curl</button>
+    </div>
+
+    <div id="error" class="status error" style="display: none;"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        // PRODUCTION Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyCKG_oI5avZzeM56ZN7euSU7tP4jVLMCX0",
+            authDomain: "jm-showroom.firebaseapp.com",
+            projectId: "jm-showroom",
+            storageBucket: "jm-showroom.firebasestorage.app",
+            messagingSenderId: "725198091196",
+            appId: "1:725198091196:web:500025b57d7fdc2e29f1b9"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        const loginBtn = document.getElementById('login');
+        const loading = document.getElementById('loading');
+        const tokenOutput = document.getElementById('token-output');
+        const errorDiv = document.getElementById('error');
+
+        loginBtn.onclick = async () => {
+            try {
+                loginBtn.disabled = true;
+                loading.style.display = 'block';
+                errorDiv.style.display = 'none';
+                tokenOutput.style.display = 'none';
+
+                const provider = new GoogleAuthProvider();
+                // Add additional scopes if needed
+                provider.addScope('email');
+                provider.addScope('profile');
+
+                const result = await signInWithPopup(auth, provider);
+                const user = result.user;
+                
+                // Force refresh to get a fresh token
+                const idToken = await user.getIdToken(true);
+
+                // Display results
+                document.getElementById('token').textContent = idToken;
+                
+                // Create curl command
+                const curlCmd = `curl -X GET "https://jm-showroomer-back.onrender.com/api/v1/users/me" \\
+  -H "Authorization: Bearer ${idToken}"`;
+                document.getElementById('curl').textContent = curlCmd;
+
+                loading.style.display = 'none';
+                tokenOutput.style.display = 'block';
+                loginBtn.disabled = false;
+                
+                console.log('🔥 ID Token:', idToken);
+                console.log('👤 User:', user.email, user.uid);
+
+            } catch (err) {
+                loading.style.display = 'none';
+                loginBtn.disabled = false;
+                
+                errorDiv.style.display = 'block';
+                errorDiv.innerHTML = `<strong>Error:</strong> ${err.message}<br><br>Code: ${err.code}`;
+                
+                console.error('Login error:', err);
+            }
+        };
+
+        function copyToken() {
+            const token = document.getElementById('token').textContent;
+            navigator.clipboard.writeText(token);
+            alert('Token copied!');
+        }
+
+        function copyCurl() {
+            const curl = document.getElementById('curl').textContent;
+            navigator.clipboard.writeText(curl);
+            alert('curl command copied!');
+        }
+    </script>
+</body>
+</html>
+
