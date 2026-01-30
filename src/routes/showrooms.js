@@ -6,12 +6,20 @@ import { blockRestrictedCountries } from "../middlewares/countryRestriction.js";
 import { optionalAuth } from "../middlewares/optionalAuth.js";
 import { loadUserIfExists } from "../middlewares/loadUserIfExists.js";
 import { ROLES } from "../constants/roles.js";
+import { schemaValidate } from "../middlewares/schemaValidate.js";
+import { showroomCreateSchema } from "../schemas/showroom.create.schema.js";
+import { showroomUpdateSchema } from "../schemas/showroom.update.schema.js";
+import {
+    showroomSubmitSchema,
+    showroomSubmitParamsSchema,
+} from "../schemas/showroom.submit.schema.js";
 import {
     listShowrooms,
     createShowroomController,
     getShowroomById,
     favoriteShowroom,
     updateShowroom,
+    submitShowroomForReview,
 } from "../controllers/showroomController.js";
 
 const router = Router();
@@ -29,6 +37,7 @@ router.post(
     loadUser,
     requireRole([ROLES.OWNER, ROLES.MANAGER]),
     blockRestrictedCountries,
+    schemaValidate({ body: showroomCreateSchema }),
     createShowroomController
 );
 
@@ -39,7 +48,22 @@ router.patch(
     loadUser,
     requireRole([ROLES.OWNER]),
     blockRestrictedCountries,
+    schemaValidate({ body: showroomUpdateSchema }),
     updateShowroom
+);
+
+// SUBMIT
+router.post(
+    "/:id/submit",
+    authMiddleware,
+    loadUser,
+    requireRole([ROLES.OWNER]),
+    blockRestrictedCountries,
+    schemaValidate({
+        body: showroomSubmitSchema,
+        params: showroomSubmitParamsSchema,
+    }),
+    submitShowroomForReview
 );
 
 // FAVORITE (stub)

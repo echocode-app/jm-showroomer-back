@@ -2,7 +2,6 @@
 
 Backend API for mobile (Flutter) and web clients.
 
-
 ## Quick Start (Flutter)
 
 1. Authenticate via Google Sign-In and get `idToken` from Firebase.
@@ -26,33 +25,35 @@ final response = await http.get(
 ## Example API Responses
 
 **User Profile:**
+
 ```json
 {
-   "success": true,
-   "data": {
-      "uid": "abc123",
-      "email": "user@email.com",
-      "name": "John Don",
-      "avatar": "https://example.com/avatar.jpg",
-      "role": "user",
-      "roles": ["user"],
-      "status": "active",
-      "onboardingState": "new",
-      "roleRequest": null,
-      "createdAt": "2024-01-01T12:00:00Z",
-      "updatedAt": "2024-01-01T12:00:00Z"
-   }
+  "success": true,
+  "data": {
+    "uid": "abc123",
+    "email": "user@email.com",
+    "name": "John Don",
+    "avatar": "https://example.com/avatar.jpg",
+    "role": "user",
+    "roles": ["user"],
+    "status": "active",
+    "onboardingState": "new",
+    "roleRequest": null,
+    "createdAt": "2024-01-01T12:00:00Z",
+    "updatedAt": "2024-01-01T12:00:00Z"
+  }
 }
 ```
 
 **Error Response:**
+
 ```json
 {
-   "success": false,
-   "error": {
-      "code": "AUTH_INVALID",
-      "message": "Invalid token"
-   }
+  "success": false,
+  "error": {
+    "code": "AUTH_INVALID",
+    "message": "Invalid token"
+  }
 }
 ```
 
@@ -104,9 +105,12 @@ Where `<ID_TOKEN>` is the Firebase token received after Google Sign-In.
 
 1. Login via Google OAuth → obtain `idToken`
 2. Fetch user profile: `GET /users/me` with `Authorization` header
-3. Request OWNER role (cannot assign manually): `POST /users/request-owner`
-   - Wait for `"pending"` status
-   - Backend approves OWNER role later
+3. Complete onboarding: `POST /users/complete-onboarding` with `country` field
+   - Required for new users before using other features
+   - Blocked countries (Russia, Belarus) return `403 COUNTRY_BLOCKED`
+4. Request OWNER role (cannot assign manually): `POST /users/request-owner`
+   - Returns `"Owner role request submitted"`
+   - Backend approves OWNER role later (admin review)
 
 ---
 
@@ -146,7 +150,9 @@ Where `<ID_TOKEN>` is the Firebase token received after Google Sign-In.
 - 401 AUTH_MISSING — Missing token
 - 401 AUTH_INVALID — Invalid/expired token
 - 403 FORBIDDEN — Role not allowed
+- 403 COUNTRY_BLOCKED — russia or belarus not allowed
 - 404 USER_NOT_FOUND — Profile missing
+- 429 RATE_LIMIT_EXCEEDED — Too many requests
 - 400 — Validation error
 - 500 — Server error
 
@@ -165,42 +171,34 @@ Where `<ID_TOKEN>` is the Firebase token received after Google Sign-In.
 
 **Auth & Onboarding Flow (Flutter)**
 
-**Environments:**
-
-- **DEV** — mock user (`dev-test-user-123`) works without Firestore. `onboardingState` and `request-owner` flows are mocked. Use `TEST_ID_TOKEN` for protected endpoints.
-- **STAGE** — requires real Firebase token; behavior same as PROD for auth and RBAC.
-- **PROD** — requires real Firebase token; public endpoints available without token.
-
-**Endpoints & Roles:**  
+**Endpoints & Roles:**
 | Scope | Method | Endpoint | Roles / Notes |
 | ----- | --------- | ------------------------------- | ---------------------------------------------------------------------- |
 | TRUE | Protected | GET /users/me | Returns user profile including `onboardingState` (`new` / `completed`) |
-| TRUE | Protected | POST /users/complete-onboarding | Marks onboarding as completed (`onboardingState = completed`) |
-| TRUE | Protected | POST /users/request-owner | Requests OWNER role; in DEV mock returns `"pending_owner"` immediately |
+| TRUE | Protected | POST /users/complete-onboarding | Marks onboarding as completed (`onboardingState = completed`). Required before other features. Blocked countries return 403 COUNTRY_BLOCKED. |
+| TRUE | Protected | POST /users/request-owner | Requests OWNER role; returns `"Owner role request submitted"` |
 | TRUE | Dev-only | POST /users/dev/register-test | Creates a test user |
 
-**Roles & Permissions:**
+**Country Restrictions:**
 
-- `GUEST` — unauthenticated, browse only
-- `USER` — default after login; can request OWNER
-- `OWNER` — business user; can create showrooms and lookbooks
-- `ADMIN`, `MANAGER`, `STYLIST` — future roles
+- russia (`RU`) and belarus (`BY`) are blocked
+- `POST /users/complete-onboarding` with blocked country → 403 COUNTRY_BLOCKED
+- `POST /showrooms/create` with blocked country → 403 COUNTRY_BLOCKED
 
 **Flutter Notes:**
 
 1. Always fetch `GET /users/me` after login to get current `onboardingState`.
-2. Do not assume onboarding is completed locally.
-3. Call `POST /users/complete-onboarding` when onboarding is finished.
+2. Call `POST /users/complete-onboarding` with user's country first.
+3. Blocked countries (RU/BY) show "Country is not supported" message.
 4. Use `idToken` in all protected requests.
-5. DEV mock returns `"pending_owner"` for OWNER requests for UI testing without Firestore.
-6. `onboardingState` is linked to roles but does not change permissions directly.
+5. OWNER role is required for creating showrooms.
 
 ---
 
 ## Showroom CRUD – Backend
 
 - **Firebase Firestore** integrated
-- **Create showroom** (`POST /showrooms/create`) – OWNER only
+- **Create showroom** (`POST /showrooms/create`) – OWNER or MANAGER only
 - **List showrooms** (`GET /showrooms`) – public
 - **Get showroom by ID** (`GET /showrooms/{id}`) – protected for owner/admin, public if status=approved
 - **Update showroom** (`PATCH /showrooms/{id}`) – OWNER only (draft/rejected)
@@ -209,27 +207,27 @@ Where `<ID_TOKEN>` is the Firebase token received after Google Sign-In.
 ### Validation rules
 
 - **Unique name** per owner
-- **Blocked countries**: russia, belarus
+- **Blocked countries**: russia, belarus → 403 COUNTRY_BLOCKED
 - **Edit tracking**: `editCount`, `editHistory` with editor UID, role, timestamp
 - **Null-safe fields**: `contacts`, `location`
 
 ### Roles
 
-| Role  | Permissions                               |
-| ----- | ----------------------------------------- |
-| OWNER | Create, update showrooms (draft/rejected) |
-| USER  | Browse only                               |
-| ADMIN | Internal / moderation (future)            |
-| GUEST | Unauthenticated, browse only              |
+| Role    | Permissions                               |
+| ------- | ----------------------------------------- |
+| OWNER   | Create, update showrooms (draft/rejected) |
+| MANAGER | Create showrooms (future)                 |
+| USER    | Browse only                               |
+| ADMIN   | Internal / moderation (future)            |
+| GUEST   | Unauthenticated, browse only              |
 
 ### Country Restrictions
 
 - Actions are blocked for users and showrooms in the following countries:
-  - Russia (`RU`)
-  - Belarus (`BY`)
-- Attempts to complete onboarding or create a showroom with a blocked country return `403 FORBIDDEN`.
+  - russia (`RU`)
+  - belarus (`BY`)
+- Attempts to complete onboarding or create a showroom with a blocked country return `403 COUNTRY_BLOCKED` with message "Country is not supported".
 - Allowed countries (e.g., Ukraine, EU countries) succeed with `200 OK`.
 - Applies to:
   - `POST /users/complete-onboarding` – onboarding with blocked country fails
   - `POST /showrooms/create` – creating showrooms in blocked countries fails
-- OWNER role is required for creating showrooms; user registration is restricted regardless of role.

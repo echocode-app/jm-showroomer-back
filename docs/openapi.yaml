@@ -174,6 +174,9 @@ components:
 
         name:
           type: string
+        nameNormalized:
+          type: string
+          readOnly: true
 
         type:
           type: string
@@ -196,6 +199,9 @@ components:
         address:
           type: string
           nullable: true
+        addressNormalized:
+          type: string
+          readOnly: true
 
         country:
           type: string
@@ -218,7 +224,8 @@ components:
 
         status:
           type: string
-          enum: [draft, pending, approved, rejected]
+          enum: [draft, pending, approved, rejected, deleted]
+          description: Draft → Pending → Approved/Rejected/Deleted
 
         editCount:
           type: integer
@@ -229,6 +236,10 @@ components:
         updatedAt:
           type: string
           format: date-time
+        submittedAt:
+          type: string
+          format: date-time
+          readOnly: true
 
     CreateShowroomInput:
       type: object
@@ -267,6 +278,10 @@ components:
               type: number
             lng:
               type: number
+        draft:
+          type: boolean
+          description: |
+            If true, creates or reuses a draft without requiring all fields.
 
     UpdateShowroomInput:
       type: object
@@ -624,6 +639,8 @@ paths:
         Creates a new showroom.
         Showrooms in blocked countries (Russia, Belarus) are not allowed.
         Requires OWNER or MANAGER role.
+        Draft mode: pass { "draft": true } in the body (or mode=draft) to create/reuse a draft
+        without requiring name/type/country.
       security:
         - bearerAuth: []
       x-roles: [owner, manager]
@@ -818,6 +835,65 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /showrooms/{id}/submit:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Showroom ID
+
+    post:
+      tags: [Showrooms]
+      summary: Submit showroom for review
+      description: |
+        Submits a draft (or rejected) showroom for moderation.
+        Required fields must be present; status changes to pending.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Showroom submitted successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          showroom:
+                            $ref: "#/components/schemas/Showroom"
+                          message:
+                            type: string
+                            example: "Submitted for review"
+        "400":
+          description: Validation error or incomplete showroom
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Forbidden - not owner or country restriction
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Showroom not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /lookbooks:
     get:
       tags: [Lookbooks]
@@ -934,4 +1010,3 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
-

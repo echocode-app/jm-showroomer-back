@@ -1,5 +1,6 @@
 import {
     createShowroom,
+    submitShowroomForReviewService,
     listShowroomsService,
     getShowroomByIdService,
     updateShowroomService,
@@ -9,7 +10,12 @@ import { ok } from "../utils/apiResponse.js";
 // CREATE
 export async function createShowroomController(req, res, next) {
     try {
-        const showroom = await createShowroom(req.body, req.user.uid);
+        const draftMode =
+            req.query?.mode === "draft" || req.body?.draft === true;
+        const showroom = await createShowroom(req.body, req.user.uid, {
+            draft: draftMode,
+            userCountry: req.user?.country ?? null,
+        });
         return ok(res, { showroom });
     } catch (err) {
         next(err);
@@ -53,6 +59,16 @@ export async function updateShowroom(req, res, next) {
     try {
         const showroom = await updateShowroomService(req.params.id, req.body, req.user);
         return ok(res, { showroom });
+    } catch (err) {
+        next(err);
+    }
+}
+
+// SUBMIT
+export async function submitShowroomForReview(req, res, next) {
+    try {
+        const showroom = await submitShowroomForReviewService(req.params.id, req.user);
+        return ok(res, { showroom, message: "Submitted for review" });
     } catch (err) {
         next(err);
     }
