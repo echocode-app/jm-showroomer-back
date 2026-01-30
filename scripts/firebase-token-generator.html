@@ -9,7 +9,7 @@
         .error { background: #fee; color: #c00; border: 1px solid #fcc; }
         .success { background: #efe; color: #060; border: 1px solid #cfc; }
         .info { background: #eef; color: #006; border: 1px solid #ccf; }
-        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; border-radius: 4px; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; border-radius: 4px; max-height: 200px; overflow-y: auto; word-break: break-all; font-size: 11px; }
         button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #4285f4; color: white; border: none; border-radius: 4px; }
         button:hover { background: #357abd; }
         button:disabled { background: #ccc; cursor: not-allowed; }
@@ -38,8 +38,7 @@
         <h4>Use this curl command:</h4>
         <pre id="curl"></pre>
         
-        <button onclick="copyToken()">Copy Token</button>
-        <button onclick="copyCurl()">Copy curl</button>
+
     </div>
 
     <div id="error" class="status error" style="display: none;"></div>
@@ -110,16 +109,38 @@
             }
         };
 
-        function copyToken() {
+        async function copyToken() {
             const token = document.getElementById('token').textContent;
-            navigator.clipboard.writeText(token);
-            alert('Token copied!');
+            try {
+                await navigator.clipboard.writeText(token);
+                alert('Token copied! ✅');
+            } catch (err) {
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = token;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                alert('Token copied! ✅');
+            }
         }
 
-        function copyCurl() {
+        async function copyCurl() {
             const curl = document.getElementById('curl').textContent;
-            navigator.clipboard.writeText(curl);
-            alert('curl command copied!');
+            try {
+                await navigator.clipboard.writeText(curl);
+                alert('curl command copied! ✅');
+            } catch (err) {
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = curl;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                alert('curl command copied! ✅');
+            }
         }
     </script>
 </body>
