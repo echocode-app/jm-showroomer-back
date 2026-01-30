@@ -10,16 +10,13 @@ import { schemaValidate } from "../middlewares/schemaValidate.js";
 import { showroomCreateSchema } from "../schemas/showroom.create.schema.js";
 import { showroomUpdateSchema } from "../schemas/showroom.update.schema.js";
 import {
-    showroomSubmitSchema,
-    showroomSubmitParamsSchema,
-} from "../schemas/showroom.submit.schema.js";
-import {
     listShowrooms,
     createShowroomController,
+    createDraftShowroomController,
     getShowroomById,
     favoriteShowroom,
     updateShowroom,
-    submitShowroomForReview,
+    submitShowroomForReviewController,
 } from "../controllers/showroomController.js";
 
 const router = Router();
@@ -41,6 +38,15 @@ router.post(
     createShowroomController
 );
 
+// CREATE DRAFT
+router.post(
+    "/draft",
+    authMiddleware,
+    loadUser,
+    requireRole([ROLES.OWNER]),
+    createDraftShowroomController
+);
+
 // UPDATE
 router.patch(
     "/:id",
@@ -58,12 +64,7 @@ router.post(
     authMiddleware,
     loadUser,
     requireRole([ROLES.OWNER]),
-    blockRestrictedCountries,
-    schemaValidate({
-        body: showroomSubmitSchema,
-        params: showroomSubmitParamsSchema,
-    }),
-    submitShowroomForReview
+    submitShowroomForReviewController
 );
 
 // FAVORITE (stub)

@@ -50,3 +50,22 @@ export async function completeOnboarding(req, res) {
     return ok(res, { message: "Onboarding completed" });
 }
 
+/**
+ * DEV: upgrade current user to owner role
+ */
+export async function makeOwnerDev(req, res) {
+    if (process.env.NODE_ENV === "prod") {
+        return fail(res, "NOT_FOUND", "Not found", 404);
+    }
+
+    const db = getFirestoreInstance();
+    const ref = db.collection("users").doc(req.user.uid);
+
+    await ref.update({
+        role: "owner",
+        roles: ["owner"],
+        updatedAt: new Date().toISOString(),
+    });
+
+    return ok(res, { message: "Role upgraded to owner" });
+}

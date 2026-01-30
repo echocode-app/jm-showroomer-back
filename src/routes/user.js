@@ -8,6 +8,7 @@ import {
   getMyProfile,
   requestOwnerRole,
   completeOnboarding,
+  makeOwnerDev,
 } from "../controllers/userController.js";
 
 import { registerTestUser } from "../controllers/testUserController.js";
@@ -51,6 +52,16 @@ router.post(
 router.post(
   "/dev/register-test",
   registerTestUser
+);
+
+/**
+ * DEV: upgrade current user to owner
+ */
+router.post(
+  "/dev/make-owner",
+  authMiddleware,
+  loadUser,
+  makeOwnerDev
 );
 
 export default router;

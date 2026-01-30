@@ -54,7 +54,10 @@ export async function createShowroom(data, ownerUid, options = {}) {
     }
 
     if (data.contacts?.phone) {
-        const { e164 } = validatePhone(data.contacts.phone, null);
+        const { e164 } = validatePhone(
+            data.contacts.phone,
+            options.userCountry ?? data.country ?? null
+        );
         contacts.phone = e164;
     } else if (data.contacts?.phone === "") {
         contacts.phone = null;
