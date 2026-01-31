@@ -1,9 +1,10 @@
 import { log } from "../config/logger.js";
+import { getMessageForCode, getStatusForCode } from "../core/errorCodes.js";
 
 export const errorHandler = (err, req, res, next) => {
-  const status = err.status || 500;
   const code = err.code || "INTERNAL_ERROR";
-  const message = err.message || "Internal server error";
+  const status = getStatusForCode(code) ?? err.status ?? 500;
+  const message = getMessageForCode(code, err.message || "Internal server error");
 
   if (status >= 500) {
     log.fatal(`${code}: ${message}`);

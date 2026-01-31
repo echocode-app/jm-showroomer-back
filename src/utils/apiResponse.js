@@ -13,12 +13,16 @@ export function created(res, data = {}) {
     });
 }
 
+import { getMessageForCode, getStatusForCode } from "../core/errorCodes.js";
+
 export function fail(res, code, message, status = 400) {
-    return res.status(status).json({
+    const finalStatus = getStatusForCode(code) ?? status;
+    const finalMessage = getMessageForCode(code, message);
+    return res.status(finalStatus).json({
         success: false,
         error: {
             code,
-            message,
+            message: finalMessage,
         },
     });
 }

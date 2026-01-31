@@ -24,7 +24,7 @@ export async function createShowroom(data, ownerUid, options = {}) {
     if (!data.country) throw badRequest("COUNTRY_REQUIRED");
 
     if (isCountryBlocked(data.country)) {
-        throw badRequest("COUNTRY_BLOCKED");
+        throw forbidden("COUNTRY_BLOCKED");
     }
 
     if (

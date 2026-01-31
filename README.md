@@ -1,55 +1,96 @@
-# JM Showroomer API v1
+# JM Showroomer Backend
 
-Backend API for Flutter and web clients.
+Backend API for the JM Showroomer mobile and web clients. Provides authentication, onboarding, and showroom management workflows with moderation and validation rules.
 
-## Quick Start (Flutter)
+## Overview
+- API base path: `/api/v1`
+- Auth: Firebase ID tokens
+- Data: Firestore (showrooms, users), Storage for assets/tests
+- Dev-hosting: Render
 
-1. Google Sign-In → get Firebase `idToken`.
-2. `GET /users/me` with `Authorization: Bearer <ID_TOKEN>`.
-3. Check `onboardingState` and `role` before protected endpoints.
+## Core Features
+- **Authentication** via Firebase ID tokens (Bearer auth)
+- **RBAC**: guest / user / owner / admin
+- **Showroom lifecycle**: draft → pending → approved / rejected (deleted is filtered)
+- **Country restrictions**: RU/BY blocked
+- **Anti‑spam & duplicates**: owner‑level and global duplicate checks
+- **Moderation workflow**: submit for review, admin approval/rejection (admin endpoints planned)
 
-Example (Dart/Flutter):
+## Tech Stack
+- Node.js (ESM)
+- Express
+- Firebase Admin SDK (Auth, Firestore, Storage)
+- Joi validation
+- OpenAPI 3.0 docs (modular YAML)
+- Bash E2E tests (curl + jq)
 
-```dart
-final response = await http.get(
-  Uri.parse('https://<BACKEND_URL>/api/v1/users/me'),
-  headers: {'Authorization': 'Bearer $idToken'},
-);
+## Repository Structure
+```
+src/
+  core/           # app bootstrap, error handling
+  routes/         # API routes
+  controllers/    # HTTP controllers
+  services/       # domain logic
+  middlewares/    # auth, RBAC, validation, country guard
+  utils/          # helpers, validation
+  schemas/        # Joi schemas
+  constants/      # enums, country block list
+  test/           # bash smoke/E2E scripts
+
+docs/             # OpenAPI specs (modular)
 ```
 
-## Core Flow (must implement)
+## Environment Configuration
+Uses `.env.<env>` files. Expected environments: `dev`, `test`, `stage`, `prod`.
 
-1. Onboarding: `POST /users/complete-onboarding` with `country`.
-   - blocked countries: russia, belarus → `403 COUNTRY_BLOCKED`
-2. Request OWNER role: `POST /users/request-owner`.
-3. Draft flow (OWNER only):
-   - `POST /showrooms/draft` → create/reuse draft
-   - `PATCH /showrooms/{id}` → save step-by-step
-   - `POST /showrooms/{id}/submit` → status becomes `pending`
+Required variables (minimum):
+- `BASE_URL`
+- Firebase Admin credentials (see existing `.env.*` templates)
+- `TEST_USER_TOKEN` for tests
 
-Required fields for submit:  
-`name`, `type`, `country`, `address`, `city`, `availability`, `contacts.phone`, `contacts.instagram`, `location.lat`, `location.lng`.
+## Run Locally
+```bash
+npm install
 
-## Base URL
+# dev (with hot reload)
+NODE_ENV=dev npm run dev
 
-`https://<BACKEND_URL>/api/v1`
+# prod-like
+NODE_ENV=prod npm start
+```
 
-## Error Handling (Flutter)
+## Tests
+### Smoke
+```bash
+NODE_ENV=test ./src/test/test_api_full_real.sh
+```
 
-- 401 `AUTH_MISSING` / `AUTH_INVALID` → re-login
-- 403 `FORBIDDEN` → no permission
-- 403 `COUNTRY_BLOCKED` → russia or belarus
-- 400 validation → show message from `error`
+### E2E Showroom Flow
+```bash
+NODE_ENV=test ./src/test/test_showroom_e2e.sh
+```
 
-## Endpoints (essentials)
+> These scripts use `TEST_USER_TOKEN` from `.env.<env>` and require `jq`.
 
-- `GET /users/me`
-- `POST /users/complete-onboarding`
-- `POST /users/request-owner`
-- `POST /showrooms/draft`
-- `PATCH /showrooms/{id}`
-- `POST /showrooms/{id}/submit`
+## API Documentation
+- OpenAPI spec: `docs/openapi.yaml`
+- Swagger UI: `GET /docs`
 
-## Full Documentation
+## Deployment (Render)
+- Service runs as a Render web service.
+- Uses environment variables and Firebase Admin credentials.
+- Ensure `NODE_ENV=prod` on production instance.
 
-See `docs/openapi.yaml` for the full API schema and models.
+## Contribution Workflow
+1. Create a feature branch.
+2. Make changes with tests updated as needed.
+3. Run smoke/E2E tests locally.
+4. Open a PR with a concise summary and test evidence.
+
+## Common Commands
+```bash
+npm run dev
+npm start
+NODE_ENV=test ./src/test/test_api_full_real.sh
+NODE_ENV=test ./src/test/test_showroom_e2e.sh
+```

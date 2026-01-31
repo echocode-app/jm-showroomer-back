@@ -3,7 +3,7 @@ import { fail } from "../utils/apiResponse.js";
 
 export function countryGuardFromUser(req, res, next) {
   if (req.user?.country && isCountryBlocked(req.user.country)) {
-    return fail(res, "COUNTRY_BLOCKED", "Access restricted by country", 403);
+    return fail(res, "COUNTRY_BLOCKED", "Country is not supported", 403);
   }
   next();
 }

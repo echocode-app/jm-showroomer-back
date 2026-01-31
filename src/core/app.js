@@ -9,17 +9,28 @@ import { rateLimiter, sanitizeInput } from "../middlewares/rateLimit.js";
 import { CONFIG } from "../config/index.js";
 
 import swaggerUi from "swagger-ui-express";
-import YAML from "yamljs";
 import path from "path";
 
 // Express
 const app = express();
 
-// Swagger doc
-const swaggerDocument = YAML.load(path.join(process.cwd(), "docs/openapi.yaml"));
+// Render / any reverse proxy setup
+app.set("trust proxy", 1);
 
-// Middleware Swagger UI
-app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+// Serve OpenAPI files for $ref resolution
+const docsPath = path.join(process.cwd(), "docs");
+app.use("/docs/spec", express.static(docsPath));
+
+// Swagger UI (loads from /docs/spec/openapi.yaml)
+app.use(
+  "/docs",
+  swaggerUi.serve,
+  swaggerUi.setup(null, {
+    swaggerOptions: {
+      url: "/docs/spec/openapi.yaml",
+    },
+  })
+);
 
 // Rate limiting (100 requests per 15 minutes)
 app.use(rateLimiter);

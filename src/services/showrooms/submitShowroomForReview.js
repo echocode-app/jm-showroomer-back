@@ -19,7 +19,7 @@ export async function submitShowroomForReviewService(id, user) {
         }
 
         if (isCountryBlocked(showroom.country)) {
-            throw badRequest("COUNTRY_BLOCKED");
+            throw forbidden("COUNTRY_BLOCKED");
         }
 
         if (user?.country && !isSameCountry(showroom.country, user.country)) {
@@ -94,7 +94,7 @@ export async function submitShowroomForReviewService(id, user) {
     }
 
     if (isCountryBlocked(showroom.country)) {
-        throw badRequest("COUNTRY_BLOCKED");
+        throw forbidden("COUNTRY_BLOCKED");
     }
 
     if (user?.country && !isSameCountry(showroom.country, user.country)) {

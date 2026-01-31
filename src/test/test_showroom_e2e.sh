@@ -101,6 +101,17 @@ print_section "Public endpoints"
 request "GET /showrooms" 200 "" "${BASE_URL}/showrooms"
 
 #####################################
+# AUTH NEGATIVE
+#####################################
+print_section "Auth negative"
+request "GET /users/me (no auth)" 401 "AUTH_MISSING" \
+  "${BASE_URL}/users/me"
+
+request "GET /users/me (invalid auth)" 401 "AUTH_INVALID" \
+  -H "Authorization: Bearer invalid" \
+  "${BASE_URL}/users/me"
+
+#####################################
 # AUTH
 #####################################
 print_section "Auth"
@@ -127,6 +138,34 @@ if [[ "$ENV" != "prod" ]]; then
   if [[ "$USER_ROLE" != "owner" ]]; then
     fail "Expected role=owner, got $USER_ROLE"
   fi
+
+  print_section "Country blocked (onboarding)"
+  request "POST /users/complete-onboarding (blocked)" 403 "COUNTRY_BLOCKED" \
+    -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+    -d '{"country":"russia"}' \
+    "${BASE_URL}/users/complete-onboarding"
+
+  print_section "Country blocked (showrooms create)"
+  request "POST /showrooms/create (blocked)" 403 "COUNTRY_BLOCKED" \
+    -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+    -d '{"name":"Blocked Showroom","type":"multibrand","country":"russia"}' \
+    "${BASE_URL}/showrooms/create"
+
+  if [[ -n "${TEST_OWNER_TOKEN_2:-}" ]]; then
+    print_section "Dev role upgrade (owner2)"
+    OWNER2_AUTH_HEADER=(-H "Authorization: Bearer ${TEST_OWNER_TOKEN_2}")
+    request "POST /users/dev/make-owner (owner2)" 200 "" \
+      -X POST "${OWNER2_AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+      -d '{}' \
+      "${BASE_URL}/users/dev/make-owner"
+
+    ME_RESPONSE=$(curl -s "${OWNER2_AUTH_HEADER[@]}" "${BASE_URL}/users/me")
+    echo "$ME_RESPONSE"
+    OWNER2_ROLE=$(echo "$ME_RESPONSE" | jq -r '.data.role // empty')
+    if [[ "$OWNER2_ROLE" != "owner" ]]; then
+      fail "Expected owner2 role=owner, got $OWNER2_ROLE"
+    fi
+  fi
 else
   echo "⚠ Skipping owner/dev flow in prod"
   exit 0
@@ -139,7 +178,7 @@ print_section "RBAC (negative check)"
 # If a separate user token is provided, verify access denied
 if [[ -n "${TEST_USER_TOKEN_USER:-}" ]]; then
   USER_AUTH_HEADER=(-H "Authorization: Bearer ${TEST_USER_TOKEN_USER}")
-  request "USER → POST /showrooms/draft" 403 "" \
+  request "USER → POST /showrooms/draft" 403 "FORBIDDEN" \
     -X POST "${USER_AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
     -d '{}' \
     "${BASE_URL}/showrooms/draft"
@@ -160,6 +199,7 @@ assert_non_empty "$SHOWROOM_ID" "showroom id"
 assert_eq "$STATUS" "draft" "status"
 
 request "GET /showrooms/{id}" 200 "" \
+  "${AUTH_HEADER[@]}" \
   "${BASE_URL}/showrooms/$SHOWROOM_ID"
 
 EDIT_COUNT=$(echo "$BODY" | jq -r '.data.showroom.editCount // 0')
@@ -208,7 +248,7 @@ request "PATCH invalid instagram" 400 "INSTAGRAM_INVALID" \
 
 request "PATCH invalid phone" 400 "PHONE_INVALID" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d '{"contacts":{"phone":"0999999999"}}' \
+  -d '{"contacts":{"phone":"abc"}}' \
   "${BASE_URL}/showrooms/$SHOWROOM_ID"
 
 request "PATCH blocked country" 403 "COUNTRY_BLOCKED" \
@@ -256,6 +296,30 @@ request "POST /showrooms/{id}/submit (owner duplicate name)" 400 "SHOWROOM_NAME_
   -d '{}' \
   "${BASE_URL}/showrooms/$SECOND_ID/submit"
 
+if [[ -n "${TEST_OWNER_TOKEN_2:-}" ]]; then
+  print_section "Duplicate checks (owner2)"
+
+  OWNER2_AUTH_HEADER=(-H "Authorization: Bearer ${TEST_OWNER_TOKEN_2}")
+
+  request "OWNER2 → POST /showrooms/draft" 200 "" \
+    -X POST "${OWNER2_AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+    -d '{}' \
+    "${BASE_URL}/showrooms/draft"
+
+  OWNER2_ID=$(echo "$BODY" | jq -r '.data.showroom.id // empty')
+  assert_non_empty "$OWNER2_ID" "owner2 showroom id"
+
+  request "OWNER2 → PATCH draft (duplicate name+address)" 200 "" \
+    -X PATCH "${OWNER2_AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+    -d '{"name":"My Showroom 01","type":"multibrand","country":"Ukraine","availability":"open","address":"Kyiv, Khreshchatyk 1","city":"Kyiv","location":{"lat":50.45,"lng":30.52},"contacts":{"phone":"+380999111223","instagram":"https://instagram.com/myshowroom"}}' \
+    "${BASE_URL}/showrooms/$OWNER2_ID"
+
+  request "OWNER2 → POST /showrooms/{id}/submit (duplicate)" 400 "SHOWROOM_DUPLICATE" \
+    -X POST "${OWNER2_AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+    -d '{}' \
+    "${BASE_URL}/showrooms/$OWNER2_ID/submit"
+fi
+
 #####################################
 # ACCESS DENIED
 #####################################
@@ -263,8 +327,16 @@ print_section "Access denied"
 # Use a different user token if provided, otherwise skip
 if [[ -n "${TEST_USER_TOKEN_USER:-}" ]]; then
   USER_AUTH_HEADER=(-H "Authorization: Bearer ${TEST_USER_TOKEN_USER}")
-  request "USER → POST /showrooms/{id}/submit" 403 "" \
+  request "USER → POST /showrooms/{id}/submit" 403 "FORBIDDEN" \
     -X POST "${USER_AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+    -d '{}' \
+    "${BASE_URL}/showrooms/$SHOWROOM_ID/submit"
+fi
+
+if [[ -n "${TEST_OWNER_TOKEN_2:-}" ]]; then
+  OWNER2_AUTH_HEADER=(-H "Authorization: Bearer ${TEST_OWNER_TOKEN_2}")
+  request "OWNER2 → POST /showrooms/{id}/submit" 403 "ACCESS_DENIED" \
+    -X POST "${OWNER2_AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
     -d '{}' \
     "${BASE_URL}/showrooms/$SHOWROOM_ID/submit"
 fi

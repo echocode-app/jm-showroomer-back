@@ -81,9 +81,8 @@ export function sanitizeInput(req, res, next) {
     }
 
     if (req.query && Object.keys(req.query).length > 0) {
-        req.query = sanitize(req.query);
+        Object.assign(req.query, sanitize(req.query));
     }
 
     next();
 }
-

@@ -1,26 +1,27 @@
 import { errorHandler } from "../middlewares/error.js";
+import { getMessageForCode, getStatusForCode } from "./errorCodes.js";
 
 export function setupErrorHandling(app) {
     app.use(errorHandler);
 }
 
-export function badRequest(message = "Bad request") {
+function buildError(code, defaultStatus) {
+    const status = getStatusForCode(code) ?? defaultStatus;
+    const message = getMessageForCode(code, code);
     const err = new Error(message);
-    err.status = 400;
-    err.code = message;
+    err.status = status;
+    err.code = code;
     return err;
+}
+
+export function badRequest(message = "Bad request") {
+    return buildError(message, 400);
 }
 
 export function notFound(message = "Not found") {
-    const err = new Error(message);
-    err.status = 404;
-    err.code = message;
-    return err;
+    return buildError(message, 404);
 }
 
 export function forbidden(message = "Forbidden") {
-    const err = new Error(message);
-    err.status = 403;
-    err.code = message;
-    return err;
+    return buildError(message, 403);
 }

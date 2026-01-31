@@ -145,10 +145,10 @@ fi
 # DRAFT CREATION / REUSE
 #####################################
 print_section "Draft creation"
-request "POST /showrooms/create?mode=draft" 200 "" \
+request "POST /showrooms/draft" 200 "" \
   -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d '{"draft":true}' \
-  "${BASE_URL}/showrooms/create?mode=draft"
+  -d '{}' \
+  "${BASE_URL}/showrooms/draft"
 
 DRAFT_ID=$(echo "$LAST_BODY" | jq -r '.data.showroom.id // empty')
 DRAFT_STATUS=$(echo "$LAST_BODY" | jq -r '.data.showroom.status // empty')
@@ -169,6 +169,7 @@ assert_eq "$DRAFT_ID_2" "$DRAFT_ID" "draft id reuse"
 print_section "Partial updates"
 
 request "GET /showrooms/{id}" 200 "" \
+  "${AUTH_HEADER[@]}" \
   "${BASE_URL}/showrooms/$DRAFT_ID"
 
 EDIT_COUNT=$(echo "$LAST_BODY" | jq -r '.data.showroom.editCount // 0')
@@ -180,6 +181,7 @@ request "PATCH step1 (name/type)" 200 "" \
   "${BASE_URL}/showrooms/$DRAFT_ID"
 
 request "GET after step1" 200 "" \
+  "${AUTH_HEADER[@]}" \
   "${BASE_URL}/showrooms/$DRAFT_ID"
 
 assert_eq "$(echo "$LAST_BODY" | jq -r '.data.showroom.name')" "My Showroom 01" "name"
@@ -197,6 +199,7 @@ request "PATCH step2 (country/availability)" 200 "" \
   "${BASE_URL}/showrooms/$DRAFT_ID"
 
 request "GET after step2" 200 "" \
+  "${AUTH_HEADER[@]}" \
   "${BASE_URL}/showrooms/$DRAFT_ID"
 
 assert_eq "$(echo "$LAST_BODY" | jq -r '.data.showroom.country')" "Ukraine" "country"
@@ -214,6 +217,7 @@ request "PATCH step3 (address/city/location)" 200 "" \
   "${BASE_URL}/showrooms/$DRAFT_ID"
 
 request "GET after step3" 200 "" \
+  "${AUTH_HEADER[@]}" \
   "${BASE_URL}/showrooms/$DRAFT_ID"
 
 assert_eq "$(echo "$LAST_BODY" | jq -r '.data.showroom.address')" "Kyiv, Khreshchatyk 1" "address"
@@ -246,6 +250,7 @@ request "PATCH step4 (contacts)" 200 "" \
   "${BASE_URL}/showrooms/$DRAFT_ID"
 
 request "GET after step4" 200 "" \
+  "${AUTH_HEADER[@]}" \
   "${BASE_URL}/showrooms/$DRAFT_ID"
 
 assert_eq "$(echo "$LAST_BODY" | jq -r '.data.showroom.contacts.phone')" "+380999999999" "contacts.phone"
@@ -257,6 +262,7 @@ request "PATCH contacts (instagram only)" 200 "" \
   "${BASE_URL}/showrooms/$DRAFT_ID"
 
 request "GET after instagram-only" 200 "" \
+  "${AUTH_HEADER[@]}" \
   "${BASE_URL}/showrooms/$DRAFT_ID"
 
 assert_eq "$(echo "$LAST_BODY" | jq -r '.data.showroom.contacts.phone')" "+380999999999" "contacts.phone preserved"
@@ -268,6 +274,7 @@ request "PATCH contacts (phone only)" 200 "" \
   "${BASE_URL}/showrooms/$DRAFT_ID"
 
 request "GET after phone-only" 200 "" \
+  "${AUTH_HEADER[@]}" \
   "${BASE_URL}/showrooms/$DRAFT_ID"
 
 assert_eq "$(echo "$LAST_BODY" | jq -r '.data.showroom.contacts.phone')" "+380999111223" "contacts.phone updated"

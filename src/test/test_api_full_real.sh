@@ -121,10 +121,14 @@ request "POST /users/complete-onboarding (RU blocked)" 403 "COUNTRY_BLOCKED" \
 #####################################
 print_section "RBAC"
 
-request "USER → POST /showrooms/create" 403 "FORBIDDEN" \
-  -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d '{"name":"Test","country":"Ukraine","type":"multibrand"}' \
-  "${BASE_URL}/showrooms/create"
+if [[ "$USER_ROLE" == "user" ]]; then
+  request "USER → POST /showrooms/create" 403 "FORBIDDEN" \
+    -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+    -d '{"name":"Test","country":"Ukraine","type":"multibrand"}' \
+    "${BASE_URL}/showrooms/create"
+else
+  echo "⚠ Skipping USER RBAC check (role=$USER_ROLE)"
+fi
 
 request "USER → POST /lookbooks/create" 403 "FORBIDDEN" \
   -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \

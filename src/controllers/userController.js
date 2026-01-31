@@ -67,5 +67,5 @@ export async function makeOwnerDev(req, res) {
         updatedAt: new Date().toISOString(),
     });
 
-    return ok(res, { message: "Role upgraded to owner" });
+    return ok(res, { role: "owner" });
 }

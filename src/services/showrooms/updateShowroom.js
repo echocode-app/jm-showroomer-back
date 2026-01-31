@@ -17,7 +17,7 @@ import { DEV_STORE, useDevMock } from "./_store.js";
 
 export async function updateShowroomService(id, data, user) {
     if (data.country && isCountryBlocked(data.country)) {
-        throw badRequest("COUNTRY_BLOCKED");
+        throw forbidden("COUNTRY_BLOCKED");
     }
 
     if (data.country && user?.country && !isSameCountry(data.country, user.country)) {

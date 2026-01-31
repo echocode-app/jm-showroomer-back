@@ -1,0 +1,213 @@
+components:
+  schemas:
+    User:
+      type: object
+      required: [uid, role, roles, status, onboardingState]
+      properties:
+        uid:
+          type: string
+        email:
+          type: string
+          nullable: true
+        name:
+          type: string
+          nullable: true
+        avatar:
+          type: string
+          nullable: true
+        role:
+          type: string
+          enum: [guest, user, owner, admin, manager, stylist]
+        roles:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        onboardingState:
+          type: string
+          enum: [new, completed]
+        country:
+          type: string
+          nullable: true
+        roleRequest:
+          type: object
+          nullable: true
+          properties:
+            role:
+              type: string
+            status:
+              type: string
+            requestedAt:
+              type: string
+              format: date-time
+            reviewedAt:
+              type: string
+              format: date-time
+              nullable: true
+            reviewedBy:
+              type: string
+              nullable: true
+            reason:
+              type: string
+              nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CompleteOnboardingInput:
+      type: object
+      required: [country]
+      properties:
+        country:
+          type: string
+          description: User country (russia/belarus blocked)
+
+paths:
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Get current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
+  /users/complete-onboarding:
+    post:
+      tags: [Users]
+      summary: Complete onboarding
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteOnboardingInput'
+      responses:
+        "200":
+          description: Onboarding completed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+        "400":
+          description: Missing country
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "403":
+          description: Country blocked
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
+  /users/request-owner:
+    post:
+      tags: [Users]
+      summary: Request owner role
+      security:
+        - bearerAuth: []
+      x-roles: [user]
+      responses:
+        "200":
+          description: Request submitted
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
+  /users/dev/register-test:
+    post:
+      tags: [Users]
+      summary: Create test user (dev only)
+      security: []
+      responses:
+        "200":
+          description: Test user created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            $ref: '#/components/schemas/User'
+
+  /users/dev/make-owner:
+    post:
+      tags: [Users]
+      summary: Upgrade current user to owner (dev/test only)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Role upgraded
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          role:
+                            type: string
+                            example: owner
+        "404":
+          description: Not available in production
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'

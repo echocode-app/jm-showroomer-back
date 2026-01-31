@@ -10,10 +10,10 @@ const locationSchema = Joi.object({
     lng: Joi.number(),
 }).min(1);
 
-export const showroomCreateSchema = Joi.object({
-    name: Joi.string().required(),
-    type: Joi.string().required(),
-    country: Joi.string().required(),
+const baseSchema = Joi.object({
+    name: Joi.string(),
+    type: Joi.string(),
+    country: Joi.string(),
     availability: Joi.any(),
     category: Joi.any(),
     brands: Joi.array(),
@@ -30,13 +30,16 @@ export const showroomCreateSchema = Joi.object({
     nameNormalized: Joi.forbidden(),
     addressNormalized: Joi.forbidden(),
     submittedAt: Joi.forbidden(),
-})
-    .when("draft", {
-        is: true,
-        then: Joi.object({
-            name: Joi.string(),
-            type: Joi.string(),
-            country: Joi.string(),
-        }),
+}).unknown(false);
+
+export const showroomCreateSchema = Joi.alternatives().try(
+    baseSchema.keys({
+        draft: Joi.boolean().valid(true).required(),
+    }),
+    baseSchema.keys({
+        draft: Joi.boolean().valid(false).optional(),
+        name: Joi.string().required(),
+        type: Joi.string().required(),
+        country: Joi.string().required(),
     })
-    .unknown(false);
+);

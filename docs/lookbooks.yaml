@@ -1,0 +1,106 @@
+components:
+  schemas:
+    Lookbook:
+      type: object
+      properties:
+        id:
+          type: string
+        ownerUid:
+          type: string
+        name:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+paths:
+  /lookbooks:
+    get:
+      tags: [Lookbooks]
+      summary: List lookbooks (stub)
+      security: []
+      responses:
+        "200":
+          description: Lookbooks list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          lookbooks:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Lookbook'
+
+  /lookbooks/create:
+    post:
+      tags: [Lookbooks]
+      summary: Create lookbook (stub)
+      security:
+        - bearerAuth: []
+      x-roles: [owner, manager]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        "200":
+          description: Lookbook created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          lookbook:
+                            type: object
+
+  /lookbooks/{id}/rsvp:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [Lookbooks]
+      summary: RSVP to event (stub)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: RSVP response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          eventId:
+                            type: string
+                          user:
+                            type: string
+                          status:
+                            type: string
+                            example: "RSVPed"

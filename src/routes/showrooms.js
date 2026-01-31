@@ -22,7 +22,7 @@ import {
 const router = Router();
 
 // LIST
-router.get("/", listShowrooms);
+router.get("/", optionalAuth, loadUserIfExists, listShowrooms);
 
 // GET BY ID
 router.get("/:id", optionalAuth, loadUserIfExists, getShowroomById);
@@ -34,6 +34,13 @@ router.post(
     loadUser,
     requireRole([ROLES.OWNER, ROLES.MANAGER]),
     blockRestrictedCountries,
+    (req, res, next) => {
+        if (req.query?.mode === "draft") {
+            req.body = req.body || {};
+            req.body.draft = true;
+        }
+        next();
+    },
     schemaValidate({ body: showroomCreateSchema }),
     createShowroomController
 );

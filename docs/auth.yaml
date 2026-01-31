@@ -1,0 +1,60 @@
+components:
+  schemas:
+    OAuthLoginInput:
+      type: object
+      required: [idToken]
+      properties:
+        idToken:
+          type: string
+          description: Firebase ID Token from Google Sign-In
+
+paths:
+  /auth/oauth:
+    post:
+      tags: [Auth]
+      summary: Google OAuth login (Firebase)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OAuthLoginInput'
+      responses:
+        "200":
+          description: Authenticated user
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            $ref: './users.yaml#/components/schemas/User'
+        "400":
+          description: Missing idToken
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+  /auth/apple:
+    post:
+      tags: [Auth]
+      summary: Apple OAuth login (not implemented)
+      security: []
+      responses:
+        "501":
+          description: Apple OAuth coming soon
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'

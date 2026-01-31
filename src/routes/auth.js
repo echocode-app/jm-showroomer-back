@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { oauthLogin } from "../controllers/authController.js";
+import { fail } from "../utils/apiResponse.js";
 
 const router = Router();
 
@@ -8,7 +9,7 @@ router.post("/oauth", oauthLogin);
 
 // POST /auth/apple
 router.post("/apple", (req, res) => {
-    res.status(501).json({ message: "Apple OAuth coming soon" });
+    return fail(res, "NOT_IMPLEMENTED", "Apple OAuth coming soon", 501);
 });
 
 export default router;
@@ -20,4 +21,3 @@ export default router;
 // }
 
 // Authorization: Bearer <idToken>
-
