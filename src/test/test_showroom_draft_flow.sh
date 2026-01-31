@@ -23,6 +23,7 @@ fi
 BASE_URL="${BASE_URL:?BASE_URL is required}"
 AUTH_HEADER=(-H "Authorization: Bearer ${TEST_USER_TOKEN}")
 JSON_HEADER=(-H "Content-Type: application/json")
+NOW=$(date +%s%N)
 
 #####################################
 # HELPERS
@@ -175,17 +176,24 @@ request "GET /showrooms/{id}" 200 "" \
 EDIT_COUNT=$(echo "$LAST_BODY" | jq -r '.data.showroom.editCount // 0')
 EDIT_HISTORY_LEN=$(echo "$LAST_BODY" | jq '.data.showroom.editHistory | length')
 
+NAME_STEP1="My Showroom 01 ${NOW}"
 request "PATCH step1 (name/type)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d '{"name":"My Showroom 01","type":"multibrand"}' \
+  -d "{\"name\":\"${NAME_STEP1}\",\"type\":\"multibrand\"}" \
   "${BASE_URL}/showrooms/$DRAFT_ID"
 
 request "GET after step1" 200 "" \
   "${AUTH_HEADER[@]}" \
   "${BASE_URL}/showrooms/$DRAFT_ID"
 
-assert_eq "$(echo "$LAST_BODY" | jq -r '.data.showroom.name')" "My Showroom 01" "name"
+assert_eq "$(echo "$LAST_BODY" | jq -r '.data.showroom.name')" "$NAME_STEP1" "name"
 assert_eq "$(echo "$LAST_BODY" | jq -r '.data.showroom.type')" "multibrand" "type"
+CURRENT_AVAILABILITY=$(echo "$LAST_BODY" | jq -r '.data.showroom.availability // empty')
+if [[ "$CURRENT_AVAILABILITY" == "open" ]]; then
+  AVAILABILITY_NEXT="appointment"
+else
+  AVAILABILITY_NEXT="open"
+fi
 NEW_EDIT_COUNT=$(echo "$LAST_BODY" | jq -r '.data.showroom.editCount // 0')
 NEW_EDIT_HISTORY_LEN=$(echo "$LAST_BODY" | jq '.data.showroom.editHistory | length')
 assert_gt "$NEW_EDIT_COUNT" "$EDIT_COUNT" "editCount"
@@ -195,7 +203,7 @@ EDIT_HISTORY_LEN=$NEW_EDIT_HISTORY_LEN
 
 request "PATCH step2 (country/availability)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d '{"country":"Ukraine","availability":"open"}' \
+  -d "{\"country\":\"Ukraine\",\"availability\":\"${AVAILABILITY_NEXT}\"}" \
   "${BASE_URL}/showrooms/$DRAFT_ID"
 
 request "GET after step2" 200 "" \
@@ -203,7 +211,7 @@ request "GET after step2" 200 "" \
   "${BASE_URL}/showrooms/$DRAFT_ID"
 
 assert_eq "$(echo "$LAST_BODY" | jq -r '.data.showroom.country')" "Ukraine" "country"
-assert_eq "$(echo "$LAST_BODY" | jq -r '.data.showroom.availability')" "open" "availability"
+assert_eq "$(echo "$LAST_BODY" | jq -r '.data.showroom.availability')" "$AVAILABILITY_NEXT" "availability"
 NEW_EDIT_COUNT=$(echo "$LAST_BODY" | jq -r '.data.showroom.editCount // 0')
 NEW_EDIT_HISTORY_LEN=$(echo "$LAST_BODY" | jq '.data.showroom.editHistory | length')
 assert_gt "$NEW_EDIT_COUNT" "$EDIT_COUNT" "editCount"
@@ -213,14 +221,14 @@ EDIT_HISTORY_LEN=$NEW_EDIT_HISTORY_LEN
 
 request "PATCH step3 (address/city/location)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d '{"address":"Kyiv, Khreshchatyk 1","city":"Kyiv","location":{"lat":50.45,"lng":30.52}}' \
+  -d "{\"address\":\"Kyiv, Khreshchatyk ${NOW}\",\"city\":\"Kyiv\",\"location\":{\"lat\":50.45,\"lng\":30.52}}" \
   "${BASE_URL}/showrooms/$DRAFT_ID"
 
 request "GET after step3" 200 "" \
   "${AUTH_HEADER[@]}" \
   "${BASE_URL}/showrooms/$DRAFT_ID"
 
-assert_eq "$(echo "$LAST_BODY" | jq -r '.data.showroom.address')" "Kyiv, Khreshchatyk 1" "address"
+assert_eq "$(echo "$LAST_BODY" | jq -r '.data.showroom.address')" "Kyiv, Khreshchatyk ${NOW}" "address"
 assert_eq "$(echo "$LAST_BODY" | jq -r '.data.showroom.city')" "Kyiv" "city"
 assert_eq "$(echo "$LAST_BODY" | jq -r '.data.showroom.location.lat')" "50.45" "location.lat"
 assert_eq "$(echo "$LAST_BODY" | jq -r '.data.showroom.location.lng')" "30.52" "location.lng"
@@ -235,6 +243,11 @@ EDIT_HISTORY_LEN=$NEW_EDIT_HISTORY_LEN
 # SUBMIT INCOMPLETE
 #####################################
 print_section "Submit incomplete"
+request "PATCH force incomplete (clear contacts)" 200 "" \
+  -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+  -d "{\"name\":\"Incomplete ${NOW}\",\"contacts\":{\"phone\":null,\"instagram\":null}}" \
+  "${BASE_URL}/showrooms/$DRAFT_ID"
+
 request "POST /showrooms/{id}/submit (incomplete)" 400 "SHOWROOM_INCOMPLETE" \
   -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
   -d '{}' \
@@ -246,7 +259,7 @@ request "POST /showrooms/{id}/submit (incomplete)" 400 "SHOWROOM_INCOMPLETE" \
 print_section "Contacts + merge"
 request "PATCH step4 (contacts)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d '{"contacts":{"phone":"+380 (99) 999-99-99","instagram":"https://instagram.com/myshowroom"}}' \
+  -d "{\"contacts\":{\"phone\":\"+380 (99) 999-99-99\",\"instagram\":\"https://instagram.com/myshowroom${NOW}\"}}" \
   "${BASE_URL}/showrooms/$DRAFT_ID"
 
 request "GET after step4" 200 "" \
@@ -254,7 +267,7 @@ request "GET after step4" 200 "" \
   "${BASE_URL}/showrooms/$DRAFT_ID"
 
 assert_eq "$(echo "$LAST_BODY" | jq -r '.data.showroom.contacts.phone')" "+380999999999" "contacts.phone"
-assert_eq "$(echo "$LAST_BODY" | jq -r '.data.showroom.contacts.instagram')" "https://instagram.com/myshowroom" "contacts.instagram"
+assert_eq "$(echo "$LAST_BODY" | jq -r '.data.showroom.contacts.instagram')" "https://instagram.com/myshowroom${NOW}" "contacts.instagram"
 
 request "PATCH contacts (instagram only)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \

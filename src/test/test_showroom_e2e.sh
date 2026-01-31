@@ -23,6 +23,7 @@ fi
 BASE_URL="${BASE_URL:?BASE_URL is required}"
 AUTH_HEADER=(-H "Authorization: Bearer ${TEST_USER_TOKEN}")
 JSON_HEADER=(-H "Content-Type: application/json")
+NOW=$(date +%s%N)
 
 #####################################
 # HELPERS
@@ -188,6 +189,7 @@ fi
 # DRAFT FLOW
 #####################################
 print_section "Draft flow"
+NAME_MAIN="My Showroom 01 ${NOW}"
 request "POST /showrooms/draft" 200 "" \
   -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
   -d '{}' \
@@ -206,29 +208,37 @@ EDIT_COUNT=$(echo "$BODY" | jq -r '.data.showroom.editCount // 0')
 
 request "PATCH step1 (name/type)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d '{"name":"My Showroom 01","type":"multibrand"}' \
+  -d "{\"name\":\"${NAME_MAIN}\",\"type\":\"multibrand\"}" \
   "${BASE_URL}/showrooms/$SHOWROOM_ID"
 
 request "GET after step1" 200 "" \
+  "${AUTH_HEADER[@]}" \
   "${BASE_URL}/showrooms/$SHOWROOM_ID"
 
 NEW_EDIT_COUNT=$(echo "$BODY" | jq -r '.data.showroom.editCount // 0')
 assert_gt "$NEW_EDIT_COUNT" "$EDIT_COUNT" "editCount"
 EDIT_COUNT=$NEW_EDIT_COUNT
 
+CURRENT_AVAILABILITY=$(echo "$BODY" | jq -r '.data.showroom.availability // empty')
+if [[ "$CURRENT_AVAILABILITY" == "open" ]]; then
+  AVAILABILITY_NEXT="appointment"
+else
+  AVAILABILITY_NEXT="open"
+fi
+
 request "PATCH step2 (country/availability)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d '{"country":"Ukraine","availability":"open"}' \
+  -d "{\"country\":\"Ukraine\",\"availability\":\"${AVAILABILITY_NEXT}\"}" \
   "${BASE_URL}/showrooms/$SHOWROOM_ID"
 
 request "PATCH step3 (address/city/location)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d '{"address":"Kyiv, Khreshchatyk 1","city":"Kyiv","location":{"lat":50.45,"lng":30.52}}' \
+  -d "{\"address\":\"Kyiv, Khreshchatyk ${NOW}\",\"city\":\"Kyiv\",\"location\":{\"lat\":50.45,\"lng\":30.52}}" \
   "${BASE_URL}/showrooms/$SHOWROOM_ID"
 
 request "PATCH step4 (contacts)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d '{"contacts":{"phone":"+380 (99) 999-99-99","instagram":"https://instagram.com/myshowroom"}}' \
+  -d "{\"contacts\":{\"phone\":\"+380 (99) 999-99-99\",\"instagram\":\"https://instagram.com/myshowroom${NOW}\"}}" \
   "${BASE_URL}/showrooms/$SHOWROOM_ID"
 
 #####################################
@@ -288,7 +298,7 @@ assert_non_empty "$SECOND_ID" "second showroom id"
 
 request "PATCH second showroom (set duplicate name)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d '{"name":"My Showroom 01","availability":"open","address":"Kyiv, Khreshchatyk 1","city":"Kyiv","location":{"lat":50.45,"lng":30.52},"contacts":{"phone":"+380999111223","instagram":"https://instagram.com/myshowroom"}}' \
+  -d "{\"name\":\"${NAME_MAIN}\",\"availability\":\"open\",\"address\":\"Kyiv, Khreshchatyk 1\",\"city\":\"Kyiv\",\"location\":{\"lat\":50.45,\"lng\":30.52},\"contacts\":{\"phone\":\"+380999111223\",\"instagram\":\"https://instagram.com/myshowroom\"}}" \
   "${BASE_URL}/showrooms/$SECOND_ID"
 
 request "POST /showrooms/{id}/submit (owner duplicate name)" 400 "SHOWROOM_NAME_ALREADY_EXISTS" \
