@@ -343,6 +343,8 @@ request "POST /showrooms/{id}/submit" 200 "" \
 
 SUBMIT_STATUS=$(echo "$LAST_BODY" | jq -r '.data.showroom.status // empty')
 SUBMITTED_AT=$(echo "$LAST_BODY" | jq -r '.data.showroom.submittedAt // empty')
+SUBMITTED_NAME=$(echo "$LAST_BODY" | jq -r '.data.showroom.name // empty')
+SUBMITTED_ADDRESS=$(echo "$LAST_BODY" | jq -r '.data.showroom.address // empty')
 assert_eq "$SUBMIT_STATUS" "pending" "submit status"
 assert_non_empty "$SUBMITTED_AT" "submittedAt"
 
@@ -370,7 +372,7 @@ assert_non_empty "$SECOND_ID" "second showroom id"
 
 request "PATCH second showroom (set required fields + duplicate name)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d '{"name":"My Showroom 01","availability":"open","address":"Kyiv, Khreshchatyk 1","city":"Kyiv","location":{"lat":50.45,"lng":30.52},"contacts":{"phone":"+380999111223","instagram":"https://instagram.com/newhandle"}}' \
+  -d "{\"name\":\"${SUBMITTED_NAME}\",\"availability\":\"open\",\"address\":\"${SUBMITTED_ADDRESS}\",\"city\":\"Kyiv\",\"location\":{\"lat\":50.45,\"lng\":30.52},\"contacts\":{\"phone\":\"+380999111223\",\"instagram\":\"https://instagram.com/newhandle\"}}" \
   "${BASE_URL}/showrooms/$SECOND_ID"
 
 request "POST /showrooms/{id}/submit (owner duplicate name)" 400 "SHOWROOM_NAME_ALREADY_EXISTS" \

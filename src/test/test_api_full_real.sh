@@ -173,6 +173,7 @@ if [[ "$USER_ROLE" == "owner" ]]; then
   echo "✔ Created showroom $SHOWROOM_ID"
 
   request "GET /showrooms/{id}" 200 "" \
+    "${AUTH_HEADER[@]}" \
     "${BASE_URL}/showrooms/$SHOWROOM_ID"
 
   request "PATCH /showrooms/{id}" 200 "" \
