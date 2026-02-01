@@ -2,12 +2,14 @@ import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth.js";
 import { loadUser } from "../middlewares/loadUser.js";
 import { requireRole } from "../middlewares/role.js";
+import { schemaValidate } from "../middlewares/schemaValidate.js";
 import { ROLES } from "../constants/roles.js";
+import { completeOwnerProfileSchema } from "../schemas/user.complete-owner-profile.schema.js";
 
 import {
   getMyProfile,
-  requestOwnerRole,
   completeOnboarding,
+  completeOwnerProfile,
   makeOwnerDev,
 } from "../controllers/userController.js";
 
@@ -26,17 +28,6 @@ router.get(
 );
 
 /**
- * POST /users/request-owner
- */
-router.post(
-  "/request-owner",
-  authMiddleware,
-  loadUser,
-  requireRole([ROLES.USER]),
-  requestOwnerRole
-);
-
-/**
  * POST /users/complete-onboarding
  */
 router.post(
@@ -44,6 +35,18 @@ router.post(
   authMiddleware,
   loadUser,
   completeOnboarding
+);
+
+/**
+ * POST /users/complete-owner-profile
+ */
+router.post(
+  "/complete-owner-profile",
+  authMiddleware,
+  loadUser,
+  requireRole([ROLES.USER, ROLES.OWNER]),
+  schemaValidate({ body: completeOwnerProfileSchema }),
+  completeOwnerProfile
 );
 
 /**

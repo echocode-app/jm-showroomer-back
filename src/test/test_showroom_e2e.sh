@@ -124,14 +124,14 @@ if [[ -z "$USER_ROLE" ]]; then
 fi
 
 #####################################
-# DEV OWNER UPGRADE (non-prod)
+# OWNER UPGRADE (via owner profile)
 #####################################
-if [[ "$ENV" != "prod" ]]; then
-  print_section "Dev role upgrade"
-  request "POST /users/dev/make-owner" 200 "" \
+print_section "Owner profile upgrade"
+if [[ "$USER_ROLE" != "owner" ]]; then
+  request "POST /users/complete-owner-profile" 200 "" \
     -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-    -d '{}' \
-    "${BASE_URL}/users/dev/make-owner"
+    -d "{\"name\":\"Owner ${NOW}\",\"position\":\"Founder\",\"country\":\"Ukraine\",\"instagram\":\"https://instagram.com/owner${NOW}\"}" \
+    "${BASE_URL}/users/complete-owner-profile"
 
   ME_RESPONSE=$(curl -s "${AUTH_HEADER[@]}" "${BASE_URL}/users/me")
   echo "$ME_RESPONSE"
@@ -139,37 +139,30 @@ if [[ "$ENV" != "prod" ]]; then
   if [[ "$USER_ROLE" != "owner" ]]; then
     fail "Expected role=owner, got $USER_ROLE"
   fi
+fi
 
-  print_section "Country blocked (onboarding)"
-  request "POST /users/complete-onboarding (blocked)" 403 "COUNTRY_BLOCKED" \
-    -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-    -d '{"country":"russia"}' \
-    "${BASE_URL}/users/complete-onboarding"
+print_section "Country blocked (onboarding)"
+request "POST /users/complete-onboarding (blocked)" 403 "COUNTRY_BLOCKED" \
+  -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+  -d '{"country":"russia"}' \
+  "${BASE_URL}/users/complete-onboarding"
 
-  print_section "Country blocked (showrooms create)"
-  request "POST /showrooms/create (blocked)" 403 "COUNTRY_BLOCKED" \
-    -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-    -d '{"name":"Blocked Showroom","type":"multibrand","country":"russia"}' \
-    "${BASE_URL}/showrooms/create"
+print_section "Country blocked (showrooms create)"
+request "POST /showrooms/create (blocked)" 403 "COUNTRY_BLOCKED" \
+  -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+  -d '{"name":"Blocked Showroom","type":"multibrand","country":"russia"}' \
+  "${BASE_URL}/showrooms/create"
 
-  if [[ -n "${TEST_OWNER_TOKEN_2:-}" ]]; then
-    print_section "Dev role upgrade (owner2)"
-    OWNER2_AUTH_HEADER=(-H "Authorization: Bearer ${TEST_OWNER_TOKEN_2}")
-    request "POST /users/dev/make-owner (owner2)" 200 "" \
+if [[ -n "${TEST_OWNER_TOKEN_2:-}" ]]; then
+  OWNER2_AUTH_HEADER=(-H "Authorization: Bearer ${TEST_OWNER_TOKEN_2}")
+  OWNER2_ME=$(curl -s "${OWNER2_AUTH_HEADER[@]}" "${BASE_URL}/users/me")
+  OWNER2_ROLE=$(echo "$OWNER2_ME" | jq -r '.data.role // empty')
+  if [[ "$OWNER2_ROLE" != "owner" ]]; then
+    request "POST /users/complete-owner-profile (owner2)" 200 "" \
       -X POST "${OWNER2_AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-      -d '{}' \
-      "${BASE_URL}/users/dev/make-owner"
-
-    ME_RESPONSE=$(curl -s "${OWNER2_AUTH_HEADER[@]}" "${BASE_URL}/users/me")
-    echo "$ME_RESPONSE"
-    OWNER2_ROLE=$(echo "$ME_RESPONSE" | jq -r '.data.role // empty')
-    if [[ "$OWNER2_ROLE" != "owner" ]]; then
-      fail "Expected owner2 role=owner, got $OWNER2_ROLE"
-    fi
+      -d "{\"name\":\"Owner2 ${NOW}\",\"position\":\"Founder\",\"country\":\"Ukraine\",\"instagram\":\"https://instagram.com/owner2${NOW}\"}" \
+      "${BASE_URL}/users/complete-owner-profile"
   fi
-else
-  echo "⚠ Skipping owner/dev flow in prod"
-  exit 0
 fi
 
 #####################################

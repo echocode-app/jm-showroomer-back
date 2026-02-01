@@ -103,20 +103,15 @@ if [[ -z "$USER_ROLE" ]]; then
 fi
 
 if [[ "$USER_ROLE" != "owner" ]]; then
-  if [[ "$ENV" != "prod" ]]; then
-    request "POST /users/dev/make-owner" 200 "" \
-      -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-      -d '{}' \
-      "${BASE_URL}/users/dev/make-owner"
+  request "POST /users/complete-owner-profile (upgrade)" 200 "" \
+    -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+    -d "{\"name\":\"Owner ${NOW}\",\"position\":\"Founder\",\"country\":\"Ukraine\",\"instagram\":\"https://instagram.com/owner${NOW}\"}" \
+    "${BASE_URL}/users/complete-owner-profile"
 
-    ME_RESPONSE=$(curl -s "${AUTH_HEADER[@]}" "${BASE_URL}/users/me")
-    echo "$ME_RESPONSE"
-    USER_ROLE=$(echo "$ME_RESPONSE" | jq -r '.data.role // empty')
-    assert_eq "$USER_ROLE" "owner" "role"
-  else
-    echo "⚠ skipping (role!=owner)"
-    exit 0
-  fi
+  ME_RESPONSE=$(curl -s "${AUTH_HEADER[@]}" "${BASE_URL}/users/me")
+  echo "$ME_RESPONSE"
+  USER_ROLE=$(echo "$ME_RESPONSE" | jq -r '.data.role // empty')
+  assert_eq "$USER_ROLE" "owner" "role"
 fi
 
 #####################################
@@ -175,6 +170,14 @@ request "SUBMIT B (owner duplicate)" 400 "SHOWROOM_NAME_ALREADY_EXISTS" \
 if [[ -n "${TEST_OWNER_TOKEN_2:-}" ]]; then
   print_section "Global duplicate (owner2)"
   OWNER2_AUTH_HEADER=(-H "Authorization: Bearer ${TEST_OWNER_TOKEN_2}")
+  OWNER2_ME=$(curl -s "${OWNER2_AUTH_HEADER[@]}" "${BASE_URL}/users/me")
+  OWNER2_ROLE=$(echo "$OWNER2_ME" | jq -r '.data.role // empty')
+  if [[ "$OWNER2_ROLE" != "owner" ]]; then
+    request "OWNER2 /users/complete-owner-profile (upgrade)" 200 "" \
+      -X POST "${OWNER2_AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+      -d "{\"name\":\"Owner2 ${NOW}\",\"position\":\"Founder\",\"country\":\"Ukraine\",\"instagram\":\"https://instagram.com/owner2${NOW}\"}" \
+      "${BASE_URL}/users/complete-owner-profile"
+  fi
 
   request "OWNER2 /showrooms/draft (C)" 200 "" \
     -X POST "${OWNER2_AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
@@ -260,6 +263,14 @@ throttle
 
 if [[ -n "${TEST_OWNER_TOKEN_2:-}" ]]; then
   OWNER2_AUTH_HEADER=(-H "Authorization: Bearer ${TEST_OWNER_TOKEN_2}")
+  OWNER2_ME=$(curl -s "${OWNER2_AUTH_HEADER[@]}" "${BASE_URL}/users/me")
+  OWNER2_ROLE=$(echo "$OWNER2_ME" | jq -r '.data.role // empty')
+  if [[ "$OWNER2_ROLE" != "owner" ]]; then
+    request "OWNER2 /users/complete-owner-profile (upgrade)" 200 "" \
+      -X POST "${OWNER2_AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+      -d "{\"name\":\"Owner2 ${NOW}\",\"position\":\"Founder\",\"country\":\"Ukraine\",\"instagram\":\"https://instagram.com/owner2${NOW}\"}" \
+      "${BASE_URL}/users/complete-owner-profile"
+  fi
 
   request "OWNER2 /showrooms/draft (F)" 200 "" \
     -X POST "${OWNER2_AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
@@ -290,6 +301,14 @@ print_section "Draft does not block global duplicate"
 
 if [[ -n "${TEST_OWNER_TOKEN_2:-}" ]]; then
   OWNER2_AUTH_HEADER=(-H "Authorization: Bearer ${TEST_OWNER_TOKEN_2}")
+  OWNER2_ME=$(curl -s "${OWNER2_AUTH_HEADER[@]}" "${BASE_URL}/users/me")
+  OWNER2_ROLE=$(echo "$OWNER2_ME" | jq -r '.data.role // empty')
+  if [[ "$OWNER2_ROLE" != "owner" ]]; then
+    request "OWNER2 /users/complete-owner-profile (upgrade)" 200 "" \
+      -X POST "${OWNER2_AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+      -d "{\"name\":\"Owner2 ${NOW}\",\"position\":\"Founder\",\"country\":\"Ukraine\",\"instagram\":\"https://instagram.com/owner2${NOW}\"}" \
+      "${BASE_URL}/users/complete-owner-profile"
+  fi
 
   request "POST /showrooms/draft (G)" 200 "" \
     -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \

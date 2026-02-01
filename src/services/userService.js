@@ -2,26 +2,6 @@ import { getFirestoreInstance } from "../config/firebase.js";
 import { ROLES } from "../constants/roles.js";
 
 /**
- * USER → OWNER role request
- */
-export async function requestOwnerRole(userId) {
-    const db = getFirestoreInstance();
-    const ref = db.collection("users").doc(userId);
-
-    await ref.update({
-        roleRequest: {
-            role: ROLES.OWNER,
-            status: "pending",
-            requestedAt: new Date().toISOString(),
-            reviewedAt: null,
-            reviewedBy: null,
-            reason: null,
-        },
-        updatedAt: new Date().toISOString(),
-    });
-}
-
-/**
  * ADMIN → approve OWNER request
  */
 export async function approveOwnerRole(userId, adminId) {

@@ -126,6 +126,15 @@ if [[ "$USER_ROLE" == "user" ]]; then
     -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
     -d '{"name":"Test","country":"Ukraine","type":"multibrand"}' \
     "${BASE_URL}/showrooms/create"
+  NOW=$(date +%s%N)
+  request "USER → POST /users/complete-owner-profile (upgrade)" 200 "" \
+    -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+    -d "{\"name\":\"Owner ${NOW}\",\"position\":\"Founder\",\"country\":\"Ukraine\",\"instagram\":\"https://instagram.com/owner${NOW}\"}" \
+    "${BASE_URL}/users/complete-owner-profile"
+
+  ME_RESPONSE=$(curl -s "${AUTH_HEADER[@]}" "${BASE_URL}/users/me")
+  USER_ROLE=$(echo "$ME_RESPONSE" | jq -r '.data.role')
+  echo "$ME_RESPONSE"
 else
   echo "⚠ Skipping USER RBAC check (role=$USER_ROLE)"
 fi

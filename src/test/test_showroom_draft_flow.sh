@@ -138,8 +138,17 @@ if [[ -z "$USER_ROLE" ]]; then
 fi
 
 if [[ "$USER_ROLE" != "owner" ]]; then
-  echo "⚠ Skipping draft flow tests (role=$USER_ROLE)"
-  exit 0
+  NOW=$(date +%s%N)
+  request "POST /users/complete-owner-profile (upgrade)" 200 "" \
+    -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+    -d "{\"name\":\"Owner ${NOW}\",\"position\":\"Founder\",\"country\":\"Ukraine\",\"instagram\":\"https://instagram.com/owner${NOW}\"}" \
+    "${BASE_URL}/users/complete-owner-profile"
+
+  ME_RESPONSE=$(curl -s "${AUTH_HEADER[@]}" "${BASE_URL}/users/me")
+  USER_ROLE=$(echo "$ME_RESPONSE" | jq -r '.data.role // empty')
+  if [[ "$USER_ROLE" != "owner" ]]; then
+    fail "Expected role=owner after upgrade, got $USER_ROLE"
+  fi
 fi
 
 #####################################
@@ -318,7 +327,7 @@ request "PATCH invalid phone" 400 "PHONE_INVALID" \
   -d '{"contacts":{"phone":"0999999999"}}' \
   "${BASE_URL}/showrooms/$DRAFT_ID"
 
-request_allow_status "PATCH blocked country (RU)" 400 403 "COUNTRY_BLOCKED" \
+request_allow_status "PATCH blocked country (RU)" 403 400 "COUNTRY_BLOCKED" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
   -d '{"country":"Russia"}' \
   "${BASE_URL}/showrooms/$DRAFT_ID"

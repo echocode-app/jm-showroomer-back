@@ -57,6 +57,17 @@ components:
         updatedAt:
           type: string
           format: date-time
+        ownerProfile:
+          type: object
+          nullable: true
+          properties:
+            name:
+              type: string
+            position:
+              type: string
+              nullable: true
+            instagram:
+              type: string
 
     CompleteOnboardingInput:
       type: object
@@ -65,6 +76,20 @@ components:
         country:
           type: string
           description: User country (russia/belarus blocked)
+
+    CompleteOwnerProfileInput:
+      type: object
+      required: [name, country, instagram]
+      properties:
+        name:
+          type: string
+        position:
+          type: string
+          nullable: true
+        country:
+          type: string
+        instagram:
+          type: string
 
 paths:
   /users/me:
@@ -136,16 +161,22 @@ paths:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
 
-  /users/request-owner:
+  /users/complete-owner-profile:
     post:
       tags: [Users]
-      summary: Request owner role
+      summary: Complete owner profile and auto-upgrade to owner
       security:
         - bearerAuth: []
-      x-roles: [user]
+      x-roles: [user, owner]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteOwnerProfileInput'
       responses:
         "200":
-          description: Request submitted
+          description: Owner profile completed
           content:
             application/json:
               schema:
@@ -157,8 +188,17 @@ paths:
                         properties:
                           message:
                             type: string
+                          role:
+                            type: string
+                            example: owner
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
         "403":
-          description: Forbidden
+          description: Country blocked
           content:
             application/json:
               schema:

@@ -19,11 +19,15 @@ final response = await http.get(
 
 1. Onboarding: `POST /users/complete-onboarding` with `country`.
    - blocked countries: russia, belarus → `403 COUNTRY_BLOCKED`
-2. Request OWNER role: `POST /users/request-owner`.
+2. Complete owner profile (auto-upgrade): `POST /users/complete-owner-profile`.
+   - required: `name`, `country`, `instagram` (position optional)
 3. Draft flow (OWNER only):
    - `POST /showrooms/draft` → create/reuse draft
    - `PATCH /showrooms/{id}` → save step-by-step
    - `POST /showrooms/{id}/submit` → status becomes `pending`
+
+Notes:
+- Owner role is granted by `POST /users/complete-owner-profile`.
 
 Required fields for submit:  
 `name`, `type`, `country`, `address`, `city`, `availability`, `contacts.phone`, `contacts.instagram`, `location.lat`, `location.lng`.
@@ -43,7 +47,7 @@ Required fields for submit:
 
 - `GET /users/me`
 - `POST /users/complete-onboarding`
-- `POST /users/request-owner`
+- `POST /users/complete-owner-profile`
 - `POST /showrooms/draft`
 - `PATCH /showrooms/{id}`
 - `POST /showrooms/{id}/submit`

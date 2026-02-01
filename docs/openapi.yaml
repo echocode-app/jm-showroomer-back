@@ -18,8 +18,8 @@ paths:
     $ref: './users.yaml#/paths/~1users~1me'
   /users/complete-onboarding:
     $ref: './users.yaml#/paths/~1users~1complete-onboarding'
-  /users/request-owner:
-    $ref: './users.yaml#/paths/~1users~1request-owner'
+  /users/complete-owner-profile:
+    $ref: './users.yaml#/paths/~1users~1complete-owner-profile'
   /users/dev/register-test:
     $ref: './users.yaml#/paths/~1users~1dev~1register-test'
   /users/dev/make-owner:
@@ -63,6 +63,8 @@ components:
       $ref: './users.yaml#/components/schemas/User'
     CompleteOnboardingInput:
       $ref: './users.yaml#/components/schemas/CompleteOnboardingInput'
+    CompleteOwnerProfileInput:
+      $ref: './users.yaml#/components/schemas/CompleteOwnerProfileInput'
     Contacts:
       $ref: './showrooms.yaml#/components/schemas/Contacts'
     Location:

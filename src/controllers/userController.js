@@ -1,22 +1,17 @@
-import { requestOwnerRole as requestOwnerRoleService } from "../services/userService.js";
 import { isCountryBlocked } from "../constants/countries.js";
 import { ok, fail } from "../utils/apiResponse.js";
 import { getFirestoreInstance } from "../config/firebase.js";
+import {
+    normalizeInstagramUrl,
+    validateInstagramUrl,
+    validateShowroomName,
+} from "../utils/showroomValidation.js";
 
 /**
  * GET current user profile
  */
 export async function getMyProfile(req, res) {
     return ok(res, req.user);
-}
-
-/**
- * REQUEST OWNER ROLE
- */
-export async function requestOwnerRole(req, res) {
-    await requestOwnerRoleService(req.user.uid);
-
-    return ok(res, { message: "Owner role request submitted" });
 }
 
 /**
@@ -48,6 +43,56 @@ export async function completeOnboarding(req, res) {
     });
 
     return ok(res, { message: "Onboarding completed" });
+}
+
+/**
+ * COMPLETE owner profile + auto-upgrade to owner
+ * Required: name, country, instagram. Optional: position.
+ */
+export async function completeOwnerProfile(req, res) {
+    const { name, position = null, country, instagram } = req.body || {};
+
+    const trimmedName = String(name ?? "").trim();
+    const trimmedCountry = String(country ?? "").trim();
+    const trimmedInstagram = String(instagram ?? "").trim();
+
+    if (!trimmedName || !trimmedCountry || !trimmedInstagram) {
+        return fail(res, "VALIDATION_ERROR", "Missing required fields", 400);
+    }
+
+    if (isCountryBlocked(trimmedCountry)) {
+        return fail(res, "COUNTRY_BLOCKED", "Country is not supported", 403);
+    }
+
+    try {
+        validateShowroomName(trimmedName);
+        const normalizedInstagram = normalizeInstagramUrl(trimmedInstagram);
+        validateInstagramUrl(normalizedInstagram);
+
+        const db = getFirestoreInstance();
+        const ref = db.collection("users").doc(req.user.uid);
+
+        const now = new Date().toISOString();
+        const ownerProfile = {
+            name: trimmedName,
+            position: position ? String(position).trim() : null,
+            instagram: normalizedInstagram,
+        };
+
+        await ref.update({
+            name: trimmedName,
+            country: trimmedCountry,
+            onboardingState: "completed",
+            role: "owner",
+            roles: ["owner"],
+            ownerProfile,
+            updatedAt: now,
+        });
+
+        return ok(res, { message: "Owner profile completed", role: "owner" });
+    } catch (err) {
+        return fail(res, err.code || "VALIDATION_ERROR", err.message, err.status || 400);
+    }
 }
 
 /**
