@@ -139,10 +139,17 @@ else
   echo "⚠ Skipping USER RBAC check (role=$USER_ROLE)"
 fi
 
-request "USER → POST /lookbooks/create" 403 "FORBIDDEN" \
-  -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d '{"name":"Test"}' \
-  "${BASE_URL}/lookbooks/create"
+if [[ "$USER_ROLE" == "user" ]]; then
+  request "USER → POST /lookbooks/create" 403 "FORBIDDEN" \
+    -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+    -d '{"name":"Test"}' \
+    "${BASE_URL}/lookbooks/create"
+else
+  request "OWNER → POST /lookbooks/create" 200 "" \
+    -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+    -d '{"name":"Test"}' \
+    "${BASE_URL}/lookbooks/create"
+fi
 
 #####################################
 # OWNER FLOW (SAFE)

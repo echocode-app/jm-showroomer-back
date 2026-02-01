@@ -83,9 +83,11 @@ export async function updateShowroomService(id, data, user) {
 
         EDITABLE_FIELDS.forEach(field => {
             if (data[field] !== undefined && !isEqual(data[field], showroom[field])) {
+                const fromValue = showroom[field];
+                const toValue = data[field];
                 changedFields[field] = {
-                    from: showroom[field],
-                    to: data[field],
+                    from: fromValue === undefined ? null : fromValue,
+                    to: toValue === undefined ? null : toValue,
                 };
                 showroom[field] = data[field];
             }
@@ -129,9 +131,11 @@ export async function updateShowroomService(id, data, user) {
     for (const field of EDITABLE_FIELDS) {
         if (data[field] !== undefined && !isEqual(data[field], showroom[field])) {
             updates[field] = data[field];
+            const fromValue = showroom[field];
+            const toValue = data[field];
             changedFields[field] = {
-                from: showroom[field],
-                to: data[field],
+                from: fromValue === undefined ? null : fromValue,
+                to: toValue === undefined ? null : toValue,
             };
         }
     }
