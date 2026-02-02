@@ -11,6 +11,7 @@ export async function listShowroomsService(filters = {}, user = null) {
         } else if (user.role === "owner") {
             result = result.filter(s => s.ownerUid === user.uid);
             if (filters.status) {
+                if (filters.status === "deleted") return [];
                 result = result.filter(s => s.status === filters.status);
             }
         } else if (user.role === "admin" && filters.status) {
@@ -25,6 +26,9 @@ export async function listShowroomsService(filters = {}, user = null) {
         }
 
         const limit = Number(filters.limit) || 20;
+        if (!user || user.role === "owner") {
+            result = result.filter(s => s.status !== "deleted");
+        }
         return result
             .filter(s => !isCountryBlocked(s.country))
             .slice(0, limit);
@@ -36,6 +40,7 @@ export async function listShowroomsService(filters = {}, user = null) {
     if (!user) {
         query = query.where("status", "==", "approved");
     } else if (user.role === "owner") {
+        if (filters.status === "deleted") return [];
         query = query.where("ownerUid", "==", user.uid);
         if (filters.status) {
             query = query.where("status", "==", filters.status);
@@ -55,7 +60,9 @@ export async function listShowroomsService(filters = {}, user = null) {
     query = query.limit(limit);
 
     const snapshot = await query.get();
-    return snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(s => !isCountryBlocked(s.country));
+    let result = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    if (!user || user.role === "owner") {
+        result = result.filter(s => s.status !== "deleted");
+    }
+    return result.filter(s => !isCountryBlocked(s.country));
 }

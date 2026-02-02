@@ -5,6 +5,7 @@ import {
     listShowroomsService,
     getShowroomByIdService,
     updateShowroomService,
+    deleteShowroomService,
 } from "../services/showroomService.js";
 import { ok } from "../utils/apiResponse.js";
 
@@ -69,6 +70,16 @@ export async function favoriteShowroom(req, res, next) {
 export async function updateShowroom(req, res, next) {
     try {
         const showroom = await updateShowroomService(req.params.id, req.body, req.user);
+        return ok(res, { showroom });
+    } catch (err) {
+        next(err);
+    }
+}
+
+// DELETE (soft)
+export async function deleteShowroom(req, res, next) {
+    try {
+        const showroom = await deleteShowroomService(req.params.id, req.user);
         return ok(res, { showroom });
     } catch (err) {
         next(err);

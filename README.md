@@ -11,10 +11,13 @@ Backend API for the JM Showroomer mobile and web clients. Provides authenticatio
 ## Core Features
 - **Authentication** via Firebase ID tokens (Bearer auth)
 - **RBAC**: guest / user / owner / admin
-- **Showroom lifecycle**: draft → pending → approved / rejected (deleted is filtered)
+- **Showroom lifecycle**: draft → pending → approved / rejected → deleted (soft delete)
 - **Country restrictions**: RU/BY blocked
 - **Anti‑spam & duplicates**: owner‑level and global duplicate checks
-- **Moderation workflow**: submit for review, admin approval/rejection (admin endpoints planned)
+- **Moderation workflow**: submit for review, admin approval/rejection via `/admin` endpoints
+- **Pending lock**: owners cannot edit/delete while status is `pending`
+- **Audit history**: change log with diffs per action (patch/submit/approve/reject/delete)
+- **Soft delete**: status=`deleted`, filtered from public/owner lists
 
 ## Tech Stack
 - Node.js (ESM)

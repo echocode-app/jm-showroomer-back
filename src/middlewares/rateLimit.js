@@ -1,11 +1,23 @@
 import rateLimit from "express-rate-limit";
 
-const DEFAULT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-const DEFAULT_MAX = 100; // 100 requests per window
+const DEFAULT_WINDOW_MS = 15 * 60 * 1000;
+const DEFAULT_MAX = 100;
 
-const rateLimiter = rateLimit({
+const ENV = process.env.NODE_ENV || "dev";
+const RATE_LIMITS = {
+    dev: { windowMs: 5 * 60 * 1000, max: 2000 },
+    test: { windowMs: 5 * 60 * 1000, max: 2000 },
+    prod: { windowMs: DEFAULT_WINDOW_MS, max: 300 },
+};
+
+const { windowMs, max } = RATE_LIMITS[ENV] || {
     windowMs: DEFAULT_WINDOW_MS,
     max: DEFAULT_MAX,
+};
+
+const rateLimiter = rateLimit({
+    windowMs,
+    max,
     message: {
         success: false,
         error: {

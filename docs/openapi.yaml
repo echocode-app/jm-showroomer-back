@@ -38,6 +38,15 @@ paths:
   /showrooms/{id}/favorite:
     $ref: './showrooms.yaml#/paths/~1showrooms~1{id}~1favorite'
 
+  /admin/showrooms:
+    $ref: './admin.yaml#/paths/~1admin~1showrooms'
+  /admin/showrooms/{id}:
+    $ref: './admin.yaml#/paths/~1admin~1showrooms~1{id}'
+  /admin/showrooms/{id}/approve:
+    $ref: './admin.yaml#/paths/~1admin~1showrooms~1{id}~1approve'
+  /admin/showrooms/{id}/reject:
+    $ref: './admin.yaml#/paths/~1admin~1showrooms~1{id}~1reject'
+
   /lookbooks:
     $ref: './lookbooks.yaml#/paths/~1lookbooks'
   /lookbooks/create:

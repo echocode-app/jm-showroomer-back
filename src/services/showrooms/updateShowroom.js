@@ -1,4 +1,3 @@
-import isEqual from "lodash.isequal";
 import { getFirestoreInstance } from "../../config/firebase.js";
 import { badRequest, forbidden, notFound } from "../../core/error.js";
 import { isCountryBlocked } from "../../constants/countries.js";
@@ -11,8 +10,7 @@ import {
     validatePhone,
     validateShowroomName,
 } from "../../utils/showroomValidation.js";
-import { EDITABLE_FIELDS } from "./_constants.js";
-import { isSameCountry } from "./_helpers.js";
+import { appendHistory, buildDiff, isSameCountry, makeHistoryEntry } from "./_helpers.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 
 export async function updateShowroomService(id, data, user) {
@@ -71,7 +69,13 @@ export async function updateShowroomService(id, data, user) {
         const showroom = DEV_STORE.showrooms.find(s => s.id === id);
         if (!showroom) throw notFound("SHOWROOM_NOT_FOUND");
         if (showroom.ownerUid !== user.uid) throw forbidden("ACCESS_DENIED");
-        if (!['draft', 'rejected'].includes(showroom.status)) {
+        if (showroom.status === "pending") {
+            throw badRequest("SHOWROOM_LOCKED_PENDING");
+        }
+        if (showroom.status === "deleted") {
+            throw badRequest("SHOWROOM_NOT_EDITABLE");
+        }
+        if (!['draft', 'rejected', 'approved'].includes(showroom.status)) {
             throw badRequest("SHOWROOM_NOT_EDITABLE");
         }
 
@@ -79,32 +83,31 @@ export async function updateShowroomService(id, data, user) {
             data.contacts = { ...(showroom.contacts || {}), ...data.contacts };
         }
 
-        const changedFields = {};
+        const proposed = { ...showroom, ...data };
+        const { diff, changedFields } = buildDiff(showroom, proposed);
 
-        EDITABLE_FIELDS.forEach(field => {
-            if (data[field] !== undefined && !isEqual(data[field], showroom[field])) {
-                const fromValue = showroom[field];
-                const toValue = data[field];
-                changedFields[field] = {
-                    from: fromValue === undefined ? null : fromValue,
-                    to: toValue === undefined ? null : toValue,
-                };
-                showroom[field] = data[field];
-            }
-        });
-
-        if (Object.keys(changedFields).length === 0) {
+        if (changedFields.length === 0) {
             throw badRequest("NO_FIELDS_TO_UPDATE");
         }
 
+        changedFields.forEach(field => {
+            showroom[field] = diff[field].to;
+        });
+
         showroom.editCount = (showroom.editCount || 0) + 1;
         showroom.updatedAt = new Date().toISOString();
-        showroom.editHistory.push({
-            editorUid: user.uid,
-            editorRole: user.role,
-            timestamp: showroom.updatedAt,
-            changes: changedFields,
-        });
+        showroom.editHistory = appendHistory(
+            showroom.editHistory || [],
+            makeHistoryEntry({
+                action: "patch",
+                actor: user,
+                statusBefore: showroom.status,
+                statusAfter: showroom.status,
+                changedFields,
+                diff,
+                at: showroom.updatedAt,
+            })
+        );
 
         return showroom;
     }
@@ -117,7 +120,13 @@ export async function updateShowroomService(id, data, user) {
 
     const showroom = snap.data();
     if (showroom.ownerUid !== user.uid) throw forbidden("ACCESS_DENIED");
-    if (!['draft', 'rejected'].includes(showroom.status)) {
+    if (showroom.status === "pending") {
+        throw badRequest("SHOWROOM_LOCKED_PENDING");
+    }
+    if (showroom.status === "deleted") {
+        throw badRequest("SHOWROOM_NOT_EDITABLE");
+    }
+    if (!['draft', 'rejected', 'approved'].includes(showroom.status)) {
         throw badRequest("SHOWROOM_NOT_EDITABLE");
     }
 
@@ -125,36 +134,32 @@ export async function updateShowroomService(id, data, user) {
         data.contacts = { ...(showroom.contacts || {}), ...data.contacts };
     }
 
-    const updates = {};
-    const changedFields = {};
+    const proposed = { ...showroom, ...data };
+    const { diff, changedFields } = buildDiff(showroom, proposed);
 
-    for (const field of EDITABLE_FIELDS) {
-        if (data[field] !== undefined && !isEqual(data[field], showroom[field])) {
-            updates[field] = data[field];
-            const fromValue = showroom[field];
-            const toValue = data[field];
-            changedFields[field] = {
-                from: fromValue === undefined ? null : fromValue,
-                to: toValue === undefined ? null : toValue,
-            };
-        }
-    }
-
-    if (Object.keys(updates).length === 0) {
+    if (changedFields.length === 0) {
         throw badRequest("NO_FIELDS_TO_UPDATE");
     }
 
+    const updates = {};
+    changedFields.forEach(field => {
+        updates[field] = diff[field].to;
+    });
+
     updates.editCount = (showroom.editCount || 0) + 1;
     updates.updatedAt = new Date().toISOString();
-    updates.editHistory = [
-        ...(showroom.editHistory || []),
-        {
-            editorUid: user.uid,
-            editorRole: user.role,
-            timestamp: updates.updatedAt,
-            changes: changedFields,
-        },
-    ];
+    updates.editHistory = appendHistory(
+        showroom.editHistory || [],
+        makeHistoryEntry({
+            action: "patch",
+            actor: user,
+            statusBefore: showroom.status,
+            statusAfter: showroom.status,
+            changedFields,
+            diff,
+            at: updates.updatedAt,
+        })
+    );
 
     await ref.update(updates);
     return { id, ...showroom, ...updates };

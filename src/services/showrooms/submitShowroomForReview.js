@@ -7,14 +7,20 @@ import {
     normalizeShowroomName,
 } from "../../utils/showroomValidation.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
-import { isSameCountry } from "./_helpers.js";
+import { appendHistory, buildPendingSnapshot, isSameCountry, makeHistoryEntry } from "./_helpers.js";
 
 export async function submitShowroomForReviewService(id, user) {
     if (useDevMock) {
         const showroom = DEV_STORE.showrooms.find(s => s.id === id);
         if (!showroom) throw notFound("SHOWROOM_NOT_FOUND");
         if (showroom.ownerUid !== user.uid) throw forbidden("ACCESS_DENIED");
-        if (!['draft', 'rejected'].includes(showroom.status)) {
+        if (showroom.status === "pending") {
+            throw badRequest("SHOWROOM_LOCKED_PENDING");
+        }
+        if (showroom.status === "deleted") {
+            throw badRequest("SHOWROOM_NOT_EDITABLE");
+        }
+        if (!['draft', 'rejected', 'approved'].includes(showroom.status)) {
             throw badRequest("SHOWROOM_NOT_EDITABLE");
         }
 
@@ -67,16 +73,29 @@ export async function submitShowroomForReviewService(id, user) {
 
         showroom.nameNormalized = nameNormalized;
         showroom.addressNormalized = addressNormalized;
+        showroom.pendingSnapshot = buildPendingSnapshot(showroom, {
+            nameNormalized,
+            addressNormalized,
+            ownerUid: showroom.ownerUid,
+        });
+        const statusBefore = showroom.status;
         showroom.status = "pending";
         showroom.submittedAt = new Date().toISOString();
         showroom.updatedAt = showroom.submittedAt;
-        showroom.editHistory = showroom.editHistory || [];
-        showroom.editHistory.push({
-            editorUid: user.uid,
-            editorRole: user.role,
-            timestamp: showroom.updatedAt,
-            action: "submit",
-        });
+        showroom.editHistory = appendHistory(
+            showroom.editHistory || [],
+            makeHistoryEntry({
+                action: "submit",
+                actor: user,
+                statusBefore,
+                statusAfter: showroom.status,
+                changedFields: ["status"],
+                diff: {
+                    status: { from: statusBefore, to: showroom.status },
+                },
+                at: showroom.updatedAt,
+            })
+        );
 
         return showroom;
     }
@@ -89,7 +108,13 @@ export async function submitShowroomForReviewService(id, user) {
 
     const showroom = snap.data();
     if (showroom.ownerUid !== user.uid) throw forbidden("ACCESS_DENIED");
-    if (!['draft', 'rejected'].includes(showroom.status)) {
+    if (showroom.status === "pending") {
+        throw badRequest("SHOWROOM_LOCKED_PENDING");
+    }
+    if (showroom.status === "deleted") {
+        throw badRequest("SHOWROOM_NOT_EDITABLE");
+    }
+    if (!['draft', 'rejected', 'approved'].includes(showroom.status)) {
         throw badRequest("SHOWROOM_NOT_EDITABLE");
     }
 
@@ -145,6 +170,7 @@ export async function submitShowroomForReviewService(id, user) {
         throw badRequest("SHOWROOM_DUPLICATE");
     }
 
+    const statusBefore = showroom.status;
     const updatedAt = new Date().toISOString();
     const updates = {
         status: "pending",
@@ -152,15 +178,25 @@ export async function submitShowroomForReviewService(id, user) {
         updatedAt,
         nameNormalized,
         addressNormalized,
-        editHistory: [
-            ...(showroom.editHistory || []),
-            {
-                editorUid: user.uid,
-                editorRole: user.role,
-                timestamp: updatedAt,
+        pendingSnapshot: buildPendingSnapshot(showroom, {
+            nameNormalized,
+            addressNormalized,
+            ownerUid: showroom.ownerUid,
+        }),
+        editHistory: appendHistory(
+            showroom.editHistory || [],
+            makeHistoryEntry({
                 action: "submit",
-            },
-        ],
+                actor: user,
+                statusBefore,
+                statusAfter: "pending",
+                changedFields: ["status"],
+                diff: {
+                    status: { from: statusBefore, to: "pending" },
+                },
+                at: updatedAt,
+            })
+        ),
     };
 
     await ref.update(updates);

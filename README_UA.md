@@ -12,7 +12,7 @@
 ## Що вже виконано
 - **Авторизація через Firebase ID token**.
 - **Онбординг користувача** з перевіркою країни.
-- **Ролі**: guest → user → owner (admin — у плані).
+- **Ролі**: guest | user | owner | admin.
 - **Showroom draft flow**:
   - створення чернетки,
   - збереження по кроках,
@@ -77,9 +77,10 @@
 
 **Статуси:**
 - `draft` — чернетка (редагується),
-- `pending` — відправлено на модерацію,
+- `pending` — відправлено на модерацію (owner не може редагувати/видаляти),
 - `approved` — підтверджено,
-- `rejected` — відхилено (можна виправити та відправити знову).
+- `rejected` — відхилено (можна виправити та відправити знову),
+- `deleted` — soft delete (приховано з публічних/owner списків).
 **Модерується лише шоурум, не користувач.**
 
 ### 5) Валідації
@@ -94,8 +95,17 @@
 ## Бізнес‑логіка доступу
 - **guest:** тільки перегляд approved шоурумів.
 - **user:** проходить онбординг, може заповнити owner‑профіль і стати owner.
-- **owner:** створює та редагує свої шоуруми, відправляє на модерацію.
-- **admin:** у майбутньому — модерація шоурумів та ролей.
+- **owner:** створює та редагує свої шоуруми (draft/rejected/approved), відправляє на модерацію; не може PATCH/DELETE під час pending.
+- **admin:** модерація шоурумів (approve/reject), перегляд усіх статусів, soft delete у будь‑якому статусі.
+
+## Модерація (admin)
+- `POST /admin/showrooms/{id}/approve` — approve pending
+- `POST /admin/showrooms/{id}/reject` — reject pending (body: `{ reason: string }`)
+- `DELETE /admin/showrooms/{id}` — soft delete any
+
+## Аудит і зміни
+- Кожна дія (patch/submit/approve/reject/delete) додається в `editHistory` з diff.
+- На submit створюється `pendingSnapshot` для незмінної перевірки.
 
 ## Де дивитися повний контракт API
 - `docs/openapi.yaml`

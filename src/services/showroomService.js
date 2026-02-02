@@ -4,3 +4,6 @@ export { listShowroomsService } from "./showrooms/listShowrooms.js";
 export { getShowroomByIdService } from "./showrooms/getShowroomById.js";
 export { updateShowroomService } from "./showrooms/updateShowroom.js";
 export { submitShowroomForReviewService } from "./showrooms/submitShowroomForReview.js";
+export { deleteShowroomService } from "./showrooms/deleteShowroom.js";
+export { approveShowroomService } from "./showrooms/approveShowroom.js";
+export { rejectShowroomService } from "./showrooms/rejectShowroom.js";

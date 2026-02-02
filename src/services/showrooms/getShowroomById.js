@@ -8,6 +8,13 @@ export async function getShowroomByIdService(id, user = null) {
         if (!showroom) throw notFound("SHOWROOM_NOT_FOUND");
 
         if (
+            showroom.status === "deleted" &&
+            (!user || (user.uid !== showroom.ownerUid && user.role !== "admin"))
+        ) {
+            throw forbidden("ACCESS_DENIED");
+        }
+
+        if (
             showroom.status !== "approved" &&
             (!user || (user.uid !== showroom.ownerUid && user.role !== "admin"))
         ) {
@@ -22,6 +29,13 @@ export async function getShowroomByIdService(id, user = null) {
     if (!doc.exists) throw notFound("SHOWROOM_NOT_FOUND");
 
     const showroom = doc.data();
+
+    if (
+        showroom.status === "deleted" &&
+        (!user || (user.uid !== showroom.ownerUid && user.role !== "admin"))
+    ) {
+        throw forbidden("ACCESS_DENIED");
+    }
 
     if (
         showroom.status !== "approved" &&

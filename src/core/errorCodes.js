@@ -23,6 +23,8 @@ export const ERROR_STATUS = {
     SHOWROOM_NAME_ALREADY_EXISTS: 400,
     SHOWROOM_DUPLICATE: 400,
     NO_FIELDS_TO_UPDATE: 400,
+    SHOWROOM_LOCKED_PENDING: 409,
+    SHOWROOM_PENDING_SNAPSHOT_MISSING: 409,
 
     LOAD_USER_ERROR: 500,
     AUTH_ERROR: 500,
@@ -38,6 +40,8 @@ export const ERROR_MESSAGE = {
     USER_NOT_FOUND: "User profile not found",
     NOT_FOUND: "Not found",
     VALIDATION_ERROR: "Validation error",
+    SHOWROOM_LOCKED_PENDING: "Showroom is under review",
+    SHOWROOM_PENDING_SNAPSHOT_MISSING: "Pending snapshot missing; cannot approve",
 };
 
 export function getStatusForCode(code) {

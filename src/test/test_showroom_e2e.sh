@@ -183,6 +183,7 @@ fi
 #####################################
 print_section "Draft flow"
 NAME_MAIN="My Showroom 01 ${NOW}"
+ADDRESS_MAIN="Kyiv, Khreshchatyk ${NOW}"
 request "POST /showrooms/draft" 200 "" \
   -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
   -d '{}' \
@@ -226,7 +227,7 @@ request "PATCH step2 (country/availability)" 200 "" \
 
 request "PATCH step3 (address/city/location)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d "{\"address\":\"Kyiv, Khreshchatyk ${NOW}\",\"city\":\"Kyiv\",\"location\":{\"lat\":50.45,\"lng\":30.52}}" \
+  -d "{\"address\":\"${ADDRESS_MAIN}\",\"city\":\"Kyiv\",\"location\":{\"lat\":50.45,\"lng\":30.52}}" \
   "${BASE_URL}/showrooms/$SHOWROOM_ID"
 
 request "PATCH step4 (contacts)" 200 "" \
@@ -271,7 +272,7 @@ request "POST /showrooms/{id}/submit" 200 "" \
 SUBMIT_STATUS=$(echo "$BODY" | jq -r '.data.showroom.status // empty')
 assert_eq "$SUBMIT_STATUS" "pending" "status"
 
-request "PATCH pending showroom" 400 "SHOWROOM_NOT_EDITABLE" \
+request "PATCH pending showroom" 409 "SHOWROOM_LOCKED_PENDING" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
   -d '{"name":"Should Fail"}' \
   "${BASE_URL}/showrooms/$SHOWROOM_ID"
@@ -291,7 +292,7 @@ assert_non_empty "$SECOND_ID" "second showroom id"
 
 request "PATCH second showroom (set duplicate name)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d "{\"name\":\"${NAME_MAIN}\",\"availability\":\"open\",\"address\":\"Kyiv, Khreshchatyk 1\",\"city\":\"Kyiv\",\"location\":{\"lat\":50.45,\"lng\":30.52},\"contacts\":{\"phone\":\"+380999111223\",\"instagram\":\"https://instagram.com/myshowroom\"}}" \
+  -d "{\"name\":\"${NAME_MAIN}\",\"availability\":\"open\",\"address\":\"${ADDRESS_MAIN}\",\"city\":\"Kyiv\",\"location\":{\"lat\":50.45,\"lng\":30.52},\"contacts\":{\"phone\":\"+380999111223\",\"instagram\":\"https://instagram.com/myshowroom\"}}" \
   "${BASE_URL}/showrooms/$SECOND_ID"
 
 request "POST /showrooms/{id}/submit (owner duplicate name)" 400 "SHOWROOM_NAME_ALREADY_EXISTS" \
@@ -314,7 +315,7 @@ if [[ -n "${TEST_OWNER_TOKEN_2:-}" ]]; then
 
   request "OWNER2 → PATCH draft (duplicate name+address)" 200 "" \
     -X PATCH "${OWNER2_AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-    -d '{"name":"My Showroom 01","type":"multibrand","country":"Ukraine","availability":"open","address":"Kyiv, Khreshchatyk 1","city":"Kyiv","location":{"lat":50.45,"lng":30.52},"contacts":{"phone":"+380999111223","instagram":"https://instagram.com/myshowroom"}}' \
+    -d "{\"name\":\"${NAME_MAIN}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"availability\":\"open\",\"address\":\"${ADDRESS_MAIN}\",\"city\":\"Kyiv\",\"location\":{\"lat\":50.45,\"lng\":30.52},\"contacts\":{\"phone\":\"+380999111223\",\"instagram\":\"https://instagram.com/myshowroom\"}}" \
     "${BASE_URL}/showrooms/$OWNER2_ID"
 
   request "OWNER2 → POST /showrooms/{id}/submit (duplicate)" 400 "SHOWROOM_DUPLICATE" \

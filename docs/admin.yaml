@@ -1,1 +1,174 @@
-paths: {}
+paths:
+  /admin/showrooms:
+    get:
+      tags: [Admin]
+      summary: List showrooms (admin)
+      description: Includes pending and deleted.
+      security:
+        - bearerAuth: []
+      x-roles: [admin]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: country
+          in: query
+          schema:
+            type: string
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: availability
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Showrooms list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          showrooms:
+                            type: array
+                            items:
+                              $ref: './showrooms.yaml#/components/schemas/Showroom'
+
+  /admin/showrooms/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Showroom ID
+    get:
+      tags: [Admin]
+      summary: Get showroom by ID (admin)
+      security:
+        - bearerAuth: []
+      x-roles: [admin]
+      responses:
+        "200":
+          description: Showroom
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          showroom:
+                            $ref: './showrooms.yaml#/components/schemas/Showroom'
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+    delete:
+      tags: [Admin]
+      summary: Soft delete showroom (admin)
+      security:
+        - bearerAuth: []
+      x-roles: [admin]
+      responses:
+        "200":
+          description: Showroom deleted
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          showroom:
+                            $ref: './showrooms.yaml#/components/schemas/Showroom'
+
+  /admin/showrooms/{id}/approve:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Showroom ID
+    post:
+      tags: [Admin]
+      summary: Approve showroom
+      security:
+        - bearerAuth: []
+      x-roles: [admin]
+      responses:
+        "200":
+          description: Showroom approved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          showroom:
+                            $ref: './showrooms.yaml#/components/schemas/Showroom'
+
+  /admin/showrooms/{id}/reject:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Showroom ID
+    post:
+      tags: [Admin]
+      summary: Reject showroom
+      security:
+        - bearerAuth: []
+      x-roles: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+      responses:
+        "200":
+          description: Showroom rejected
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          showroom:
+                            $ref: './showrooms.yaml#/components/schemas/Showroom'

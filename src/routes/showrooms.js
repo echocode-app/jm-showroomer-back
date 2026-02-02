@@ -16,6 +16,7 @@ import {
     getShowroomById,
     favoriteShowroom,
     updateShowroom,
+    deleteShowroom,
     submitShowroomForReviewController,
 } from "../controllers/showroomController.js";
 
@@ -63,6 +64,15 @@ router.patch(
     blockRestrictedCountries,
     schemaValidate({ body: showroomUpdateSchema }),
     updateShowroom
+);
+
+// DELETE (soft)
+router.delete(
+    "/:id",
+    authMiddleware,
+    loadUser,
+    requireRole([ROLES.OWNER]),
+    deleteShowroom
 );
 
 // SUBMIT

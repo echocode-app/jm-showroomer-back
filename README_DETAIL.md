@@ -25,9 +25,14 @@ final response = await http.get(
    - `POST /showrooms/draft` → create/reuse draft
    - `PATCH /showrooms/{id}` → save step-by-step
    - `POST /showrooms/{id}/submit` → status becomes `pending`
+   - `DELETE /showrooms/{id}` → soft delete (not allowed while pending)
 
 Notes:
 - Owner role is granted by `POST /users/complete-owner-profile`.
+- Owner can edit `approved` showrooms and submit changes again.
+- When status is `pending`, owner cannot PATCH/DELETE (review freeze).
+- Soft delete sets status=`deleted` and hides from public/owner lists.
+- Each action appends to `editHistory` with before/after diff (audit log).
 
 Required fields for submit:  
 `name`, `type`, `country`, `address`, `city`, `availability`, `contacts.phone`, `contacts.instagram`, `location.lat`, `location.lng`.
@@ -51,3 +56,10 @@ Required fields for submit:
 - `POST /showrooms/draft`
 - `PATCH /showrooms/{id}`
 - `POST /showrooms/{id}/submit`
+- `DELETE /showrooms/{id}`
+
+## Admin moderation
+
+- `POST /admin/showrooms/{id}/approve`
+- `POST /admin/showrooms/{id}/reject` (body: `{ reason: string }`)
+- `DELETE /admin/showrooms/{id}` (soft delete any)

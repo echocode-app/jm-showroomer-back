@@ -352,7 +352,7 @@ assert_non_empty "$SUBMITTED_AT" "submittedAt"
 # LOCK EDITING AFTER SUBMIT
 #####################################
 print_section "Lock after submit"
-request "PATCH pending showroom" 400 "SHOWROOM_NOT_EDITABLE" \
+request "PATCH pending showroom" 409 "SHOWROOM_LOCKED_PENDING" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
   -d '{"name":"Should Fail"}' \
   "${BASE_URL}/showrooms/$DRAFT_ID"
@@ -383,10 +383,10 @@ request "POST /showrooms/{id}/submit (owner duplicate name)" 400 "SHOWROOM_NAME_
 #####################################
 # DUPLICATE CHECKS (GLOBAL)
 #####################################
-if [[ -n "${SECOND_OWNER_TOKEN:-}" ]]; then
+if [[ -n "${TEST_OWNER_TOKEN_2:-}" ]]; then
   print_section "Duplicate checks (global)"
 
-  OTHER_AUTH_HEADER=(-H "Authorization: Bearer ${SECOND_OWNER_TOKEN}")
+  OTHER_AUTH_HEADER=(-H "Authorization: Bearer ${TEST_OWNER_TOKEN_2}")
 
   request "POST /showrooms/create (other owner draft)" 200 "" \
     -X POST "${OTHER_AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
@@ -398,7 +398,7 @@ if [[ -n "${SECOND_OWNER_TOKEN:-}" ]]; then
 
   request "PATCH other draft (complete fields, duplicate name+address)" 200 "" \
     -X PATCH "${OTHER_AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-    -d '{"name":"My Showroom 01","type":"multibrand","country":"Ukraine","availability":"open","address":"Kyiv, Khreshchatyk 1","city":"Kyiv","location":{"lat":50.45,"lng":30.52},"contacts":{"phone":"+380999111223","instagram":"https://instagram.com/newhandle"}}' \
+    -d "{\"name\":\"${SUBMITTED_NAME}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"availability\":\"open\",\"address\":\"${SUBMITTED_ADDRESS}\",\"city\":\"Kyiv\",\"location\":{\"lat\":50.45,\"lng\":30.52},\"contacts\":{\"phone\":\"+380999111223\",\"instagram\":\"https://instagram.com/newhandle\"}}" \
     "${BASE_URL}/showrooms/$OTHER_ID"
 
   request "POST /showrooms/{id}/submit (global duplicate)" 400 "SHOWROOM_DUPLICATE" \
@@ -406,7 +406,7 @@ if [[ -n "${SECOND_OWNER_TOKEN:-}" ]]; then
     -d '{}' \
     "${BASE_URL}/showrooms/$OTHER_ID/submit"
 else
-  echo "⚠ Skipping global duplicate test (SECOND_OWNER_TOKEN not set)"
+  echo "⚠ Skipping global duplicate test (TEST_OWNER_TOKEN_2 not set)"
 fi
 
 #####################################

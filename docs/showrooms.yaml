@@ -69,18 +69,61 @@ components:
           items:
             type: object
             properties:
-              editorUid:
-                type: string
-              editorRole:
-                type: string
-              timestamp:
-                type: string
-                format: date-time
-              changes:
-                type: object
-                additionalProperties: true
               action:
                 type: string
+              at:
+                type: string
+                format: date-time
+              actor:
+                type: object
+                properties:
+                  uid:
+                    type: string
+                  role:
+                    type: string
+              statusBefore:
+                type: string
+              statusAfter:
+                type: string
+              changedFields:
+                type: array
+                items:
+                  type: string
+              diff:
+                type: object
+                additionalProperties: true
+        pendingSnapshot:
+          type: object
+          nullable: true
+          description: Immutable snapshot for pending review
+          additionalProperties: true
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+        deletedBy:
+          type: object
+          nullable: true
+          properties:
+            uid:
+              type: string
+            role:
+              type: string
+        reviewedAt:
+          type: string
+          format: date-time
+          nullable: true
+        reviewedBy:
+          type: object
+          nullable: true
+          properties:
+            uid:
+              type: string
+            role:
+              type: string
+        reviewReason:
+          type: string
+          nullable: true
         createdAt:
           type: string
           format: date-time
@@ -361,7 +404,7 @@ paths:
       tags: [Showrooms]
       summary: Update showroom
       description: |
-        Only owner can edit, only for draft/rejected.
+        Only owner can edit, only for draft/rejected/approved. Pending is locked.
       security:
         - bearerAuth: []
       x-roles: [owner]
@@ -404,6 +447,29 @@ paths:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
 
+    delete:
+      tags: [Showrooms]
+      summary: Soft delete showroom (owner)
+      description: |
+        Only owner can delete, only for draft/rejected/approved. Pending is locked.
+      security:
+        - bearerAuth: []
+      x-roles: [owner]
+      responses:
+        "200":
+          description: Showroom deleted
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          showroom:
+                            $ref: '#/components/schemas/Showroom'
+
   /showrooms/{id}/submit:
     parameters:
       - name: id
@@ -416,7 +482,7 @@ paths:
       tags: [Showrooms]
       summary: Submit showroom for review
       description: |
-        Submits a draft/rejected showroom for moderation.
+        Submits a draft/rejected/approved showroom for moderation.
         Status becomes pending and submittedAt is set.
       security:
         - bearerAuth: []

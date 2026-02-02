@@ -135,6 +135,11 @@ request "PATCH A (valid fields)" 200 "" \
   -d "{\"name\":\"${NAME_A}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"availability\":\"open\",\"address\":\"${ADDRESS_A}\",\"city\":\"Kyiv\",\"location\":{\"lat\":50.45,\"lng\":30.52},\"contacts\":{\"phone\":\"+380999111223\",\"instagram\":\"https://instagram.com/showroom${NOW}\"}}" \
   "${BASE_URL}/showrooms/$SHOWROOM_A_ID"
 
+NAME_A_USED=$(echo "$BODY" | jq -r '.data.showroom.name // empty')
+ADDRESS_A_USED=$(echo "$BODY" | jq -r '.data.showroom.address // empty')
+assert_non_empty "$NAME_A_USED" "name A used"
+assert_non_empty "$ADDRESS_A_USED" "address A used"
+
 request "SUBMIT A" 200 "" \
   -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
   -d '{}' \
@@ -189,7 +194,7 @@ if [[ -n "${TEST_OWNER_TOKEN_2:-}" ]]; then
 
   request "OWNER2 PATCH C (duplicate)" 200 "" \
     -X PATCH "${OWNER2_AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-    -d "{\"name\":\"${NAME_A}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"availability\":\"open\",\"address\":\"${ADDRESS_A}\",\"city\":\"Kyiv\",\"location\":{\"lat\":50.45,\"lng\":30.52},\"contacts\":{\"phone\":\"+380999111223\",\"instagram\":\"https://instagram.com/showroom${NOW}\"}}" \
+    -d "{\"name\":\"${NAME_A_USED}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"availability\":\"open\",\"address\":\"${ADDRESS_A_USED}\",\"city\":\"Kyiv\",\"location\":{\"lat\":50.45,\"lng\":30.52},\"contacts\":{\"phone\":\"+380999111223\",\"instagram\":\"https://instagram.com/showroom${NOW}\"}}" \
     "${BASE_URL}/showrooms/$SHOWROOM_C_ID"
 
   request "OWNER2 SUBMIT C (duplicate)" 400 "SHOWROOM_DUPLICATE" \
