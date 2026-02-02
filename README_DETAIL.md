@@ -28,6 +28,7 @@ final response = await http.get(
    - `DELETE /showrooms/{id}` → soft delete (not allowed while pending)
 
 Notes:
+
 - Owner role is granted by `POST /users/complete-owner-profile`.
 - Owner can edit `approved` showrooms and submit changes again.
 - When status is `pending`, owner cannot PATCH/DELETE (review freeze).
@@ -63,3 +64,34 @@ Required fields for submit:
 - `POST /admin/showrooms/{id}/approve`
 - `POST /admin/showrooms/{id}/reject` (body: `{ reason: string }`)
 - `DELETE /admin/showrooms/{id}` (soft delete any)
+
+---
+
+API Table (actual)
+
+| Scope       | Method | Endpoint                      | Roles / Notes                                                                           |
+| ----------- | ------ | ----------------------------- | --------------------------------------------------------------------------------------- |
+| Health      | GET    | /health                       | Public. Service health check.                                                           |
+| Auth        | POST   | /auth/oauth                   | Public. Firebase ID token (Google OAuth).                                               |
+| Auth        | POST   | /auth/apple                   | Public. Stub (501).                                                                     |
+| Users       | GET    | /users/me                     | Authenticated only. Returns current profile.                                            |
+| Users       | POST   | /users/complete-onboarding    | Authenticated only. Finishes onboarding flow.                                           |
+| Users       | POST   | /users/complete-owner-profile | USER/OWNER. Upgrades to OWNER; requires schema validation.                              |
+| Users (Dev) | POST   | /users/dev/register-test      | Dev/Test only. Creates mock user.                                                       |
+| Users (Dev) | POST   | /users/dev/make-owner         | Dev/Test only. Upgrades current user to OWNER.                                          |
+| Showrooms   | GET    | /showrooms                    | Public: approved only. OWNER: own (excludes deleted). ADMIN: all; can filter by status. |
+| Showrooms   | POST   | /showrooms/create             | OWNER/MANAGER. Creates showroom. `?mode=draft` to create draft.                         |
+| Showrooms   | POST   | /showrooms/draft              | OWNER only. Create/reuse draft.                                                         |
+| Showrooms   | GET    | /showrooms/{id}               | Public for approved; OWNER/ADMIN for own/any (incl pending/deleted).                    |
+| Showrooms   | PATCH  | /showrooms/{id}               | OWNER only (own). Draft/rejected/approved; blocked while pending.                       |
+| Showrooms   | DELETE | /showrooms/{id}               | OWNER only (own). Soft delete; blocked while pending.                                   |
+| Showrooms   | POST   | /showrooms/{id}/submit        | OWNER only (own). Draft/rejected/approved → pending.                                    |
+| Showrooms   | POST   | /showrooms/{id}/favorite      | Authenticated users. Stub.                                                              |
+| Admin       | GET    | /admin/showrooms              | ADMIN only. List all (incl pending/deleted).                                            |
+| Admin       | GET    | /admin/showrooms/{id}         | ADMIN only. Get any showroom (incl deleted).                                            |
+| Admin       | POST   | /admin/showrooms/{id}/approve | ADMIN only. Pending → approved.                                                         |
+| Admin       | POST   | /admin/showrooms/{id}/reject  | ADMIN only. Pending → rejected (body: { reason }).                                      |
+| Admin       | DELETE | /admin/showrooms/{id}         | ADMIN only. Soft delete any status.                                                     |
+| Lookbooks   | GET    | /lookbooks                    | Public. Stub.                                                                           |
+| Lookbooks   | POST   | /lookbooks/create             | OWNER/MANAGER. Stub.                                                                    |
+| Lookbooks   | POST   | /lookbooks/{id}/rsvp          | Authenticated users. Stub.                                                              |
