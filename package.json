@@ -4,7 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --recursive src/test/**/*.test.js --timeout 5000",
+    "test": "npm run test:e2e",
+    "test:smoke": "NODE_ENV=test ./src/test/test_smoke.sh",
+    "test:showrooms": "NODE_ENV=test ./src/test/test_showrooms.sh",
+    "test:admin": "NODE_ENV=test ./src/test/test_admin_and_collections.sh",
+    "test:e2e": "npm run test:smoke && npm run test:showrooms && npm run test:admin",
     "dev": "NODE_ENV=dev nodemon src/core/server.js",
     "start": "NODE_ENV=prod node src/core/server.js"
   },

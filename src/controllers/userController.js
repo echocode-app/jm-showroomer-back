@@ -1,10 +1,18 @@
 import { isCountryBlocked, normalizeCountry } from "../constants/countries.js";
 import { ok, fail } from "../utils/apiResponse.js";
-import { getFirestoreInstance } from "../config/firebase.js";
 import {
     normalizeInstagramUrl,
     validateInstagramUrl,
 } from "../utils/showroomValidation.js";
+import {
+    updateUserOnboarding,
+    updateOwnerProfile,
+    updateUserProfileDoc,
+    makeOwnerDevUser,
+    ownerHasActiveShowrooms,
+    ownerHasLookbooks,
+    ownerHasEvents,
+} from "../services/users/profileService.js";
 
 // getMyProfile
 export async function getMyProfile(req, res) {
@@ -27,14 +35,7 @@ export async function completeOnboarding(req, res) {
         return ok(res, { message: "Onboarding already completed" });
     }
 
-    const db = getFirestoreInstance();
-    const ref = db.collection("users").doc(req.user.uid);
-
-    await ref.update({
-        country,
-        onboardingState: "completed",
-        updatedAt: new Date().toISOString(),
-    });
+    await updateUserOnboarding(req.user.uid, country);
 
     return ok(res, { message: "Onboarding completed" });
 }
@@ -59,9 +60,6 @@ export async function completeOwnerProfile(req, res) {
         const normalizedInstagram = normalizeInstagramUrl(trimmedInstagram);
         validateInstagramUrl(normalizedInstagram);
 
-        const db = getFirestoreInstance();
-        const ref = db.collection("users").doc(req.user.uid);
-
         const now = new Date().toISOString();
         const ownerProfile = {
             name: trimmedName,
@@ -69,12 +67,9 @@ export async function completeOwnerProfile(req, res) {
             instagram: normalizedInstagram,
         };
 
-        await ref.update({
+        await updateOwnerProfile(req.user.uid, {
             name: trimmedName,
             country: trimmedCountry,
-            onboardingState: "completed",
-            role: "owner",
-            roles: ["owner"],
             ownerProfile,
             updatedAt: now,
         });
@@ -83,37 +78,6 @@ export async function completeOwnerProfile(req, res) {
     } catch (err) {
         return fail(res, err.code || "VALIDATION_ERROR", err.message, err.status || 400);
     }
-}
-
-// ownerHasActiveShowrooms
-async function ownerHasActiveShowrooms(db, ownerUid) {
-    const snapshot = await db
-        .collection("showrooms")
-        .where("ownerUid", "==", ownerUid)
-        .where("status", "in", ["draft", "pending", "approved", "rejected"])
-        .limit(1)
-        .get();
-    return !snapshot.empty;
-}
-
-// ownerHasLookbooks
-async function ownerHasLookbooks(db, ownerUid) {
-    const snapshot = await db
-        .collection("lookbooks")
-        .where("owner", "==", ownerUid)
-        .limit(1)
-        .get();
-    return !snapshot.empty;
-}
-
-// ownerHasEvents
-async function ownerHasEvents(db, ownerUid) {
-    const snapshot = await db
-        .collection("events")
-        .where("owner", "==", ownerUid)
-        .limit(1)
-        .get();
-    return !snapshot.empty;
 }
 
 // updateUserProfile
@@ -152,11 +116,10 @@ export async function updateUserProfile(req, res) {
             req.user?.role === "owner" &&
             normalizeCountry(trimmedCountry) !== normalizeCountry(currentCountry)
         ) {
-            const db = getFirestoreInstance();
             const [hasShowrooms, hasLookbooks, hasEvents] = await Promise.all([
-                ownerHasActiveShowrooms(db, req.user.uid),
-                ownerHasLookbooks(db, req.user.uid),
-                ownerHasEvents(db, req.user.uid),
+                ownerHasActiveShowrooms(req.user.uid),
+                ownerHasLookbooks(req.user.uid),
+                ownerHasEvents(req.user.uid),
             ]);
 
             if (hasShowrooms || hasLookbooks || hasEvents) {
@@ -214,9 +177,7 @@ export async function updateUserProfile(req, res) {
 
     updates.updatedAt = now;
 
-    const db = getFirestoreInstance();
-    const ref = db.collection("users").doc(req.user.uid);
-    await ref.update(updates);
+    await updateUserProfileDoc(req.user.uid, updates);
 
     return ok(res, { message: "Profile updated" });
 }
@@ -227,14 +188,7 @@ export async function makeOwnerDev(req, res) {
         return fail(res, "NOT_FOUND", "Not found", 404);
     }
 
-    const db = getFirestoreInstance();
-    const ref = db.collection("users").doc(req.user.uid);
-
-    await ref.update({
-        role: "owner",
-        roles: ["owner"],
-        updatedAt: new Date().toISOString(),
-    });
+    await makeOwnerDevUser(req.user.uid);
 
     return ok(res, { role: "owner" });
 }
