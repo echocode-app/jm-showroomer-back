@@ -47,10 +47,12 @@ export const ERROR_MESSAGE = {
         "To change country, delete your showrooms and lookbooks or create a new account",
 };
 
+// getStatusForCode
 export function getStatusForCode(code) {
     return ERROR_STATUS[code];
 }
 
+// getMessageForCode
 export function getMessageForCode(code, fallback) {
     return ERROR_MESSAGE[code] ?? fallback ?? code;
 }

@@ -2,6 +2,7 @@ import { getFirestoreInstance } from "../../config/firebase.js";
 import { forbidden, notFound } from "../../core/error.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 
+// getShowroomByIdService
 export async function getShowroomByIdService(id, user = null) {
     if (useDevMock) {
         const showroom = DEV_STORE.showrooms.find(s => s.id === id);

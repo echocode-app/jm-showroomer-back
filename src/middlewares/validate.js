@@ -1,5 +1,6 @@
 import { fail } from "../utils/apiResponse.js";
 
+// validateBody
 export function validateBody(fields) {
     return (req, res, next) => {
         for (const field of fields) {
@@ -11,6 +12,7 @@ export function validateBody(fields) {
     };
 }
 
+// validateParam
 export function validateParam(paramName) {
     return (req, res, next) => {
         if (!req.params[paramName]) {

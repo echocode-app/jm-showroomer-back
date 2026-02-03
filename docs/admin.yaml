@@ -133,6 +133,30 @@ paths:
                         properties:
                           showroom:
                             $ref: './showrooms.yaml#/components/schemas/Showroom'
+        "400":
+          description: Not editable (must be pending)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "409":
+          description: Pending snapshot missing
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
 
   /admin/showrooms/{id}/reject:
     parameters:
@@ -172,3 +196,21 @@ paths:
                         properties:
                           showroom:
                             $ref: './showrooms.yaml#/components/schemas/Showroom'
+        "400":
+          description: Validation error or not editable (must be pending)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'

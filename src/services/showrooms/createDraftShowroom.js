@@ -1,6 +1,7 @@
 import { getFirestoreInstance } from "../../config/firebase.js";
 import { DEV_STORE, generateId, useDevMock } from "./_store.js";
 
+// createDraftShowroom
 export async function createDraftShowroom(ownerUid) {
     if (useDevMock) {
         const existing = DEV_STORE.showrooms.find(

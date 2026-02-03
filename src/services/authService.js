@@ -1,6 +1,7 @@
 import { getAuthInstance, getFirestoreInstance } from "../config/firebase.js";
 import { isCountryBlocked } from "../constants/countries.js";
 
+// verifyOAuthToken
 export async function verifyOAuthToken(idToken) {
     if (!idToken) {
         const err = new Error("Missing idToken");

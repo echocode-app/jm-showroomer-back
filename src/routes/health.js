@@ -3,6 +3,7 @@ import { log } from "../config/logger.js";
 
 const router = Router();
 
+// ROUTE GET /
 router.get("/", (req, res) => {
   log.success("Health check endpoint called ✅");
   res.json({

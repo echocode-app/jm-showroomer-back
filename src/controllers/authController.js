@@ -1,6 +1,7 @@
 import { verifyOAuthToken } from "../services/authService.js";
 import { ok, fail } from "../utils/apiResponse.js";
 
+// oauthLogin
 export async function oauthLogin(req, res, next) {
     try {
         const { idToken } = req.body;

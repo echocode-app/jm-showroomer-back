@@ -1,6 +1,7 @@
 import { getAuthInstance, getFirestoreInstance } from "../config/firebase.js";
 import { fail } from "../utils/apiResponse.js";
 
+// authMiddleware
 export async function authMiddleware(req, res, next) {
     try {
         const header = req.headers.authorization;

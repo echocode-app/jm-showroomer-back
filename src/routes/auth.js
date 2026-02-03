@@ -13,11 +13,3 @@ router.post("/apple", (req, res) => {
 });
 
 export default router;
-
-// POST /auth/oauth
-// Content-Type: application/json
-// {
-//   "idToken": "<FIREBASE_ID_TOKEN>"
-// }
-
-// Authorization: Bearer <idToken>

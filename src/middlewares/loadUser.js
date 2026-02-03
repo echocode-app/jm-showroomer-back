@@ -1,6 +1,7 @@
 import { getFirestoreInstance } from "../config/firebase.js";
 import { fail } from "../utils/apiResponse.js";
 
+// loadUser
 export async function loadUser(req, res, next) {
     try {
         if (!req.auth) {

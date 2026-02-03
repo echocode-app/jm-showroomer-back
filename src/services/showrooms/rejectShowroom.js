@@ -3,6 +3,7 @@ import { badRequest, forbidden, notFound } from "../../core/error.js";
 import { appendHistory, makeHistoryEntry } from "./_helpers.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 
+// rejectShowroomService
 export async function rejectShowroomService(id, reason, user) {
     if (user?.role !== "admin") {
         throw forbidden("ACCESS_DENIED");

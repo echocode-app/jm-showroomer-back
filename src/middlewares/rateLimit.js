@@ -44,7 +44,9 @@ export function createRateLimiter() {
  * Custom input sanitization for Firebase/Firestore
  * Removes potentially dangerous characters and patterns
  */
+// sanitizeInput
 export function sanitizeInput(req, res, next) {
+// sanitize
     const sanitize = (obj, depth = 0) => {
         if (depth > 5) return obj;
         if (!obj || typeof obj !== "object") return obj;

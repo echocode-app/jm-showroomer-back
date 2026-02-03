@@ -6,17 +6,12 @@ import {
     validateInstagramUrl,
 } from "../utils/showroomValidation.js";
 
-/**
- * GET current user profile
- */
+// getMyProfile
 export async function getMyProfile(req, res) {
     return ok(res, req.user);
 }
 
-/**
- * COMPLETE onboarding
- */
-
+// completeOnboarding
 export async function completeOnboarding(req, res) {
     const { country } = req.body;
 
@@ -44,10 +39,7 @@ export async function completeOnboarding(req, res) {
     return ok(res, { message: "Onboarding completed" });
 }
 
-/**
- * COMPLETE owner profile + auto-upgrade to owner
- * Required: name, country, instagram. Optional: position.
- */
+// completeOwnerProfile
 export async function completeOwnerProfile(req, res) {
     const { name, position = null, country, instagram } = req.body || {};
 
@@ -93,6 +85,7 @@ export async function completeOwnerProfile(req, res) {
     }
 }
 
+// ownerHasActiveShowrooms
 async function ownerHasActiveShowrooms(db, ownerUid) {
     const snapshot = await db
         .collection("showrooms")
@@ -103,6 +96,7 @@ async function ownerHasActiveShowrooms(db, ownerUid) {
     return !snapshot.empty;
 }
 
+// ownerHasLookbooks
 async function ownerHasLookbooks(db, ownerUid) {
     const snapshot = await db
         .collection("lookbooks")
@@ -112,6 +106,7 @@ async function ownerHasLookbooks(db, ownerUid) {
     return !snapshot.empty;
 }
 
+// ownerHasEvents
 async function ownerHasEvents(db, ownerUid) {
     const snapshot = await db
         .collection("events")
@@ -121,9 +116,7 @@ async function ownerHasEvents(db, ownerUid) {
     return !snapshot.empty;
 }
 
-/**
- * PATCH user profile
- */
+// updateUserProfile
 export async function updateUserProfile(req, res) {
     const {
         name,
@@ -228,9 +221,7 @@ export async function updateUserProfile(req, res) {
     return ok(res, { message: "Profile updated" });
 }
 
-/**
- * DEV: upgrade current user to owner role
- */
+// makeOwnerDev
 export async function makeOwnerDev(req, res) {
     if (process.env.NODE_ENV === "prod") {
         return fail(res, "NOT_FOUND", "Not found", 404);

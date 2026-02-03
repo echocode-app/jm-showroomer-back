@@ -3,6 +3,7 @@ import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 // Error codes: SHOWROOM_NAME_INVALID, INSTAGRAM_INVALID, PHONE_INVALID, SHOWROOM_INCOMPLETE
 
+// normalizeShowroomName
 export function normalizeShowroomName(name) {
     const normalized = String(name ?? "")
         .trim()
@@ -13,6 +14,7 @@ export function normalizeShowroomName(name) {
     return normalized.replace(/^[\p{P}\p{S}]+|[\p{P}\p{S}]+$/gu, "");
 }
 
+// validateShowroomName
 export function validateShowroomName(name) {
     const trimmed = String(name ?? "").trim();
     const length = Array.from(trimmed).length;
@@ -31,6 +33,7 @@ export function validateShowroomName(name) {
     }
 }
 
+// normalizeInstagramUrl
 export function normalizeInstagramUrl(url) {
     let normalized = String(url ?? "").trim();
 
@@ -43,6 +46,7 @@ export function normalizeInstagramUrl(url) {
     return normalized.replace(/\/+$/g, "");
 }
 
+// validateInstagramUrl
 export function validateInstagramUrl(url) {
     const normalized = normalizeInstagramUrl(url);
     let parsed;
@@ -64,12 +68,14 @@ export function validateInstagramUrl(url) {
     if (segments.length < 1) throw badRequest("INSTAGRAM_INVALID");
 }
 
+// normalizePhone
 export function normalizePhone(phone) {
     return String(phone ?? "")
         .trim()
         .replace(/[\s()\-]/g, "");
 }
 
+// validatePhone
 export function validatePhone(phone, userCountry = null) {
     const normalized = normalizePhone(phone);
     if (!normalized) throw badRequest("PHONE_INVALID");
@@ -84,6 +90,7 @@ export function validatePhone(phone, userCountry = null) {
     };
 }
 
+// normalizeAddress
 export function normalizeAddress(address) {
     let normalized = String(address ?? "").trim();
     if (!normalized) return "";
@@ -97,10 +104,12 @@ export function normalizeAddress(address) {
     return normalized;
 }
 
+// normalizeAddressForCompare
 export function normalizeAddressForCompare(address) {
     return normalizeAddress(address).toLowerCase();
 }
 
+// assertShowroomComplete
 export function assertShowroomComplete(showroom) {
     const missing = [];
 

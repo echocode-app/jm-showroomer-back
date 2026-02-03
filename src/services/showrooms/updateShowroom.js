@@ -13,6 +13,7 @@ import {
 import { appendHistory, buildDiff, isSameCountry, makeHistoryEntry } from "./_helpers.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 
+// updateShowroomService
 export async function updateShowroomService(id, data, user) {
     if (data.country && isCountryBlocked(data.country)) {
         throw forbidden("COUNTRY_BLOCKED");

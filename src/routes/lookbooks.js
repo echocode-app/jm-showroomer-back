@@ -15,7 +15,8 @@ router.post(
     createLookbook
 );
 
-router.get("/", listLookbooks); // public
+// ROUTE GET /
+router.get("/", listLookbooks);
 
 router.post(
     "/:id/rsvp",

@@ -1,11 +1,13 @@
 import isEqual from "lodash.isequal";
 import { EDITABLE_FIELDS, HISTORY_LIMIT } from "./_constants.js";
 
+// isSameCountry
 export function isSameCountry(left, right) {
     if (!left || !right) return false;
     return String(left).trim().toLowerCase() === String(right).trim().toLowerCase();
 }
 
+// buildDiff
 export function buildDiff(before = {}, after = {}, fields = EDITABLE_FIELDS) {
     const diff = {};
     const changedFields = [];
@@ -23,6 +25,7 @@ export function buildDiff(before = {}, after = {}, fields = EDITABLE_FIELDS) {
     return { diff, changedFields };
 }
 
+// makeHistoryEntry
 export function makeHistoryEntry({
     action,
     actor,
@@ -46,12 +49,14 @@ export function makeHistoryEntry({
     };
 }
 
+// appendHistory
 export function appendHistory(history = [], entry) {
     const next = [...history, entry];
     if (next.length <= HISTORY_LIMIT) return next;
     return next.slice(-HISTORY_LIMIT);
 }
 
+// buildPendingSnapshot
 export function buildPendingSnapshot(showroom, overrides = {}) {
     const snapshot = {};
     for (const field of EDITABLE_FIELDS) {

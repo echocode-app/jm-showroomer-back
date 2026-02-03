@@ -1,6 +1,7 @@
 // src/controllers/lookbookController.js
 import { ok, fail } from "../utils/apiResponse.js";
 
+// createLookbook
 export async function createLookbook(req, res, next) {
     try {
         // TODO
@@ -12,6 +13,7 @@ export async function createLookbook(req, res, next) {
     }
 }
 
+// listLookbooks
 export async function listLookbooks(req, res, next) {
     try {
         // TODO
@@ -21,6 +23,7 @@ export async function listLookbooks(req, res, next) {
     }
 }
 
+// rsvpEvent
 export async function rsvpEvent(req, res, next) {
     try {
         const { id } = req.params;

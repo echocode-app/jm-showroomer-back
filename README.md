@@ -21,6 +21,10 @@ Backend API for the JM Showroomer mobile and web clients. Provides authenticatio
 - **Profile settings**: `PATCH /users/profile` (country change blocked for owners with active showrooms/lookbooks/events)
 - **Collections stubs**: public empty lists for favorites/visit lists to keep UI stable
 
+## Error Notes (UI‑relevant)
+- `USER_COUNTRY_CHANGE_BLOCKED` (409): owner cannot change country while having active showrooms/lookbooks/events.
+- `SHOWROOM_LOCKED_PENDING` (409): owner cannot edit/delete showroom while status is `pending`.
+
 ## Tech Stack
 - Node.js (ESM)
 - Express

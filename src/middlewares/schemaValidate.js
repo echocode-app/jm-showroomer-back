@@ -6,6 +6,7 @@ const REQUIRED_CODE_MAP = {
     country: "COUNTRY_REQUIRED",
 };
 
+// mapJoiError
 function mapJoiError(details) {
     const missing = details.find(
         d => d.type === "any.required" && d.path?.length
@@ -20,6 +21,7 @@ function mapJoiError(details) {
     return badRequest("VALIDATION_ERROR");
 }
 
+// schemaValidate
 export function schemaValidate({ body: bodySchema = null, params: paramsSchema = null } = {}) {
     return (req, res, next) => {
         try {

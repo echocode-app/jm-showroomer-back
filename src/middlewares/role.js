@@ -2,6 +2,7 @@ import { fail } from "../utils/apiResponse.js";
 import { ROLES } from "../constants/roles.js";
 import { log } from "../config/logger.js";
 
+// requireRole
 export function requireRole(allowedRoles = []) {
     return (req, res, next) => {
         if (!req.user || !allowedRoles.includes(req.user.role)) {

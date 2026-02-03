@@ -1,5 +1,6 @@
 import { getAuthInstance } from "../config/firebase.js";
 
+// optionalAuth
 export async function optionalAuth(req, res, next) {
     const header = req.headers.authorization;
 

@@ -119,6 +119,16 @@ request "POST /showrooms/draft" 200 "" \
 SHOWROOM_ID=$(echo "$BODY" | jq -r '.data.showroom.id // empty')
 assert_non_empty "$SHOWROOM_ID" "showroom id"
 
+print_section "Admin cannot approve/reject when not pending"
+request "POST /admin/showrooms/{id}/approve (draft)" 400 "SHOWROOM_NOT_EDITABLE" \
+  -X POST "${ADMIN_HEADER[@]}" \
+  "${BASE_URL}/admin/showrooms/${SHOWROOM_ID}/approve"
+
+request "POST /admin/showrooms/{id}/reject (draft)" 400 "SHOWROOM_NOT_EDITABLE" \
+  -X POST "${ADMIN_HEADER[@]}" "${JSON_HEADER[@]}" \
+  -d '{"reason":"Invalid state"}' \
+  "${BASE_URL}/admin/showrooms/${SHOWROOM_ID}/reject"
+
 NAME_MAIN="Admin Review Showroom ${NOW}"
 request "PATCH /showrooms/{id} (complete data)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \

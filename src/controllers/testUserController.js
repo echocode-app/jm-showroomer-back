@@ -1,6 +1,7 @@
 import { createTestUser } from "../services/testUserService.js";
 import { ok } from "../utils/apiResponse.js";
 
+// registerTestUser
 export async function registerTestUser(req, res, next) {
     try {
         const user = await createTestUser();

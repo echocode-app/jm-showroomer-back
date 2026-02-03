@@ -7,6 +7,7 @@ import {
     validateShowroomName,
 } from "./showroomValidation.js";
 
+// expectThrows
 function expectThrows(fn, message) {
     let threw = false;
     try {

@@ -1,5 +1,6 @@
 import { getFirestoreInstance } from "../config/firebase.js";
 
+// loadUserIfExists
 export async function loadUserIfExists(req, res, next) {
     if (!req.auth?.uid) {
         return next();

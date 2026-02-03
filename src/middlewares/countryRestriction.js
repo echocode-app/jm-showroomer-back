@@ -1,6 +1,7 @@
 import { forbidden } from "../core/error.js";
 import { isCountryBlocked } from "../constants/countries.js";
 
+// blockRestrictedCountries
 export function blockRestrictedCountries(req, res, next) {
   const candidates = [
     // explicit override (tests, future geo)

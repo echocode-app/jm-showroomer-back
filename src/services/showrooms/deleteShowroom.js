@@ -3,6 +3,7 @@ import { badRequest, forbidden, notFound } from "../../core/error.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 import { appendHistory, makeHistoryEntry } from "./_helpers.js";
 
+// assertCanDelete
 function assertCanDelete(showroom, user, isAdmin) {
     if (!isAdmin && showroom.ownerUid !== user.uid) {
         throw forbidden("ACCESS_DENIED");
@@ -17,6 +18,7 @@ function assertCanDelete(showroom, user, isAdmin) {
     }
 }
 
+// deleteShowroomService
 export async function deleteShowroomService(id, user) {
     const isAdmin = user?.role === "admin";
 

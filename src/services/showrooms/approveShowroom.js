@@ -4,6 +4,7 @@ import { EDITABLE_FIELDS } from "./_constants.js";
 import { appendHistory, buildDiff, makeHistoryEntry } from "./_helpers.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 
+// approveShowroomService
 export async function approveShowroomService(id, user) {
     if (user?.role !== "admin") {
         throw forbidden("ACCESS_DENIED");

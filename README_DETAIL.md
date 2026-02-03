@@ -82,8 +82,6 @@ API Table (actual)
 | Users       | POST   | /users/complete-onboarding    | Authenticated only. Finishes onboarding flow.                                           |
 | Users       | POST   | /users/complete-owner-profile | USER/OWNER. Upgrades to OWNER; requires schema validation.                              |
 | Users       | PATCH  | /users/profile                | Authenticated. Update profile; owner country change blocked with active assets.         |
-| Users (Dev) | POST   | /users/dev/register-test      | Dev/Test only. Creates mock user.                                                       |
-| Users (Dev) | POST   | /users/dev/make-owner         | Dev/Test only. Upgrades current user to OWNER.                                          |
 | Showrooms   | GET    | /showrooms                    | Public: approved only. OWNER: own (excludes deleted). ADMIN: all; can filter by status. |
 | Showrooms   | POST   | /showrooms/create             | OWNER/MANAGER. Creates showroom. `?mode=draft` to create draft.                         |
 | Showrooms   | POST   | /showrooms/draft              | OWNER only. Create/reuse draft.                                                         |

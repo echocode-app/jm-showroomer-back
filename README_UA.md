@@ -56,7 +56,7 @@
 **Що робить:**
 - приймає `name`, `position` (optional), `country`, `instagram`;
 - блокує russia/belarus (COUNTRY_BLOCKED);
-- валідовує `instagram`;
+- валідує `instagram`;
 - виставляє `role = owner` і `roles = ["owner"]`.
 
 ### 3) Профіль власника (без модерації користувача)

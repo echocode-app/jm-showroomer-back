@@ -6,6 +6,7 @@ import { log } from "./logger.js";
 
 let auth, db, storage;
 
+// initFirebase
 export function initFirebase() {
     if (!getApps().length) {
         initializeApp({
@@ -25,16 +26,19 @@ export function initFirebase() {
     storage = getStorage();
 }
 
+// getAuthInstance
 export const getAuthInstance = () => {
     if (!auth) initFirebase();
     return auth;
 };
 
+// getFirestoreInstance
 export const getFirestoreInstance = () => {
     if (!db) initFirebase();
     return db;
 };
 
+// getStorageInstance
 export const getStorageInstance = () => {
     if (!storage) initFirebase();
     return storage;

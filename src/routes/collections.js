@@ -7,14 +7,17 @@ const router = Router();
 
 router.use(optionalAuth, loadUserIfExists);
 
+// ROUTE GET /favorites/showrooms
 router.get("/favorites/showrooms", (req, res) =>
     ok(res, { items: [] })
 );
 
+// ROUTE GET /favorites/lookbooks
 router.get("/favorites/lookbooks", (req, res) =>
     ok(res, { items: [] })
 );
 
+// ROUTE GET /want-to-visit/events
 router.get("/want-to-visit/events", (req, res) =>
     ok(res, { items: [] })
 );

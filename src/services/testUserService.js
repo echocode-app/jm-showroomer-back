@@ -1,5 +1,6 @@
 import { getAuthInstance, getFirestoreInstance, getStorageInstance } from "../config/firebase.js";
 
+// createTestUser
 export async function createTestUser() {
   const auth = getAuthInstance();
   const db = getFirestoreInstance();

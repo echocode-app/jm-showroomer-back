@@ -1,6 +1,7 @@
 import { log } from "../config/logger.js";
 import { getMessageForCode, getStatusForCode } from "../core/errorCodes.js";
 
+// errorHandler
 export const errorHandler = (err, req, res, next) => {
   const code = err.code || "INTERNAL_ERROR";
   const status = getStatusForCode(code) ?? err.status ?? 500;

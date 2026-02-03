@@ -399,6 +399,12 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+        "409":
+          description: Locked (pending)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
 
     patch:
       tags: [Showrooms]
@@ -446,6 +452,12 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+        "409":
+          description: Locked (pending)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
 
     delete:
       tags: [Showrooms]
@@ -469,6 +481,30 @@ paths:
                         properties:
                           showroom:
                             $ref: '#/components/schemas/Showroom'
+        "400":
+          description: Not editable
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "409":
+          description: Locked (pending)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
 
   /showrooms/{id}/submit:
     parameters:
@@ -515,6 +551,12 @@ paths:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "404":
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "409":
+          description: Locked (pending)
           content:
             application/json:
               schema:

@@ -22,10 +22,6 @@ paths:
     $ref: './users.yaml#/paths/~1users~1complete-owner-profile'
   /users/profile:
     $ref: './users.yaml#/paths/~1users~1profile'
-  /users/dev/register-test:
-    $ref: './users.yaml#/paths/~1users~1dev~1register-test'
-  /users/dev/make-owner:
-    $ref: './users.yaml#/paths/~1users~1dev~1make-owner'
 
   /showrooms:
     $ref: './showrooms.yaml#/paths/~1showrooms'

@@ -1,10 +1,12 @@
 export const BLOCKED_COUNTRY_CODES = ["ru", "by"];
 export const BLOCKED_COUNTRY_NAMES = ["russia", "belarus"];
 
+// normalizeCountry
 export function normalizeCountry(value) {
   return String(value).trim().toLowerCase();
 }
 
+// isCountryBlocked
 export function isCountryBlocked(country) {
   if (!country) return false;
 

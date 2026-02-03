@@ -203,6 +203,11 @@ request "POST /admin/showrooms/{id}/approve" 200 "" \
 STATUS=$(echo "$BODY" | jq -r '.data.showroom.status // empty')
 assert_eq "$STATUS" "approved" "status"
 
+request "PATCH approved (allowed)" 200 "" \
+  -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+  -d '{"name":"Approved Edit"}' \
+  "${BASE_URL}/showrooms/${SHOWROOM_ID}"
+
 request "DELETE approved (owner)" 200 "" \
   -X DELETE "${AUTH_HEADER[@]}" \
   "${BASE_URL}/showrooms/${SHOWROOM_ID}"
