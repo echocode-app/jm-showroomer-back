@@ -104,6 +104,18 @@ paths:
                         properties:
                           showroom:
                             $ref: './showrooms.yaml#/components/schemas/Showroom'
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
 
   /admin/showrooms/{id}/approve:
     parameters:

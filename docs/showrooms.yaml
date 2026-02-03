@@ -221,6 +221,7 @@ components:
           type: string
         country:
           type: string
+          description: Must match owner country (change blocked).
         city:
           type: string
         contacts:
@@ -287,6 +288,7 @@ paths:
       description: |
         Creates a showroom (status=draft).
         Draft mode is supported via body {"draft": true} or query mode=draft.
+        Showroom country must match owner country.
       security:
         - bearerAuth: []
       x-roles: [owner, manager]
@@ -334,6 +336,7 @@ paths:
     post:
       tags: [Showrooms]
       summary: Create or reuse draft showroom
+      description: Showroom country must match owner country.
       security:
         - bearerAuth: []
       x-roles: [owner]
@@ -399,18 +402,13 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
-        "409":
-          description: Locked (pending)
-          content:
-            application/json:
-              schema:
-                $ref: './common.yaml#/components/schemas/ApiError'
-
     patch:
       tags: [Showrooms]
       summary: Update showroom
       description: |
         Only owner can edit, only for draft/rejected/approved. Pending is locked.
+        Showroom country must match owner country.
+        Error codes: SHOWROOM_LOCKED_PENDING (409), SHOWROOM_NOT_EDITABLE (400), NO_FIELDS_TO_UPDATE (400).
       security:
         - bearerAuth: []
       x-roles: [owner]
@@ -441,7 +439,7 @@ paths:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "403":
-          description: Forbidden or country blocked
+          description: Forbidden or country blocked (includes country mismatch)
           content:
             application/json:
               schema:
@@ -464,6 +462,7 @@ paths:
       summary: Soft delete showroom (owner)
       description: |
         Only owner can delete, only for draft/rejected/approved. Pending is locked.
+        Error codes: SHOWROOM_LOCKED_PENDING (409), SHOWROOM_NOT_EDITABLE (400).
       security:
         - bearerAuth: []
       x-roles: [owner]
@@ -520,6 +519,8 @@ paths:
       description: |
         Submits a draft/rejected/approved showroom for moderation.
         Status becomes pending and submittedAt is set.
+        Showroom country must match owner country.
+        Error codes: SHOWROOM_INCOMPLETE (400), SHOWROOM_NAME_ALREADY_EXISTS (400), SHOWROOM_DUPLICATE (400), SHOWROOM_LOCKED_PENDING (409), SHOWROOM_NOT_EDITABLE (400).
       security:
         - bearerAuth: []
       x-roles: [owner]
@@ -538,13 +539,13 @@ paths:
                           showroom:
                             $ref: '#/components/schemas/Showroom'
         "400":
-          description: Validation error or incomplete
+          description: Validation error, incomplete, or not editable
           content:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "403":
-          description: Forbidden or country blocked
+          description: Forbidden or country blocked (includes country mismatch)
           content:
             application/json:
               schema:

@@ -36,6 +36,7 @@ Notes:
 - Each action appends to `editHistory` with before/after diff (audit log).
 - Profile settings: `PATCH /users/profile` (name/country/instagram/position/settings).
   - Owner country change is blocked if there are active showrooms/lookbooks/events → `409 USER_COUNTRY_CHANGE_BLOCKED`.
+- Showroom country must match owner country; changing it to a different country is blocked on PATCH/submit.
 
 Required fields for submit:  
 `name`, `type`, `country`, `address`, `city`, `availability`, `contacts.phone`, `contacts.instagram`, `location.lat`, `location.lng`.
@@ -101,3 +102,5 @@ API Table (actual)
 | Collections | GET    | /collections/favorites/showrooms | Public/any role. Stub (empty list).                                                 |
 | Collections | GET    | /collections/favorites/lookbooks | Public/any role. Stub (empty list).                                                 |
 | Collections | GET    | /collections/want-to-visit/events | Public/any role. Stub (empty list).                                                |
+| Dev         | POST   | /users/dev/register-test       | Dev/Test only. Creates mock user (not in OpenAPI).                                     |
+| Dev         | POST   | /users/dev/make-owner          | Dev/Test only. Upgrades current user to owner (not in OpenAPI).                       |

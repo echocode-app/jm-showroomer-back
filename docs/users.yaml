@@ -106,9 +106,11 @@ components:
           type: string
         instagram:
           type: string
+          description: Owner-only field
         position:
           type: string
           nullable: true
+          description: Owner-only field
         appLanguage:
           type: string
         notificationsEnabled:
@@ -260,7 +262,7 @@ paths:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "403":
-          description: Forbidden or country blocked
+          description: Forbidden (owner-only fields) or country blocked
           content:
             application/json:
               schema:

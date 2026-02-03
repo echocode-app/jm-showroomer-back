@@ -10,7 +10,7 @@ Backend API for the JM Showroomer mobile and web clients. Provides authenticatio
 
 ## Core Features
 - **Authentication** via Firebase ID tokens (Bearer auth)
-- **RBAC**: guest / user / owner / admin
+- **RBAC**: guest / user / owner / admin (future roles exist: manager, stylist)
 - **Showroom lifecycle**: draft → pending → approved / rejected → deleted (soft delete)
 - **Country restrictions**: RU/BY blocked
 - **Anti‑spam & duplicates**: owner‑level and global duplicate checks
@@ -18,6 +18,7 @@ Backend API for the JM Showroomer mobile and web clients. Provides authenticatio
 - **Pending lock**: owners cannot edit/delete while status is `pending`
 - **Audit history**: change log with diffs per action (patch/submit/approve/reject/delete)
 - **Soft delete**: status=`deleted`, filtered from public/owner lists
+- **Showroom country rule**: showroom country must match owner country (change blocked)
 - **Profile settings**: `PATCH /users/profile` (country change blocked for owners with active showrooms/lookbooks/events)
 - **Collections stubs**: public empty lists for favorites/visit lists to keep UI stable
 
@@ -48,42 +49,13 @@ src/
 
 docs/             # OpenAPI specs (modular)
 ```
-
-## Environment Configuration
-Uses `.env.<env>` files. Expected environments: `dev`, `test`, `stage`, `prod`.
-
-Required variables (minimum):
-- `BASE_URL`
-- Firebase Admin credentials (see existing `.env.*` templates)
-- `TEST_USER_TOKEN` for tests
-
-## Run Locally
-```bash
-npm install
-
-# dev (with hot reload)
-NODE_ENV=dev npm run dev
-
-# prod-like
-NODE_ENV=prod npm start
-```
-
-## Tests
-### Smoke
-```bash
-NODE_ENV=test ./src/test/test_api_full_real.sh
-```
-
-### E2E Showroom Flow
-```bash
-NODE_ENV=test ./src/test/test_showroom_e2e.sh
-```
-
-> These scripts use `TEST_USER_TOKEN` from `.env.<env>` and require `jq`.
-
 ## API Documentation
 - OpenAPI spec: `docs/openapi.yaml`
 - Swagger UI: `GET /docs`
+
+## Dev‑only Endpoints (not in OpenAPI)
+- `POST /users/dev/register-test`
+- `POST /users/dev/make-owner`
 
 ## Deployment (Render)
 - Service runs as a Render web service.
@@ -100,6 +72,4 @@ NODE_ENV=test ./src/test/test_showroom_e2e.sh
 ```bash
 npm run dev
 npm start
-NODE_ENV=test ./src/test/test_api_full_real.sh
-NODE_ENV=test ./src/test/test_showroom_e2e.sh
 ```
