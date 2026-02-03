@@ -34,6 +34,8 @@ Notes:
 - When status is `pending`, owner cannot PATCH/DELETE (review freeze).
 - Soft delete sets status=`deleted` and hides from public/owner lists.
 - Each action appends to `editHistory` with before/after diff (audit log).
+- Profile settings: `PATCH /users/profile` (name/country/instagram/position/settings).
+  - Owner country change is blocked if there are active showrooms/lookbooks/events → `409 USER_COUNTRY_CHANGE_BLOCKED`.
 
 Required fields for submit:  
 `name`, `type`, `country`, `address`, `city`, `availability`, `contacts.phone`, `contacts.instagram`, `location.lat`, `location.lng`.
@@ -47,6 +49,7 @@ Required fields for submit:
 - 401 `AUTH_MISSING` / `AUTH_INVALID` → re-login
 - 403 `FORBIDDEN` → no permission
 - 403 `COUNTRY_BLOCKED` → russia or belarus
+- 409 `USER_COUNTRY_CHANGE_BLOCKED` → owner has active showrooms/lookbooks/events
 - 400 validation → show message from `error`
 
 ## Endpoints (essentials)
@@ -54,6 +57,7 @@ Required fields for submit:
 - `GET /users/me`
 - `POST /users/complete-onboarding`
 - `POST /users/complete-owner-profile`
+- `PATCH /users/profile`
 - `POST /showrooms/draft`
 - `PATCH /showrooms/{id}`
 - `POST /showrooms/{id}/submit`
@@ -77,6 +81,7 @@ API Table (actual)
 | Users       | GET    | /users/me                     | Authenticated only. Returns current profile.                                            |
 | Users       | POST   | /users/complete-onboarding    | Authenticated only. Finishes onboarding flow.                                           |
 | Users       | POST   | /users/complete-owner-profile | USER/OWNER. Upgrades to OWNER; requires schema validation.                              |
+| Users       | PATCH  | /users/profile                | Authenticated. Update profile; owner country change blocked with active assets.         |
 | Users (Dev) | POST   | /users/dev/register-test      | Dev/Test only. Creates mock user.                                                       |
 | Users (Dev) | POST   | /users/dev/make-owner         | Dev/Test only. Upgrades current user to OWNER.                                          |
 | Showrooms   | GET    | /showrooms                    | Public: approved only. OWNER: own (excludes deleted). ADMIN: all; can filter by status. |
@@ -95,3 +100,6 @@ API Table (actual)
 | Lookbooks   | GET    | /lookbooks                    | Public. Stub.                                                                           |
 | Lookbooks   | POST   | /lookbooks/create             | OWNER/MANAGER. Stub.                                                                    |
 | Lookbooks   | POST   | /lookbooks/{id}/rsvp          | Authenticated users. Stub.                                                              |
+| Collections | GET    | /collections/favorites/showrooms | Public/any role. Stub (empty list).                                                 |
+| Collections | GET    | /collections/favorites/lookbooks | Public/any role. Stub (empty list).                                                 |
+| Collections | GET    | /collections/want-to-visit/events | Public/any role. Stub (empty list).                                                |

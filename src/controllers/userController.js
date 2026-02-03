@@ -1,10 +1,9 @@
-import { isCountryBlocked } from "../constants/countries.js";
+import { isCountryBlocked, normalizeCountry } from "../constants/countries.js";
 import { ok, fail } from "../utils/apiResponse.js";
 import { getFirestoreInstance } from "../config/firebase.js";
 import {
     normalizeInstagramUrl,
     validateInstagramUrl,
-    validateShowroomName,
 } from "../utils/showroomValidation.js";
 
 /**
@@ -65,7 +64,6 @@ export async function completeOwnerProfile(req, res) {
     }
 
     try {
-        validateShowroomName(trimmedName);
         const normalizedInstagram = normalizeInstagramUrl(trimmedInstagram);
         validateInstagramUrl(normalizedInstagram);
 
@@ -93,6 +91,141 @@ export async function completeOwnerProfile(req, res) {
     } catch (err) {
         return fail(res, err.code || "VALIDATION_ERROR", err.message, err.status || 400);
     }
+}
+
+async function ownerHasActiveShowrooms(db, ownerUid) {
+    const snapshot = await db
+        .collection("showrooms")
+        .where("ownerUid", "==", ownerUid)
+        .where("status", "in", ["draft", "pending", "approved", "rejected"])
+        .limit(1)
+        .get();
+    return !snapshot.empty;
+}
+
+async function ownerHasLookbooks(db, ownerUid) {
+    const snapshot = await db
+        .collection("lookbooks")
+        .where("owner", "==", ownerUid)
+        .limit(1)
+        .get();
+    return !snapshot.empty;
+}
+
+async function ownerHasEvents(db, ownerUid) {
+    const snapshot = await db
+        .collection("events")
+        .where("owner", "==", ownerUid)
+        .limit(1)
+        .get();
+    return !snapshot.empty;
+}
+
+/**
+ * PATCH user profile
+ */
+export async function updateUserProfile(req, res) {
+    const {
+        name,
+        country,
+        instagram,
+        position,
+        appLanguage,
+        notificationsEnabled,
+    } = req.body || {};
+
+    const updates = {};
+    const now = new Date().toISOString();
+
+    if (name !== undefined) {
+        const trimmedName = String(name ?? "").trim();
+        if (!trimmedName) {
+            return fail(res, "VALIDATION_ERROR", "Name is required", 400);
+        }
+        updates.name = trimmedName;
+    }
+
+    if (country !== undefined) {
+        const trimmedCountry = String(country ?? "").trim();
+        if (!trimmedCountry) {
+            return fail(res, "COUNTRY_REQUIRED", "Country is required", 400);
+        }
+        if (isCountryBlocked(trimmedCountry)) {
+            return fail(res, "COUNTRY_BLOCKED", "Country is not supported", 403);
+        }
+
+        const currentCountry = req.user?.country ?? null;
+        if (
+            req.user?.role === "owner" &&
+            normalizeCountry(trimmedCountry) !== normalizeCountry(currentCountry)
+        ) {
+            const db = getFirestoreInstance();
+            const [hasShowrooms, hasLookbooks, hasEvents] = await Promise.all([
+                ownerHasActiveShowrooms(db, req.user.uid),
+                ownerHasLookbooks(db, req.user.uid),
+                ownerHasEvents(db, req.user.uid),
+            ]);
+
+            if (hasShowrooms || hasLookbooks || hasEvents) {
+                return fail(
+                    res,
+                    "USER_COUNTRY_CHANGE_BLOCKED",
+                    "To change country, delete your showrooms and lookbooks or create a new account",
+                    409
+                );
+            }
+        }
+
+        updates.country = trimmedCountry;
+        if (req.user?.onboardingState !== "completed") {
+            updates.onboardingState = "completed";
+        }
+    }
+
+    if (instagram !== undefined || position !== undefined) {
+        if (req.user?.role !== "owner") {
+            return fail(res, "FORBIDDEN", "Access denied", 403);
+        }
+    }
+
+    if (instagram !== undefined) {
+        const trimmedInstagram = String(instagram ?? "").trim();
+        if (!trimmedInstagram) {
+            return fail(res, "VALIDATION_ERROR", "Instagram is required", 400);
+        }
+        try {
+            const normalizedInstagram = normalizeInstagramUrl(trimmedInstagram);
+            validateInstagramUrl(normalizedInstagram);
+            updates["ownerProfile.instagram"] = normalizedInstagram;
+        } catch (err) {
+            return fail(res, err.code || "VALIDATION_ERROR", err.message, err.status || 400);
+        }
+    }
+
+    if (position !== undefined) {
+        const trimmedPosition = position ? String(position).trim() : null;
+        updates["ownerProfile.position"] = trimmedPosition || null;
+    }
+
+    if (appLanguage !== undefined) {
+        updates.appLanguage = String(appLanguage).trim();
+    }
+
+    if (notificationsEnabled !== undefined) {
+        updates.notificationsEnabled = Boolean(notificationsEnabled);
+    }
+
+    if (updates.name && req.user?.role === "owner") {
+        updates["ownerProfile.name"] = updates.name;
+    }
+
+    updates.updatedAt = now;
+
+    const db = getFirestoreInstance();
+    const ref = db.collection("users").doc(req.user.uid);
+    await ref.update(updates);
+
+    return ok(res, { message: "Profile updated" });
 }
 
 /**

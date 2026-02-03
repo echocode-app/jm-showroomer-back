@@ -25,6 +25,7 @@ export const ERROR_STATUS = {
     NO_FIELDS_TO_UPDATE: 400,
     SHOWROOM_LOCKED_PENDING: 409,
     SHOWROOM_PENDING_SNAPSHOT_MISSING: 409,
+    USER_COUNTRY_CHANGE_BLOCKED: 409,
 
     LOAD_USER_ERROR: 500,
     AUTH_ERROR: 500,
@@ -42,6 +43,8 @@ export const ERROR_MESSAGE = {
     VALIDATION_ERROR: "Validation error",
     SHOWROOM_LOCKED_PENDING: "Showroom is under review",
     SHOWROOM_PENDING_SNAPSHOT_MISSING: "Pending snapshot missing; cannot approve",
+    USER_COUNTRY_CHANGE_BLOCKED:
+        "To change country, delete your showrooms and lookbooks or create a new account",
 };
 
 export function getStatusForCode(code) {

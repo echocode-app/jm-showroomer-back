@@ -5,11 +5,13 @@ import { requireRole } from "../middlewares/role.js";
 import { schemaValidate } from "../middlewares/schemaValidate.js";
 import { ROLES } from "../constants/roles.js";
 import { completeOwnerProfileSchema } from "../schemas/user.complete-owner-profile.schema.js";
+import { userProfileUpdateSchema } from "../schemas/user.profile.schema.js";
 
 import {
   getMyProfile,
   completeOnboarding,
   completeOwnerProfile,
+  updateUserProfile,
   makeOwnerDev,
 } from "../controllers/userController.js";
 
@@ -47,6 +49,17 @@ router.post(
   requireRole([ROLES.USER, ROLES.OWNER]),
   schemaValidate({ body: completeOwnerProfileSchema }),
   completeOwnerProfile
+);
+
+/**
+ * PATCH /users/profile
+ */
+router.patch(
+  "/profile",
+  authMiddleware,
+  loadUser,
+  schemaValidate({ body: userProfileUpdateSchema }),
+  updateUserProfile
 );
 
 /**

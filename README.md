@@ -18,6 +18,8 @@ Backend API for the JM Showroomer mobile and web clients. Provides authenticatio
 - **Pending lock**: owners cannot edit/delete while status is `pending`
 - **Audit history**: change log with diffs per action (patch/submit/approve/reject/delete)
 - **Soft delete**: status=`deleted`, filtered from public/owner lists
+- **Profile settings**: `PATCH /users/profile` (country change blocked for owners with active showrooms/lookbooks/events)
+- **Collections stubs**: public empty lists for favorites/visit lists to keep UI stable
 
 ## Tech Stack
 - Node.js (ESM)

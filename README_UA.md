@@ -8,6 +8,7 @@
 - контроль ролей і доступів;
 - валідації даних (ім’я, телефон, інстаграм, країни);
 - анти‑дублі та анти‑спам логіку.
+- налаштування профілю користувача (PATCH /users/profile).
 
 ## Що вже виконано
 - **Авторизація через Firebase ID token**.
@@ -25,6 +26,7 @@
 - **Анти‑дублі**:
   - дубль імені для власника,
   - глобальний дубль (name + address) у pending/approved.
+- **Оновлення профілю** через `PATCH /users/profile`.
 - **API контракт** у OpenAPI (`docs/openapi.yaml` + модульні файли).
 - **E2E тести** через bash скрипти.
 
@@ -66,6 +68,17 @@
 **Модерація користувача не проводиться.** Модерація стосується лише шоурумів.
 **Роль owner присвоюється автоматично** після `complete-owner-profile`.
 
+### 3.1) Оновлення профілю
+**Endpoint:** `PATCH /users/profile`
+
+Дозволені поля:
+- `name`, `country`, `appLanguage`, `notificationsEnabled`
+- `instagram`, `position` (тільки для owner)
+
+**Зміна країни для owner:**
+якщо є активні шоуруми або лукбуки/івенти → 409 `USER_COUNTRY_CHANGE_BLOCKED`  
+Повідомлення: «Щоб змінити країну, видаліть свої шоуруми та лукбуки або створіть новий акаунт».
+
 ### 4) Створення шоуруму (draft → submit)
 **Кроки:**
 1. **Створення або отримання чернетки**:
@@ -102,6 +115,11 @@
 - `POST /admin/showrooms/{id}/approve` — approve pending
 - `POST /admin/showrooms/{id}/reject` — reject pending (body: `{ reason: string }`)
 - `DELETE /admin/showrooms/{id}` — soft delete any
+
+## Колекції (UI‑стаби)
+- `GET /collections/favorites/showrooms` — публічно (guest/user/owner/admin), порожній список (stub)
+- `GET /collections/favorites/lookbooks` — публічно (guest/user/owner/admin), порожній список (stub)
+- `GET /collections/want-to-visit/events` — публічно (guest/user/owner/admin), порожній список (stub)
 
 ## Аудит і зміни
 - Кожна дія (patch/submit/approve/reject/delete) додається в `editHistory` з diff.

@@ -20,6 +20,8 @@ paths:
     $ref: './users.yaml#/paths/~1users~1complete-onboarding'
   /users/complete-owner-profile:
     $ref: './users.yaml#/paths/~1users~1complete-owner-profile'
+  /users/profile:
+    $ref: './users.yaml#/paths/~1users~1profile'
   /users/dev/register-test:
     $ref: './users.yaml#/paths/~1users~1dev~1register-test'
   /users/dev/make-owner:
@@ -37,6 +39,13 @@ paths:
     $ref: './showrooms.yaml#/paths/~1showrooms~1{id}~1submit'
   /showrooms/{id}/favorite:
     $ref: './showrooms.yaml#/paths/~1showrooms~1{id}~1favorite'
+
+  /collections/favorites/showrooms:
+    $ref: './users.yaml#/paths/~1collections~1favorites~1showrooms'
+  /collections/favorites/lookbooks:
+    $ref: './users.yaml#/paths/~1collections~1favorites~1lookbooks'
+  /collections/want-to-visit/events:
+    $ref: './users.yaml#/paths/~1collections~1want-to-visit~1events'
 
   /admin/showrooms:
     $ref: './admin.yaml#/paths/~1admin~1showrooms'

@@ -30,6 +30,12 @@ components:
         country:
           type: string
           nullable: true
+        appLanguage:
+          type: string
+          nullable: true
+        notificationsEnabled:
+          type: boolean
+          nullable: true
         roleRequest:
           type: object
           nullable: true
@@ -90,6 +96,23 @@ components:
           type: string
         instagram:
           type: string
+    UserProfileUpdateInput:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+        country:
+          type: string
+        instagram:
+          type: string
+        position:
+          type: string
+          nullable: true
+        appLanguage:
+          type: string
+        notificationsEnabled:
+          type: boolean
 
 paths:
   /users/me:
@@ -204,6 +227,51 @@ paths:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
 
+  /users/profile:
+    patch:
+      tags: [Users]
+      summary: Update user profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdateInput'
+      responses:
+        "200":
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "403":
+          description: Forbidden or country blocked
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "409":
+          description: Country change blocked (owner has active showrooms/lookbooks/events)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
   /users/dev/register-test:
     post:
       tags: [Users]
@@ -251,3 +319,66 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+
+  /collections/favorites/showrooms:
+    get:
+      tags: [Collections]
+      summary: Favorite showrooms (stub)
+      security: []
+      responses:
+        "200":
+          description: Empty list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items: {}
+
+  /collections/favorites/lookbooks:
+    get:
+      tags: [Collections]
+      summary: Favorite lookbooks (stub)
+      security: []
+      responses:
+        "200":
+          description: Empty list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items: {}
+
+  /collections/want-to-visit/events:
+    get:
+      tags: [Collections]
+      summary: Events to visit (stub)
+      security: []
+      responses:
+        "200":
+          description: Empty list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items: {}
