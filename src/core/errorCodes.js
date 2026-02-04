@@ -12,6 +12,7 @@ export const ERROR_STATUS = {
     NOT_FOUND: 404,
 
     VALIDATION_ERROR: 400,
+    ID_TOKEN_REQUIRED: 400,
     SHOWROOM_NAME_REQUIRED: 400,
     SHOWROOM_TYPE_REQUIRED: 400,
     COUNTRY_REQUIRED: 400,
@@ -36,6 +37,7 @@ export const ERROR_MESSAGE = {
     AUTH_MISSING: "Authorization token missing",
     AUTH_INVALID: "Invalid or expired token",
     NO_AUTH: "Auth info missing",
+    ID_TOKEN_REQUIRED: "Missing idToken",
     FORBIDDEN: "Access denied",
     COUNTRY_BLOCKED: "Country is not supported",
     USER_NOT_FOUND: "User profile not found",

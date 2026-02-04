@@ -18,10 +18,12 @@ components:
         role:
           type: string
           enum: [guest, user, owner, admin, manager, stylist]
+          description: Roles manager/stylist are reserved for future (MVP2) and not currently assignable via public API.
         roles:
           type: array
           items:
             type: string
+          description: MVP1 uses single-role values (guest/user/owner/admin). Multi-role support is reserved for MVP2.
         status:
           type: string
         onboardingState:
@@ -39,6 +41,7 @@ components:
         roleRequest:
           type: object
           nullable: true
+          description: Reserved for future role upgrade workflows (MVP2); unused in MVP1.
           properties:
             role:
               type: string
@@ -106,11 +109,11 @@ components:
           type: string
         instagram:
           type: string
-          description: Owner-only field
+          description: Owner-only field (role=owner). Non-owners get 403 FORBIDDEN.
         position:
           type: string
           nullable: true
-          description: Owner-only field
+          description: Owner-only field (role=owner). Non-owners get 403 FORBIDDEN.
         appLanguage:
           type: string
         notificationsEnabled:
@@ -233,6 +236,7 @@ paths:
     patch:
       tags: [Users]
       summary: Update user profile
+      description: Requires Bearer auth. Fields instagram/position are owner-only; non-owners receive 403 FORBIDDEN.
       security:
         - bearerAuth: []
       requestBody:
@@ -261,8 +265,20 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Unauthorized (AUTH_MISSING or AUTH_INVALID)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
         "403":
           description: Forbidden (owner-only fields) or country blocked
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "404":
+          description: User not found
           content:
             application/json:
               schema:

@@ -5,6 +5,7 @@ import { isCountryBlocked } from "../constants/countries.js";
 export async function verifyOAuthToken(idToken) {
     if (!idToken) {
         const err = new Error("Missing idToken");
+        err.code = "ID_TOKEN_REQUIRED";
         err.status = 400;
         throw err;
     }
@@ -17,6 +18,7 @@ export async function verifyOAuthToken(idToken) {
         decoded = await auth.verifyIdToken(idToken);
     } catch {
         const err = new Error("Invalid token");
+        err.code = "AUTH_INVALID";
         err.status = 401;
         throw err;
     }
@@ -50,5 +52,8 @@ export async function verifyOAuthToken(idToken) {
         firestoreUser = snap.data();
     }
 
-    return firestoreUser;
+    return {
+        user: firestoreUser,
+        signInProvider: decoded?.firebase?.sign_in_provider || null,
+    };
 }

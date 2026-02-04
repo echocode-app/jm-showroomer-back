@@ -11,8 +11,6 @@ paths:
 
   /auth/oauth:
     $ref: './auth.yaml#/paths/~1auth~1oauth'
-  /auth/apple:
-    $ref: './auth.yaml#/paths/~1auth~1apple'
 
   /users/me:
     $ref: './users.yaml#/paths/~1users~1me'

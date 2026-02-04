@@ -2,7 +2,7 @@
 
 ## Quick Start (Flutter)
 
-1. Google Sign-In → get Firebase `idToken`.
+1. Firebase Sign-In (Google/Apple/any) → get Firebase `idToken`.
 2. `GET /users/me` with `Authorization: Bearer <ID_TOKEN>`.
 3. Check `onboardingState` and `role` before protected endpoints.
 
@@ -77,8 +77,7 @@ API Table (actual)
 | Scope       | Method | Endpoint                      | Roles / Notes                                                                           |
 | ----------- | ------ | ----------------------------- | --------------------------------------------------------------------------------------- |
 | Health      | GET    | /health                       | Public. Service health check.                                                           |
-| Auth        | POST   | /auth/oauth                   | Public. Firebase ID token (Google OAuth).                                               |
-| Auth        | POST   | /auth/apple                   | Public. Stub (501).                                                                     |
+| Auth        | POST   | /auth/oauth                   | Public. Login via Firebase ID token (Google/Apple/any).                                 |
 | Users       | GET    | /users/me                     | Authenticated only. Returns current profile.                                            |
 | Users       | POST   | /users/complete-onboarding    | Authenticated only. Finishes onboarding flow.                                           |
 | Users       | POST   | /users/complete-owner-profile | USER/OWNER. Upgrades to OWNER; requires schema validation.                              |

@@ -168,7 +168,7 @@ export async function updateUserProfile(req, res) {
     }
 
     if (notificationsEnabled !== undefined) {
-        updates.notificationsEnabled = Boolean(notificationsEnabled);
+        updates.notificationsEnabled = notificationsEnabled;
     }
 
     if (updates.name && req.user?.role === "owner") {

@@ -30,6 +30,14 @@ http_request "POST /users/complete-onboarding (unauth)" 401 "AUTH_MISSING" \
   -X POST -H "$(json_header)" \
   -d '{"country":"Ukraine"}' \
   "${BASE_URL}/users/complete-onboarding"
+http_request "POST /auth/oauth (missing idToken)" 400 "ID_TOKEN_REQUIRED" \
+  -X POST -H "$(json_header)" \
+  -d '{}' \
+  "${BASE_URL}/auth/oauth"
+http_request "POST /auth/oauth (invalid idToken)" 401 "AUTH_INVALID" \
+  -X POST -H "$(json_header)" \
+  -d '{"idToken":"invalid"}' \
+  "${BASE_URL}/auth/oauth"
 
 if [[ -n "${TEST_USER_TOKEN:-}" ]]; then
   AUTH_HEADER=(-H "$(auth_header "${TEST_USER_TOKEN}")")

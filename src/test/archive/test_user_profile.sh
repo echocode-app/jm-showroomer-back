@@ -26,6 +26,15 @@ JSON_HEADER=(-H "Content-Type: application/json")
 NOW=$(date +%s%N)
 
 #####################################
+# PREFLIGHT
+#####################################
+HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/health")
+if [[ "$HEALTH_STATUS" != "200" ]]; then
+  echo "❌ Server not running, start with: npm run dev"
+  exit 1
+fi
+
+#####################################
 # HELPERS
 #####################################
 print_section() {

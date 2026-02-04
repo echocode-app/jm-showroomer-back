@@ -4,13 +4,14 @@ Backend API for the JM Showroomer mobile and web clients. Provides authenticatio
 
 ## Overview
 - API base path: `/api/v1`
-- Auth: Firebase ID tokens
+- Auth: Firebase ID tokens (Google/Apple/any)
 - Data: Firestore (showrooms, users), Storage for assets/tests
 - Dev-hosting: Render
 
 ## Core Features
-- **Authentication** via Firebase ID tokens (Bearer auth)
+- **Authentication** via Firebase ID tokens (Google/Apple/any, Bearer auth)
 - **RBAC**: guest / user / owner / admin (future roles exist: manager, stylist)
+- **MVP2-reserved fields**: `role` values `manager`/`stylist` and `roleRequest` are reserved for MVP2. MVP1 clients should ignore them if present.
 - **Showroom lifecycle**: draft → pending → approved / rejected → deleted (soft delete)
 - **Country restrictions**: RU/BY blocked
 - **Anti‑spam & duplicates**: owner‑level and global duplicate checks
@@ -70,6 +71,6 @@ docs/             # OpenAPI specs (modular)
 
 ## Common Commands
 ```bash
+npm i
 npm run dev
-npm start
 ```

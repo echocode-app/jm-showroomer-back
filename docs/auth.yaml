@@ -6,13 +6,13 @@ components:
       properties:
         idToken:
           type: string
-          description: Firebase ID Token from Google Sign-In
+          description: Firebase ID Token (Google/Apple/any provider)
 
 paths:
   /auth/oauth:
     post:
       tags: [Auth]
-      summary: Google OAuth login (Firebase)
+      summary: Login via Firebase ID token (Google/Apple/any)
       security: []
       requestBody:
         required: true
@@ -42,18 +42,6 @@ paths:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "401":
           description: Invalid or expired token
-          content:
-            application/json:
-              schema:
-                $ref: './common.yaml#/components/schemas/ApiError'
-  /auth/apple:
-    post:
-      tags: [Auth]
-      summary: Apple OAuth login (not implemented)
-      security: []
-      responses:
-        "501":
-          description: Apple OAuth coming soon
           content:
             application/json:
               schema:
