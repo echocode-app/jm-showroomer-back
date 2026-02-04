@@ -1,6 +1,7 @@
 import { ok, fail } from "../utils/apiResponse.js";
 import { listLookbooksService } from "../services/lookbooks/listLookbooks.js";
 import { getSignedReadUrl } from "../services/mediaService.js";
+import { filterValidAssets, normalizeLookbookAssets } from "../utils/mediaValidation.js";
 
 // createLookbook
 export async function createLookbook(req, res, next) {
@@ -21,10 +22,20 @@ export async function listLookbooks(req, res, next) {
         const lookbooks = await listLookbooksService({ limit });
 
         const withUrls = await Promise.all(
-            lookbooks.map(async item => ({
-                ...item,
-                coverUrl: await getSignedReadUrl(item.coverPath),
-            }))
+            lookbooks.map(async item => {
+                const resourceId = item.id;
+                const normalizedAssets = normalizeLookbookAssets(item);
+                const validAssets = filterValidAssets("lookbooks", resourceId, normalizedAssets);
+
+                const coverAsset = validAssets.find(a => a.kind === "cover");
+                const coverUrl = coverAsset ? await getSignedReadUrl(coverAsset.path) : null;
+
+                return {
+                    ...item,
+                    coverUrl,
+                    assets: item.assets && item.assets.length ? item.assets : normalizedAssets,
+                };
+            })
         );
 
         return ok(res, { lookbooks: withUrls });

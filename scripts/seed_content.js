@@ -3,6 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import { getFirestoreInstance, getStorageInstance } from "../src/config/firebase.js";
+import { MEDIA_POLICY } from "../src/constants/mediaPolicy.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,6 +67,42 @@ async function uploadIfNeeded(localPath, destPath) {
     });
 }
 
+function assertAllowedExtension(filePath) {
+    const ext = path.extname(filePath).toLowerCase();
+    if (!MEDIA_POLICY.allowedExtensionsNow.includes(ext)) {
+        throw new Error(
+            `Unsupported file extension for ${filePath}: ${ext}. Allowed: ${MEDIA_POLICY.allowedExtensionsNow.join(", ")}`
+        );
+    }
+}
+
+async function assertFileSizeLimit(filePath, kind) {
+    const limit = MEDIA_POLICY.perKindLimits[kind]?.maxBytes;
+    if (!limit) return;
+    const stat = await fs.stat(filePath);
+    if (stat.size > limit) {
+        throw new Error(
+            `File too large for ${filePath} (${stat.size} bytes). Limit for ${kind}: ${limit} bytes`
+        );
+    }
+}
+
+function assertCountLimit(count, kind) {
+    const limit = MEDIA_POLICY.perKindLimits[kind]?.maxCount;
+    if (limit && count > limit) {
+        throw new Error(`Too many ${kind} files (${count}). Limit: ${limit}`);
+    }
+}
+
+function assertTotalLimit(totalBytes, entityType) {
+    const limit = MEDIA_POLICY.perEntityTotals[entityType]?.maxBytes;
+    if (limit && totalBytes > limit) {
+        throw new Error(
+            `Total media size too large (${totalBytes} bytes). Limit for ${entityType}: ${limit} bytes`
+        );
+    }
+}
+
 async function deletePrefix(prefix) {
     if (dryRun) {
         console.log(`DRY RUN delete prefix: ${prefix}`);
@@ -119,10 +156,34 @@ async function seedLookbooks() {
             : null;
 
         const assets = assetFiles.map((filePath, index) => ({
+            kind: "page",
             path: `lookbooks/${id}/pages/${path.basename(filePath)}`,
             type: "image",
             order: index + 1,
+            meta: null,
         }));
+
+        try {
+            if (coverFilePath) {
+                assertAllowedExtension(coverFilePath);
+                await assertFileSizeLimit(coverFilePath, "cover");
+            }
+            assertCountLimit(assetFiles.length, "page");
+            let totalBytes = 0;
+            if (coverFilePath) {
+                const stat = await fs.stat(coverFilePath);
+                totalBytes += stat.size;
+            }
+            for (const filePath of assetFiles) {
+                assertAllowedExtension(filePath);
+                await assertFileSizeLimit(filePath, "page");
+                const stat = await fs.stat(filePath);
+                totalBytes += stat.size;
+            }
+            assertTotalLimit(totalBytes, "lookbook");
+        } catch (err) {
+            throw new Error(`Lookbook ${id}: ${err.message}`);
+        }
 
         if (reset) {
             console.log(`Resetting lookbook ${id}`);
@@ -149,6 +210,7 @@ async function seedLookbooks() {
             name: meta.name || id,
             description: meta.description || null,
             coverPath,
+            pages: assets.map(a => a.path),
             assets,
             source: "seed",
             published: true,
@@ -201,10 +263,34 @@ async function seedEvents() {
             : null;
 
         const assets = assetFiles.map((filePath, index) => ({
+            kind: "gallery",
             path: `events/${id}/assets/${path.basename(filePath)}`,
             type: "image",
             order: index + 1,
+            meta: null,
         }));
+
+        try {
+            if (coverFilePath) {
+                assertAllowedExtension(coverFilePath);
+                await assertFileSizeLimit(coverFilePath, "cover");
+            }
+            assertCountLimit(assetFiles.length, "gallery");
+            let totalBytes = 0;
+            if (coverFilePath) {
+                const stat = await fs.stat(coverFilePath);
+                totalBytes += stat.size;
+            }
+            for (const filePath of assetFiles) {
+                assertAllowedExtension(filePath);
+                await assertFileSizeLimit(filePath, "gallery");
+                const stat = await fs.stat(filePath);
+                totalBytes += stat.size;
+            }
+            assertTotalLimit(totalBytes, "event");
+        } catch (err) {
+            throw new Error(`Event ${id}: ${err.message}`);
+        }
 
         if (reset) {
             console.log(`Resetting event ${id}`);
