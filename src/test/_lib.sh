@@ -36,6 +36,17 @@ require_cmd() {
   done
 }
 
+# preflight_server
+preflight_server() {
+  local base_url=$1
+  local status
+  status=$(curl -s -o /dev/null -w "%{http_code}" "${base_url}/health")
+  if [[ "$status" != "200" ]]; then
+    echo "❌ Server not running, start with: npm run dev" >&2
+    exit 1
+  fi
+}
+
 # print_section
 print_section() {
   echo

@@ -10,6 +10,7 @@ require_cmd curl jq
 require_env BASE_URL TEST_USER_TOKEN
 
 BASE_URL="${BASE_URL}"
+preflight_server "${BASE_URL}"
 AUTH_HEADER=(-H "$(auth_header "${TEST_USER_TOKEN}")")
 JSON_HEADER=(-H "$(json_header)")
 NOW=$(now_ns)

@@ -45,6 +45,12 @@ Required fields for submit:
 
 `https://<BACKEND_URL>/api/v1`
 
+## Media/Storage (MVP1)
+
+- Media paths are canonical storage paths (e.g., `lookbooks/{id}/cover/{file}.webp`).
+- Clients receive short‑lived signed URLs (e.g., `coverUrl`) for read access (TTL 6h).
+- Upload is MVP2; MVP1 uses seeded content only.
+
 ## Error Handling (Flutter)
 
 - 401 `AUTH_MISSING` / `AUTH_INVALID` → re-login
@@ -95,8 +101,8 @@ API Table (actual)
 | Admin       | POST   | /admin/showrooms/{id}/approve | ADMIN only. Pending → approved.                                                         |
 | Admin       | POST   | /admin/showrooms/{id}/reject  | ADMIN only. Pending → rejected (body: { reason }).                                      |
 | Admin       | DELETE | /admin/showrooms/{id}         | ADMIN only. Soft delete any status.                                                     |
-| Lookbooks   | GET    | /lookbooks                    | Public. Stub.                                                                           |
-| Lookbooks   | POST   | /lookbooks/create             | OWNER/MANAGER. Stub.                                                                    |
+| Lookbooks   | GET    | /lookbooks                    | Public. Seeded content (MVP1).                                                          |
+| Lookbooks   | POST   | /lookbooks/create             | OWNER/MANAGER. Stub (MVP2).                                                             |
 | Lookbooks   | POST   | /lookbooks/{id}/rsvp          | Authenticated users. Stub.                                                              |
 | Collections | GET    | /collections/favorites/showrooms | Public/any role. Stub (empty list).                                                 |
 | Collections | GET    | /collections/favorites/lookbooks | Public/any role. Stub (empty list).                                                 |

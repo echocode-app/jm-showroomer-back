@@ -7,13 +7,51 @@ components:
           type: string
         ownerUid:
           type: string
+          nullable: true
+          description: Owner UID (MVP2). Seeded content uses null.
         name:
           type: string
           nullable: true
         description:
           type: string
           nullable: true
+        coverPath:
+          type: string
+          nullable: true
+          description: Storage path (canonical). Use signed URL for access.
+        coverUrl:
+          type: string
+          nullable: true
+          description: Signed read URL (short-lived).
+        assets:
+          type: array
+          nullable: true
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+              type:
+                type: string
+              order:
+                type: integer
+        source:
+          type: string
+          enum: [seed, owner, admin]
+          nullable: true
+        published:
+          type: boolean
+          nullable: true
+        createdBy:
+          type: string
+          nullable: true
+        seedKey:
+          type: string
+          nullable: true
         createdAt:
+          type: string
+          format: date-time
+        updatedAt:
           type: string
           format: date-time
 
@@ -21,7 +59,8 @@ paths:
   /lookbooks:
     get:
       tags: [Lookbooks]
-      summary: List lookbooks (stub)
+      summary: List lookbooks
+      description: Seeded content in MVP1. Owner uploads planned for MVP2.
       security: []
       responses:
         "200":

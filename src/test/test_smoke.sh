@@ -11,10 +11,30 @@ require_env BASE_URL
 
 ENV="${NODE_ENV:-dev}"
 BASE_URL="${BASE_URL}"
+preflight_server "${BASE_URL}"
 
 print_section "Smoke (public)"
 http_request "GET /health" 200 "" "${BASE_URL}/health"
 http_request "GET /showrooms" 200 "" "${BASE_URL}/showrooms"
+http_request "GET /lookbooks" 200 "" "${BASE_URL}/lookbooks"
+
+LOOKBOOK_COUNT=$(json_get "$LAST_BODY" '.data.lookbooks // [] | length')
+if [[ "$LOOKBOOK_COUNT" != "0" ]]; then
+  HAS_UNPUBLISHED=$(json_get "$LAST_BODY" '.data.lookbooks // [] | map(select(.published == false)) | length')
+  if [[ "$HAS_UNPUBLISHED" != "0" ]]; then
+    fail "Unpublished lookbook leaked to public list"
+  fi
+
+  COVER_URL=$(json_get "$LAST_BODY" '.data.lookbooks[0].coverUrl // empty')
+  COVER_PATH=$(json_get "$LAST_BODY" '.data.lookbooks[0].coverPath // empty')
+  assert_non_empty "$COVER_PATH" "coverPath"
+  assert_non_empty "$COVER_URL" "coverUrl"
+  if [[ "$COVER_URL" != http* ]]; then
+    fail "coverUrl is not a URL"
+  fi
+else
+  echo "⚠ No lookbooks returned (seed not run)"
+fi
 
 print_section "Collections stubs (public)"
 http_request "GET /collections/favorites/showrooms" 200 "" \

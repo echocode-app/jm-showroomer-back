@@ -1,5 +1,6 @@
-// src/controllers/lookbookController.js
 import { ok, fail } from "../utils/apiResponse.js";
+import { listLookbooksService } from "../services/lookbooks/listLookbooks.js";
+import { getSignedReadUrl } from "../services/mediaService.js";
 
 // createLookbook
 export async function createLookbook(req, res, next) {
@@ -16,8 +17,17 @@ export async function createLookbook(req, res, next) {
 // listLookbooks
 export async function listLookbooks(req, res, next) {
     try {
-        // TODO
-        return ok(res, { lookbooks: [] }); // TODO
+        const limit = req.query?.limit;
+        const lookbooks = await listLookbooksService({ limit });
+
+        const withUrls = await Promise.all(
+            lookbooks.map(async item => ({
+                ...item,
+                coverUrl: await getSignedReadUrl(item.coverPath),
+            }))
+        );
+
+        return ok(res, { lookbooks: withUrls });
     } catch (err) {
         next(err);
     }
