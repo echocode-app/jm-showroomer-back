@@ -22,6 +22,7 @@ Backend API for the JM Showroomer mobile and web clients. Provides authenticatio
 - **Showroom country rule**: showroom country must match owner country (change blocked)
 - **Profile settings**: `PATCH /users/profile` (country change blocked for owners with active showrooms/lookbooks/events)
 - **Collections stubs**: public empty lists for favorites/visit lists to keep UI stable
+- **Media/Storage (MVP1)**: seeded lookbooks only, signed read URLs (short-lived), uploads reserved for MVP2
 
 ## Error Notes (UI‑relevant)
 - `USER_COUNTRY_CHANGE_BLOCKED` (409): owner cannot change country while having active showrooms/lookbooks/events.

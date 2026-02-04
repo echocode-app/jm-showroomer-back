@@ -50,6 +50,7 @@ paths:
     get:
       tags: [Health]
       summary: Health check
+      operationId: healthCheck
       security: []
       responses:
         "200":
@@ -58,3 +59,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'

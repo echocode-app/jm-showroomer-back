@@ -237,6 +237,7 @@ paths:
       description: |
         Unauthenticated users see approved only.
         Owners see their own showrooms; admins can filter by status.
+      operationId: listShowrooms
       security: []
       parameters:
         - name: country
@@ -280,6 +281,12 @@ paths:
                             type: array
                             items:
                               $ref: '#/components/schemas/Showroom'
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
 
   /showrooms/create:
     post:
@@ -289,6 +296,7 @@ paths:
         Creates a showroom (status=draft).
         Draft mode is supported via body {"draft": true} or query mode=draft.
         Showroom country must match owner country.
+      operationId: createShowroom
       security:
         - bearerAuth: []
       x-roles: [owner, manager]
@@ -325,6 +333,12 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
         "403":
           description: Forbidden or country blocked
           content:
@@ -337,6 +351,7 @@ paths:
       tags: [Showrooms]
       summary: Create or reuse draft showroom
       description: Showroom country must match owner country.
+      operationId: createDraftShowroom
       security:
         - bearerAuth: []
       x-roles: [owner]
@@ -360,6 +375,12 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
 
   /showrooms/{id}:
     parameters:
@@ -375,6 +396,7 @@ paths:
       description: |
         Public for approved showrooms. For non-approved, owner/admin only.
         Authorization header is optional.
+      operationId: getShowroomById
       security: []
       responses:
         "200":
@@ -409,6 +431,7 @@ paths:
         Only owner can edit, only for draft/rejected/approved. Pending is locked.
         Showroom country must match owner country.
         Error codes: SHOWROOM_LOCKED_PENDING (409), SHOWROOM_NOT_EDITABLE (400), NO_FIELDS_TO_UPDATE (400).
+      operationId: updateShowroom
       security:
         - bearerAuth: []
       x-roles: [owner]
@@ -438,6 +461,12 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
         "403":
           description: Forbidden or country blocked (includes country mismatch)
           content:
@@ -463,6 +492,7 @@ paths:
       description: |
         Only owner can delete, only for draft/rejected/approved. Pending is locked.
         Error codes: SHOWROOM_LOCKED_PENDING (409), SHOWROOM_NOT_EDITABLE (400).
+      operationId: deleteShowroom
       security:
         - bearerAuth: []
       x-roles: [owner]
@@ -482,6 +512,12 @@ paths:
                             $ref: '#/components/schemas/Showroom'
         "400":
           description: Not editable
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -521,6 +557,7 @@ paths:
         Status becomes pending and submittedAt is set.
         Showroom country must match owner country.
         Error codes: SHOWROOM_INCOMPLETE (400), SHOWROOM_NAME_ALREADY_EXISTS (400), SHOWROOM_DUPLICATE (400), SHOWROOM_LOCKED_PENDING (409), SHOWROOM_NOT_EDITABLE (400).
+      operationId: submitShowroom
       security:
         - bearerAuth: []
       x-roles: [owner]
@@ -540,6 +577,12 @@ paths:
                             $ref: '#/components/schemas/Showroom'
         "400":
           description: Validation error, incomplete, or not editable
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -574,6 +617,7 @@ paths:
     post:
       tags: [Showrooms]
       summary: Add showroom to favorites (stub)
+      operationId: favoriteShowroom
       security:
         - bearerAuth: []
       responses:

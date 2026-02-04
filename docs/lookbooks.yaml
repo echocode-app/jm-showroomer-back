@@ -15,6 +15,18 @@ components:
         description:
           type: string
           nullable: true
+        pages:
+          type: array
+          nullable: true
+          description: Legacy pages array (paths). Deprecated in favor of assets[].
+          items:
+            type: string
+        galleryPaths:
+          type: array
+          nullable: true
+          description: Legacy gallery array (paths). Deprecated in favor of assets[].
+          items:
+            type: string
         coverPath:
           type: string
           nullable: true
@@ -22,19 +34,27 @@ components:
         coverUrl:
           type: string
           nullable: true
-          description: Signed read URL (short-lived).
+          description: Signed read URL (short-lived, do not persist).
         assets:
           type: array
           nullable: true
           items:
             type: object
             properties:
+              kind:
+                type: string
+                description: cover | page | gallery
               path:
                 type: string
+                description: Storage path (canonical).
               type:
                 type: string
+                description: Media type (image).
               order:
                 type: integer
+              meta:
+                type: object
+                nullable: true
         source:
           type: string
           enum: [seed, owner, admin]
@@ -60,7 +80,12 @@ paths:
     get:
       tags: [Lookbooks]
       summary: List lookbooks
-      description: Seeded content in MVP1. Owner uploads planned for MVP2.
+      description: |
+        Seeded content in MVP1. Owner uploads planned for MVP2.
+        Supported formats: jpg/jpeg/png/webp. Signed URLs are short-lived; clients should not persist them.
+        PDF is reserved for MVP2.
+        Limits: cover max 10MB (1), pages max 15MB (60), gallery max 15MB (30).
+      operationId: listLookbooks
       security: []
       responses:
         "200":
@@ -78,11 +103,35 @@ paths:
                             type: array
                             items:
                               $ref: '#/components/schemas/Lookbook'
+              examples:
+                example:
+                  summary: Lookbooks list
+                  value:
+                    success: true
+                    data:
+                      lookbooks:
+                        - id: "lookbook-1"
+                          name: "Lookbook A"
+                          coverPath: "lookbooks/lookbook-1/cover/cover.webp"
+                          coverUrl: "https://storage.googleapis.com/...signed..."
+                          published: true
+                          source: "seed"
+                          createdAt: "2026-02-01T12:00:00.000Z"
+                          updatedAt: "2026-02-01T12:00:00.000Z"
+                    meta: {}
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
 
   /lookbooks/create:
     post:
       tags: [Lookbooks]
       summary: Create lookbook (stub)
+      description: MVP2. Stub in MVP1.
+      operationId: createLookbook
       security:
         - bearerAuth: []
       x-roles: [owner, manager]
@@ -111,6 +160,24 @@ paths:
                         properties:
                           lookbook:
                             type: object
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
 
   /lookbooks/{id}/rsvp:
     parameters:
@@ -122,6 +189,8 @@ paths:
     post:
       tags: [Lookbooks]
       summary: RSVP to event (stub)
+      description: MVP2. Stub in MVP1.
+      operationId: rsvpLookbookEvent
       security:
         - bearerAuth: []
       responses:
@@ -143,3 +212,15 @@ paths:
                           status:
                             type: string
                             example: "RSVPed"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'

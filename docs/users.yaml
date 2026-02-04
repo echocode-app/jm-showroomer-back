@@ -124,6 +124,7 @@ paths:
     get:
       tags: [Users]
       summary: Get current user
+      operationId: getMyProfile
       security:
         - bearerAuth: []
       responses:
@@ -154,6 +155,7 @@ paths:
     post:
       tags: [Users]
       summary: Complete onboarding
+      operationId: completeOnboarding
       security:
         - bearerAuth: []
       requestBody:
@@ -188,11 +190,24 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
 
   /users/complete-owner-profile:
     post:
       tags: [Users]
       summary: Complete owner profile and auto-upgrade to owner
+      operationId: completeOwnerProfile
       security:
         - bearerAuth: []
       x-roles: [user, owner]
@@ -231,12 +246,25 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
 
   /users/profile:
     patch:
       tags: [Users]
       summary: Update user profile
       description: Requires Bearer auth. Fields instagram/position are owner-only; non-owners receive 403 FORBIDDEN.
+      operationId: updateUserProfile
       security:
         - bearerAuth: []
       requestBody:
@@ -294,6 +322,7 @@ paths:
     get:
       tags: [Collections]
       summary: Favorite showrooms (stub)
+      operationId: listFavoriteShowrooms
       security: []
       responses:
         "200":
@@ -310,11 +339,18 @@ paths:
                           items:
                             type: array
                             items: {}
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
 
   /collections/favorites/lookbooks:
     get:
       tags: [Collections]
       summary: Favorite lookbooks (stub)
+      operationId: listFavoriteLookbooks
       security: []
       responses:
         "200":
@@ -331,11 +367,18 @@ paths:
                           items:
                             type: array
                             items: {}
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
 
   /collections/want-to-visit/events:
     get:
       tags: [Collections]
       summary: Events to visit (stub)
+      operationId: listWantToVisitEvents
       security: []
       responses:
         "200":
@@ -352,3 +395,9 @@ paths:
                           items:
                             type: array
                             items: {}
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'

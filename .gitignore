@@ -1,5 +1,29 @@
-.env.*
-node_modules
+# Dependencies
+node_modules/
 
+# Env (secrets)
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Firebase / emulators / logs
+.firebase/
+firebase-debug.log
+firestore-debug.log
+*-debug.log
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+
+# Assets
+scripts/seed_assets/**
+!scripts/seed_assets/.gitkeep
+!scripts/seed_assets/**/meta.json.example
+!scripts/seed_assets/README.md
+
+# Personal/local docs
 DEV.md
 README_BACKEND_MAP_UA.md

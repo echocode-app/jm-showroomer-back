@@ -4,6 +4,7 @@ paths:
       tags: [Admin]
       summary: List showrooms (admin)
       description: Includes pending and deleted.
+      operationId: listShowroomsAdmin
       security:
         - bearerAuth: []
       x-roles: [admin]
@@ -49,6 +50,18 @@ paths:
                             type: array
                             items:
                               $ref: './showrooms.yaml#/components/schemas/Showroom'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
 
   /admin/showrooms/{id}:
     parameters:
@@ -61,6 +74,7 @@ paths:
     get:
       tags: [Admin]
       summary: Get showroom by ID (admin)
+      operationId: getShowroomAdmin
       security:
         - bearerAuth: []
       x-roles: [admin]
@@ -84,9 +98,22 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
     delete:
       tags: [Admin]
       summary: Soft delete showroom (admin)
+      operationId: deleteShowroomAdmin
       security:
         - bearerAuth: []
       x-roles: [admin]
@@ -116,6 +143,12 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
 
   /admin/showrooms/{id}/approve:
     parameters:
@@ -128,6 +161,7 @@ paths:
     post:
       tags: [Admin]
       summary: Approve showroom
+      operationId: approveShowroom
       security:
         - bearerAuth: []
       x-roles: [admin]
@@ -169,6 +203,12 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
 
   /admin/showrooms/{id}/reject:
     parameters:
@@ -181,6 +221,7 @@ paths:
     post:
       tags: [Admin]
       summary: Reject showroom
+      operationId: rejectShowroom
       security:
         - bearerAuth: []
       x-roles: [admin]

@@ -13,6 +13,7 @@ paths:
     post:
       tags: [Auth]
       summary: Login via Firebase ID token (Google/Apple/any)
+      operationId: oauthLogin
       security: []
       requestBody:
         required: true
@@ -42,6 +43,12 @@ paths:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "401":
           description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "500":
+          description: Auth error
           content:
             application/json:
               schema:

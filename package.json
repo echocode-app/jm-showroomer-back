@@ -26,26 +26,18 @@
   "homepage": "https://github.com/echocode-app/jm-showroomer-back#readme",
   "dependencies": {
     "cors": "^2.8.5",
-    "dompurify": "^3.3.1",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "express-rate-limit": "^8.2.1",
     "firebase": "^12.8.0",
     "firebase-admin": "^13.6.0",
     "joi": "^17.13.3",
-    "jsdom": "^27.4.0",
     "libphonenumber-js": "^1.12.36",
     "lodash.isequal": "^4.5.0",
     "morgan": "^1.10.1",
-    "node-fetch": "^3.3.2",
-    "swagger-ui-express": "^5.0.1",
-    "yamljs": "^0.3.0"
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
-    "chai": "^6.2.2",
-    "cross-env": "^10.1.0",
-    "mocha": "^11.7.5",
-    "nodemon": "^3.1.11",
-    "supertest": "^7.2.2"
+    "nodemon": "^3.1.11"
   }
 }
