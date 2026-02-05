@@ -1,11 +1,15 @@
 import { getFirestoreInstance } from "../../config/firebase.js";
 import { isCountryBlocked } from "../../constants/countries.js";
+import { normalizeCity } from "../../utils/geoValidation.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 
 // listShowroomsService
 export async function listShowroomsService(filters = {}, user = null) {
     if (useDevMock) {
         let result = DEV_STORE.showrooms;
+        const cityNormalized = filters.city
+            ? normalizeCity(filters.city)
+            : null;
 
         if (!user) {
             result = result.filter(s => s.status === "approved");
@@ -20,7 +24,9 @@ export async function listShowroomsService(filters = {}, user = null) {
         }
 
         if (filters.country) result = result.filter(s => s.country === filters.country);
-        if (filters.city) result = result.filter(s => s.city === filters.city);
+        if (cityNormalized) {
+            result = result.filter(s => s.geo?.cityNormalized === cityNormalized);
+        }
         if (filters.type) result = result.filter(s => s.type === filters.type);
         if (filters.availability) {
             result = result.filter(s => s.availability === filters.availability);
@@ -37,6 +43,9 @@ export async function listShowroomsService(filters = {}, user = null) {
 
     const db = getFirestoreInstance();
     let query = db.collection("showrooms");
+    const cityNormalized = filters.city
+        ? normalizeCity(filters.city)
+        : null;
 
     if (!user) {
         query = query.where("status", "==", "approved");
@@ -51,7 +60,9 @@ export async function listShowroomsService(filters = {}, user = null) {
     }
 
     if (filters.country) query = query.where("country", "==", filters.country);
-    if (filters.city) query = query.where("city", "==", filters.city);
+    if (cityNormalized) {
+        query = query.where("geo.cityNormalized", "==", cityNormalized);
+    }
     if (filters.type) query = query.where("type", "==", filters.type);
     if (filters.availability) {
         query = query.where("availability", "==", filters.availability);

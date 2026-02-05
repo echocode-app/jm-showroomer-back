@@ -93,6 +93,40 @@ http_request "PATCH step3 (address/city/location)" 200 "" \
   -d "{\"address\":\"${ADDRESS_MAIN}\",\"city\":\"Kyiv\",\"location\":{\"lat\":50.45,\"lng\":30.52}}" \
   "${BASE_URL}/showrooms/$SHOWROOM_ID"
 
+print_section "Geo model"
+GEO_CITY_1="Kyiv"
+GEO_CITY_2="Lviv"
+
+http_request "PATCH geo (initial)" 200 "" \
+  -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+  -d "{\"geo\":{\"city\":\"${GEO_CITY_1}\",\"country\":\"Ukraine\",\"coords\":{\"lat\":50.4501,\"lng\":30.5234},\"placeId\":\"test-place-${NOW}\"}}" \
+  "${BASE_URL}/showrooms/$SHOWROOM_ID"
+
+http_request "GET after geo (initial)" 200 "" \
+  "${AUTH_HEADER[@]}" \
+  "${BASE_URL}/showrooms/$SHOWROOM_ID"
+
+assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.city')" "$GEO_CITY_1" "geo.city"
+assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.cityNormalized')" "kyiv" "geo.cityNormalized"
+assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.coords.lat')" "50.4501" "geo.coords.lat"
+assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.coords.lng')" "30.5234" "geo.coords.lng"
+assert_non_empty "$(json_get "$LAST_BODY" '.data.showroom.geo.geohash')" "geo.geohash"
+
+http_request "PATCH geo (update)" 200 "" \
+  -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+  -d "{\"geo\":{\"city\":\"${GEO_CITY_2}\",\"country\":\"Ukraine\",\"coords\":{\"lat\":49.8397,\"lng\":24.0297},\"placeId\":\"test-place-${NOW}-2\"}}" \
+  "${BASE_URL}/showrooms/$SHOWROOM_ID"
+
+http_request "GET after geo (update)" 200 "" \
+  "${AUTH_HEADER[@]}" \
+  "${BASE_URL}/showrooms/$SHOWROOM_ID"
+
+assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.city')" "$GEO_CITY_2" "geo.city updated"
+assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.cityNormalized')" "lviv" "geo.cityNormalized updated"
+assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.coords.lat')" "49.8397" "geo.coords.lat updated"
+assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.coords.lng')" "24.0297" "geo.coords.lng updated"
+assert_non_empty "$(json_get "$LAST_BODY" '.data.showroom.geo.geohash')" "geo.geohash updated"
+
 print_section "Submit incomplete"
 http_request "PATCH force incomplete (clear contacts)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
@@ -196,6 +230,32 @@ http_request "PATCH pending showroom" 409 "SHOWROOM_LOCKED_PENDING" \
 http_request "DELETE pending showroom" 409 "SHOWROOM_LOCKED_PENDING" \
   -X DELETE "${AUTH_HEADER[@]}" \
   "${BASE_URL}/showrooms/$SHOWROOM_ID"
+
+if [[ -n "${TEST_ADMIN_TOKEN:-}" ]]; then
+  print_section "Admin approve + geo preserved"
+  ADMIN_HEADER=(-H "$(auth_header "${TEST_ADMIN_TOKEN}")")
+
+  http_request "POST /admin/showrooms/{id}/approve" 200 "" \
+    -X POST "${ADMIN_HEADER[@]}" "${JSON_HEADER[@]}" \
+    -d '{}' \
+    "${BASE_URL}/admin/showrooms/$SHOWROOM_ID/approve"
+
+  http_request "GET after approve (geo)" 200 "" \
+    "${AUTH_HEADER[@]}" \
+    "${BASE_URL}/showrooms/$SHOWROOM_ID"
+
+  assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.city')" "$GEO_CITY_2" "geo.city after approve"
+  assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.cityNormalized')" "lviv" "geo.cityNormalized after approve"
+  assert_non_empty "$(json_get "$LAST_BODY" '.data.showroom.geo.geohash')" "geo.geohash after approve"
+
+  print_section "City search (public)"
+  LIST_RESPONSE=$(curl -s "${BASE_URL}/showrooms?city=${GEO_CITY_2}")
+  echo "$LIST_RESPONSE"
+  FOUND_COUNT=$(echo "$LIST_RESPONSE" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms // [] | map(select(.id == $id)) | length')
+  assert_eq "$FOUND_COUNT" "1" "showroom found by city filter"
+else
+  echo "⚠ Skipping admin approve + city search (TEST_ADMIN_TOKEN not set)"
+fi
 
 print_section "Country change blocked"
 http_request "PATCH /users/profile (country change blocked)" 409 "USER_COUNTRY_CHANGE_BLOCKED" \

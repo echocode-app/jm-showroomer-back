@@ -44,6 +44,38 @@ components:
         timestamp:
           type: string
           format: date-time
+    GeoCoords:
+      type: object
+      required: [lat, lng]
+      properties:
+        lat:
+          type: number
+          minimum: -90
+          maximum: 90
+        lng:
+          type: number
+          minimum: -180
+          maximum: 180
+    GeoLocation:
+      type: object
+      required: [city, coords]
+      properties:
+        city:
+          type: string
+        cityNormalized:
+          type: string
+          readOnly: true
+        country:
+          type: string
+          nullable: true
+        coords:
+          $ref: '#/components/schemas/GeoCoords'
+        geohash:
+          type: string
+          readOnly: true
+        placeId:
+          type: string
+          nullable: true
 
 paths:
   /health:

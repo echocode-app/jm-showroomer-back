@@ -10,6 +10,7 @@ import {
     validatePhone,
     validateShowroomName,
 } from "../../utils/showroomValidation.js";
+import { buildGeo } from "../../utils/geoValidation.js";
 import { createDraftShowroom } from "./createDraftShowroom.js";
 import { isSameCountry } from "./_helpers.js";
 import { DEV_STORE, generateId, useDevMock } from "./_store.js";
@@ -40,6 +41,8 @@ export async function createShowroom(data, ownerUid, options = {}) {
 
     const address = data.address ? normalizeAddress(data.address) : null;
     const addressNormalized = address ? normalizeAddressForCompare(address) : null;
+
+    const geo = data.geo ? buildGeo(data.geo) : null;
 
     const contacts = {
         phone: null,
@@ -80,6 +83,7 @@ export async function createShowroom(data, ownerUid, options = {}) {
             nameNormalized,
             address,
             addressNormalized,
+            geo,
             contacts,
         };
 
@@ -117,6 +121,7 @@ export async function createShowroom(data, ownerUid, options = {}) {
         addressNormalized,
         country: data.country,
         city: data.city ?? null,
+        geo,
         contacts: {
             phone: contacts?.phone ?? null,
             instagram: contacts?.instagram ?? null,

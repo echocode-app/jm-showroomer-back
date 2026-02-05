@@ -16,6 +16,7 @@ preflight_server "${BASE_URL}"
 print_section "Smoke (public)"
 http_request "GET /health" 200 "" "${BASE_URL}/health"
 http_request "GET /showrooms" 200 "" "${BASE_URL}/showrooms"
+http_request "GET /showrooms?city=Kyiv" 200 "" "${BASE_URL}/showrooms?city=Kyiv"
 http_request "GET /lookbooks" 200 "" "${BASE_URL}/lookbooks"
 
 LOOKBOOK_COUNT=$(json_get "$LAST_BODY" '.data.lookbooks // [] | length')

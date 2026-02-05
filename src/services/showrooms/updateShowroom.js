@@ -10,6 +10,7 @@ import {
     validatePhone,
     validateShowroomName,
 } from "../../utils/showroomValidation.js";
+import { buildGeo } from "../../utils/geoValidation.js";
 import { appendHistory, buildDiff, isSameCountry, makeHistoryEntry } from "./_helpers.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 
@@ -64,6 +65,14 @@ export async function updateShowroomService(id, data, user) {
         }
 
         data.contacts = contacts;
+    }
+
+    if (data.geo !== undefined) {
+        if (data.geo) {
+            data.geo = buildGeo(data.geo);
+        } else {
+            data.geo = null;
+        }
     }
 
     if (useDevMock) {

@@ -41,6 +41,38 @@ Notes:
 Required fields for submit:  
 `name`, `type`, `country`, `address`, `city`, `availability`, `contacts.phone`, `contacts.instagram`, `location.lat`, `location.lng`.
 
+## Geo model (MVP1)
+
+The client provides geo data; the backend does **not** geocode or call Google APIs.
+Send `geo` during draft PATCH or create; backend computes `cityNormalized` and `geohash`.
+
+Geo payload example:
+
+```json
+{
+  "geo": {
+    "city": "Kyiv",
+    "country": "Ukraine",
+    "coords": { "lat": 50.4501, "lng": 30.5234 },
+    "placeId": "ChIJBUVa4U7P1EAR_kYBF9IxSXY"
+  }
+}
+```
+
+Rules:
+- Send only `geo.city`, `geo.country`, `geo.coords`, `geo.placeId`.
+- Do **not** send `cityNormalized` or `geohash` (backend fills them).
+- `geo` is optional for drafts/legacy records.
+
+Search by city (public): `GET /showrooms?city=Kyiv`  
+Filter uses normalized city on backend (`geo.cityNormalized`).
+
+Response includes:
+`geo.cityNormalized` (lowercase/trimmed) and `geo.geohash` (precision 9).
+
+Possible Firestore index:
+If combining `city` with other filters (e.g., `status`, `ownerUid`), Firestore may require a composite index.
+
 ## Base URL
 
 `https://<BACKEND_URL>/api/v1`

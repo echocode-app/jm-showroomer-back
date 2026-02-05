@@ -10,6 +10,18 @@ const locationSchema = Joi.object({
     lng: Joi.number(),
 }).min(1);
 
+const geoCoordsSchema = Joi.object({
+    lat: Joi.number().min(-90).max(90).required(),
+    lng: Joi.number().min(-180).max(180).required(),
+}).required();
+
+const geoSchema = Joi.object({
+    city: Joi.string().required(),
+    country: Joi.string().allow(null),
+    coords: geoCoordsSchema,
+    placeId: Joi.string().allow(null),
+}).unknown(false);
+
 export const showroomUpdateSchema = Joi.object({
     name: Joi.string(),
     type: Joi.string(),
@@ -21,6 +33,7 @@ export const showroomUpdateSchema = Joi.object({
     city: Joi.string().allow("", null),
     contacts: contactsSchema,
     location: locationSchema,
+    geo: geoSchema,
 
     status: Joi.forbidden(),
     ownerUid: Joi.forbidden(),

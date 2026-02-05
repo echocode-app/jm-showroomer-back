@@ -11,6 +11,7 @@ export const EDITABLE_FIELDS = [
     "city",
     "contacts",
     "location",
+    "geo",
 ];
 
 export const HISTORY_LIMIT = 200;

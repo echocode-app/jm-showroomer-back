@@ -84,6 +84,10 @@ components:
       $ref: './showrooms.yaml#/components/schemas/Contacts'
     Location:
       $ref: './showrooms.yaml#/components/schemas/Location'
+    GeoCoords:
+      $ref: './showrooms.yaml#/components/schemas/GeoCoords'
+    GeoLocation:
+      $ref: './showrooms.yaml#/components/schemas/GeoLocation'
     Showroom:
       $ref: './showrooms.yaml#/components/schemas/Showroom'
     CreateShowroomInput:
