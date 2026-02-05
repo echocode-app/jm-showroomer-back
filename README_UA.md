@@ -99,6 +99,8 @@ JM Showroomer Backend забезпечує:
 
 **Пошук:** `GET /showrooms?city=Kyiv` (фільтр по `geo.cityNormalized`).
 
+**Country формат:** повна назва країни (наприклад `Ukraine`), **не** ISO2.
+
 **Статуси:**
 - `draft` — чернетка (редагується),
 - `pending` — відправлено на модерацію (owner не може редагувати/видаляти),

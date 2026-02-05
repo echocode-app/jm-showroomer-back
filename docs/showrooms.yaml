@@ -40,6 +40,7 @@ components:
         country:
           type: string
           nullable: true
+          description: Full country name (e.g., Ukraine). Not ISO2.
         coords:
           $ref: '#/components/schemas/GeoCoords'
         geohash:
@@ -83,6 +84,7 @@ components:
           readOnly: true
         country:
           type: string
+          description: Full country name (e.g., Ukraine). Not ISO2.
         city:
           type: string
           nullable: true
@@ -195,6 +197,7 @@ components:
               type: string
             country:
               type: string
+              description: Full country name (e.g., Ukraine). Not ISO2.
             city:
               type: string
             contacts:
@@ -227,7 +230,7 @@ components:
               type: string
             country:
               type: string
-              description: russia/belarus blocked
+              description: Full country name (e.g., Ukraine). Not ISO2. russia/belarus blocked.
             city:
               type: string
             contacts:
@@ -259,7 +262,7 @@ components:
           type: string
         country:
           type: string
-          description: Must match owner country (change blocked).
+          description: Full country name (e.g., Ukraine). Not ISO2. Must match owner country (change blocked).
         city:
           type: string
         contacts:

@@ -63,12 +63,18 @@ Rules:
 - Send only `geo.city`, `geo.country`, `geo.coords`, `geo.placeId`.
 - Do **not** send `cityNormalized` or `geohash` (backend fills them).
 - `geo` is optional for drafts/legacy records.
+- `geo` is updated as a whole object (no partial or null removal).
+- `country` uses full name (e.g., `Ukraine`), **not** ISO2.
 
 Search by city (public): `GET /showrooms?city=Kyiv`  
 Filter uses normalized city on backend (`geo.cityNormalized`).
 
 Response includes:
 `geo.cityNormalized` (lowercase/trimmed) and `geo.geohash` (precision 9).
+
+Location vs Geo:
+- `location` is legacy address coordinates.
+- `geo.coords` is the canonical geo used for search.
 
 Possible Firestore index:
 If combining `city` with other filters (e.g., `status`, `ownerUid`), Firestore may require a composite index.

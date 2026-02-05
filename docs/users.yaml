@@ -32,6 +32,7 @@ components:
         country:
           type: string
           nullable: true
+          description: Full country name (e.g., Ukraine). Not ISO2.
         appLanguage:
           type: string
           nullable: true
@@ -84,7 +85,7 @@ components:
       properties:
         country:
           type: string
-          description: User country (russia/belarus blocked)
+          description: Full country name (e.g., Ukraine). Not ISO2. russia/belarus blocked.
 
     CompleteOwnerProfileInput:
       type: object
@@ -97,6 +98,7 @@ components:
           nullable: true
         country:
           type: string
+          description: Full country name (e.g., Ukraine). Not ISO2. russia/belarus blocked.
         instagram:
           type: string
     UserProfileUpdateInput:
@@ -107,6 +109,7 @@ components:
           type: string
         country:
           type: string
+          description: Full country name (e.g., Ukraine). Not ISO2. russia/belarus blocked.
         instagram:
           type: string
           description: Owner-only field (role=owner). Non-owners get 403 FORBIDDEN.

@@ -15,6 +15,7 @@ AUTH_HEADER=(-H "$(auth_header "${TEST_USER_TOKEN}")")
 ADMIN_HEADER=(-H "$(auth_header "${TEST_ADMIN_TOKEN}")")
 JSON_HEADER=(-H "$(json_header)")
 NOW=$(now_ns)
+SHORT_NOW="${NOW: -6}"
 
 print_section "Collections stubs (public)"
 http_request "GET /collections/favorites/showrooms" 200 "" \
@@ -43,10 +44,10 @@ http_request "POST /admin/showrooms/{id}/reject (draft)" 400 "SHOWROOM_NOT_EDITA
   -d '{"reason":"Invalid state"}' \
   "${BASE_URL}/admin/showrooms/${SHOWROOM_ID}/reject"
 
-NAME_MAIN="Admin Review Showroom ${NOW}"
+NAME_MAIN="Admin Review ${SHORT_NOW}"
 http_request "PATCH /showrooms/{id} (complete data)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d "{\"name\":\"${NAME_MAIN}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"address\":\"Main St 2\",\"city\":\"Kyiv\",\"availability\":\"open\",\"contacts\":{\"phone\":\"+380501112244\",\"instagram\":\"https://instagram.com/review${NOW}\"},\"location\":{\"lat\":50.45,\"lng\":30.52}}" \
+  -d "{\"name\":\"${NAME_MAIN}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"address\":\"Main St 2\",\"city\":\"Kyiv\",\"availability\":\"open\",\"contacts\":{\"phone\":\"+380501112244\",\"instagram\":\"https://instagram.com/review${SHORT_NOW}\"},\"location\":{\"lat\":50.45,\"lng\":30.52}}" \
   "${BASE_URL}/showrooms/${SHOWROOM_ID}"
 
 http_request "POST /showrooms/{id}/submit" 200 "" \
@@ -103,7 +104,7 @@ if [[ "$PENDING_SNAPSHOT" != "null" && -n "$PENDING_SNAPSHOT" ]]; then
 fi
 
 print_section "Owner resubmit -> admin approve"
-UPDATED_NAME="Admin Review Updated ${NOW}"
+UPDATED_NAME="Admin Review Updated ${SHORT_NOW}"
 http_request "PATCH rejected (update name)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
   -d "{\"name\":\"${UPDATED_NAME}\"}" \

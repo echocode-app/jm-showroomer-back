@@ -62,7 +62,10 @@ paths:
 
 components:
   securitySchemes:
-    $ref: './common.yaml#/components/securitySchemes'
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     ApiSuccess:
       $ref: './common.yaml#/components/schemas/ApiSuccess'
