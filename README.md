@@ -19,6 +19,28 @@ Backend API for JM Showroomer clients. Focus: authentication, showroom lifecycle
 - **Audit**: edit history with diffs
 - **Soft delete**: hidden from public/owner lists
 
+## Search & Pagination (Showrooms)
+- `limit`: 1..100, default 20
+- `fields`: `marker` or `card`
+- `q`: prefix search by `nameNormalized` (ignored when `city` is set or `qMode=city`)
+- `city`: exact match on `geo.cityNormalized`
+- `brand`: exact match on `brandsNormalized`
+- `geohashPrefix` or `geohashPrefixes[]`
+- `cursor`: base64 JSON with version `v`
+
+Cursor limitations:
+- Cursor works only with a single `geohashPrefix`.
+- Cursor is not supported for `geohashPrefixes[]`.
+- Cursor is not supported for `geohashPrefix + q`.
+
+Validation errors:
+- `QUERY_INVALID`
+- `CURSOR_INVALID`
+
+Search implementation:
+- `src/services/showrooms/listShowrooms.js` (entry)
+- `src/services/showrooms/list/` (parse/utils/ordering/dev/firestore)
+
 ## UI‑Relevant Errors
 - `USER_COUNTRY_CHANGE_BLOCKED` (409)
 - `SHOWROOM_LOCKED_PENDING` (409)

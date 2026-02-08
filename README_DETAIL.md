@@ -79,6 +79,32 @@ Location vs Geo:
 Possible Firestore index:
 If combining `city` with other filters (e.g., `status`, `ownerUid`), Firestore may require a composite index.
 
+## Showroom Search & Pagination
+
+Query params:
+- `limit`: 1..100, default 20
+- `fields`: `marker` or `card`
+- `q`: prefix search by `nameNormalized` (ignored when `city` is set or `qMode=city`)
+- `qMode`: `city` or `name` (forces how `q` is interpreted)
+- `city`: exact match on `geo.cityNormalized`
+- `brand`: exact match on `brandsNormalized`
+- `category` or `categories`
+- `geohashPrefix` or `geohashPrefixes[]`
+- `cursor`: base64 JSON with version `v`
+
+Cursor limitations:
+- Cursor works only with a single `geohashPrefix`.
+- Cursor is not supported for `geohashPrefixes[]`.
+- Cursor is not supported for `geohashPrefix + q`.
+
+Validation errors:
+- `QUERY_INVALID`
+- `CURSOR_INVALID`
+
+Search implementation:
+- `src/services/showrooms/listShowrooms.js` (entry)
+- `src/services/showrooms/list/` (parse/utils/ordering/dev/firestore)
+
 ## Base URL
 
 `https://<BACKEND_URL>/api/v1`

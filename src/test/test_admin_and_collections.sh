@@ -25,6 +25,10 @@ http_request "GET /collections/favorites/lookbooks" 200 "" \
 http_request "GET /collections/want-to-visit/events" 200 "" \
   "${BASE_URL}/collections/want-to-visit/events"
 
+print_section "Cursor validation (public)"
+http_request "GET /showrooms?cursor=bad (invalid)" 400 "CURSOR_INVALID" \
+  "${BASE_URL}/showrooms?cursor=bad"
+
 print_section "Admin review flow"
 http_request "POST /showrooms/draft" 200 "" \
   -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \

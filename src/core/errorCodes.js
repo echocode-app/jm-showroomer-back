@@ -24,6 +24,8 @@ export const ERROR_STATUS = {
     SHOWROOM_NAME_ALREADY_EXISTS: 400,
     SHOWROOM_DUPLICATE: 400,
     NO_FIELDS_TO_UPDATE: 400,
+    QUERY_INVALID: 400,
+    CURSOR_INVALID: 400,
     SHOWROOM_LOCKED_PENDING: 409,
     SHOWROOM_PENDING_SNAPSHOT_MISSING: 409,
     USER_COUNTRY_CHANGE_BLOCKED: 409,
@@ -43,6 +45,8 @@ export const ERROR_MESSAGE = {
     USER_NOT_FOUND: "User profile not found",
     NOT_FOUND: "Not found",
     VALIDATION_ERROR: "Validation error",
+    QUERY_INVALID: "Query parameters are invalid",
+    CURSOR_INVALID: "Cursor is invalid",
     SHOWROOM_LOCKED_PENDING: "Showroom is under review",
     SHOWROOM_PENDING_SNAPSHOT_MISSING: "Pending snapshot missing; cannot approve",
     USER_COUNTRY_CHANGE_BLOCKED:

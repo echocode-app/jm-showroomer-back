@@ -85,7 +85,7 @@ fi
 
 http_request "PATCH step2 (country/availability)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d "{\"country\":\"Ukraine\",\"availability\":\"${AVAILABILITY_NEXT}\"}" \
+  -d "{\"country\":\"Ukraine\",\"availability\":\"${AVAILABILITY_NEXT}\",\"category\":\"womenswear\",\"brands\":[\"Brand A\",\"Brand B\"]}" \
   "${BASE_URL}/showrooms/$SHOWROOM_ID"
 
 http_request "PATCH step3 (address/city/location)" 200 "" \
@@ -253,6 +253,43 @@ if [[ -n "${TEST_ADMIN_TOKEN:-}" ]]; then
   echo "$LIST_RESPONSE"
   FOUND_COUNT=$(echo "$LIST_RESPONSE" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms // [] | map(select(.id == $id)) | length')
   assert_eq "$FOUND_COUNT" "1" "showroom found by city filter"
+
+  print_section "Search + marker payload"
+  GEOHASH=$(json_get "$LAST_BODY" '.data.showroom.geo.geohash // empty')
+  assert_non_empty "$GEOHASH" "geo.geohash"
+  GEO_PREFIX="${GEOHASH:0:5}"
+
+  LIST_RESPONSE=$(curl -s "${BASE_URL}/showrooms?geohashPrefix=${GEO_PREFIX}&fields=marker&limit=20")
+  echo "$LIST_RESPONSE"
+  FOUND_COUNT=$(echo "$LIST_RESPONSE" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms // [] | map(select(.id == $id)) | length')
+  assert_eq "$FOUND_COUNT" "1" "showroom found by geohashPrefix"
+
+  MARKER_NAME=$(echo "$LIST_RESPONSE" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms[] | select(.id == $id) | .name // empty')
+  MARKER_LAT=$(echo "$LIST_RESPONSE" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms[] | select(.id == $id) | .geo.coords.lat // empty')
+  MARKER_TYPE=$(echo "$LIST_RESPONSE" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms[] | select(.id == $id) | .type // empty')
+  MARKER_CATEGORY=$(echo "$LIST_RESPONSE" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms[] | select(.id == $id) | .category // empty')
+  assert_non_empty "$MARKER_NAME" "marker name"
+  assert_non_empty "$MARKER_LAT" "marker geo.coords.lat"
+  assert_non_empty "$MARKER_TYPE" "marker type"
+  assert_eq "$MARKER_CATEGORY" "womenswear" "marker category"
+
+  print_section "Brand + name search (public)"
+  LIST_RESPONSE=$(curl -s "${BASE_URL}/showrooms?brand=brand%20a&limit=20")
+  echo "$LIST_RESPONSE"
+  FOUND_COUNT=$(echo "$LIST_RESPONSE" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms // [] | map(select(.id == $id)) | length')
+  assert_eq "$FOUND_COUNT" "1" "showroom found by brand filter"
+
+  NAME_PREFIX="${SUBMITTED_NAME:0:3}"
+  LIST_RESPONSE=$(curl -s "${BASE_URL}/showrooms?q=${NAME_PREFIX}&limit=20")
+  echo "$LIST_RESPONSE"
+  FOUND_COUNT=$(echo "$LIST_RESPONSE" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms // [] | map(select(.id == $id)) | length')
+  assert_eq "$FOUND_COUNT" "1" "showroom found by name prefix"
+
+  print_section "qMode=city (public)"
+  LIST_RESPONSE=$(curl -s "${BASE_URL}/showrooms?q=${GEO_CITY_2}&qMode=city&limit=20")
+  echo "$LIST_RESPONSE"
+  FOUND_COUNT=$(echo "$LIST_RESPONSE" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms // [] | map(select(.id == $id)) | length')
+  assert_eq "$FOUND_COUNT" "1" "showroom found by qMode=city"
 else
   echo "⚠ Skipping admin approve + city search (TEST_ADMIN_TOKEN not set)"
 fi
@@ -292,8 +329,13 @@ http_request "POST /showrooms/{id}/submit (owner duplicate name)" 400 "SHOWROOM_
   "${BASE_URL}/showrooms/$SECOND_ID/submit"
 
 if [[ -n "${TEST_OWNER_TOKEN_2:-}" ]]; then
-  print_section "Duplicate checks (global)"
+  print_section "Owner2 token validation"
   OWNER2_AUTH_HEADER=(-H "$(auth_header "${TEST_OWNER_TOKEN_2}")")
+  OWNER2_ME_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${OWNER2_AUTH_HEADER[@]}" "${BASE_URL}/users/me")
+  if [[ "$OWNER2_ME_STATUS" != "200" ]]; then
+    echo "⚠ TEST_OWNER_TOKEN_2 invalid; skipping global duplicate tests"
+  else
+    print_section "Duplicate checks (global)"
 
   http_request "POST /showrooms/create (other owner draft)" 200 "" \
     -X POST "${OWNER2_AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
@@ -312,6 +354,7 @@ if [[ -n "${TEST_OWNER_TOKEN_2:-}" ]]; then
     -X POST "${OWNER2_AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
     -d '{}' \
     "${BASE_URL}/showrooms/$OTHER_ID/submit"
+  fi
 else
   echo "⚠ Skipping global duplicate test (TEST_OWNER_TOKEN_2 not set)"
 fi

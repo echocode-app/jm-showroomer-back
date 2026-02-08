@@ -26,8 +26,15 @@ components:
       properties:
         code:
           type: string
+          description: Error code. See ErrorCode for common values.
         message:
           type: string
+    ErrorCode:
+      type: string
+      description: Common error codes (partial list).
+      enum:
+        - QUERY_INVALID
+        - CURSOR_INVALID
     HealthResponse:
       type: object
       properties:

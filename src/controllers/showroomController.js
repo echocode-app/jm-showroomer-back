@@ -37,8 +37,11 @@ export async function createDraftShowroomController(req, res, next) {
 // LIST
 export async function listShowrooms(req, res, next) {
     try {
-        const showrooms = await listShowroomsService(req.query, req.user ?? null);
-        return ok(res, { showrooms });
+        const { showrooms, meta } = await listShowroomsService(
+            req.query,
+            req.user ?? null
+        );
+        return ok(res, { showrooms }, meta);
     } catch (err) {
         next(err);
     }

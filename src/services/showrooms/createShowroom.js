@@ -5,6 +5,7 @@ import {
     normalizeAddress,
     normalizeAddressForCompare,
     normalizeInstagramUrl,
+    normalizeBrands,
     normalizeShowroomName,
     validateInstagramUrl,
     validatePhone,
@@ -43,6 +44,7 @@ export async function createShowroom(data, ownerUid, options = {}) {
     const addressNormalized = address ? normalizeAddressForCompare(address) : null;
 
     const geo = data.geo ? buildGeo(data.geo) : null;
+    const brandsNormalized = normalizeBrands(data.brands ?? []);
 
     const contacts = {
         phone: null,
@@ -84,6 +86,7 @@ export async function createShowroom(data, ownerUid, options = {}) {
             address,
             addressNormalized,
             geo,
+            brandsNormalized,
             contacts,
         };
 
@@ -117,6 +120,7 @@ export async function createShowroom(data, ownerUid, options = {}) {
         availability: data.availability ?? null,
         category: data.category ?? null,
         brands: data.brands ?? [],
+        brandsNormalized,
         address,
         addressNormalized,
         country: data.country,

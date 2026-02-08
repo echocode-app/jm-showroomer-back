@@ -1,3 +1,5 @@
+// Constants: media policy.
+
 export const MEDIA_POLICY = {
     allowedImageContentTypesNow: ["image/jpeg", "image/png", "image/webp"],
     reservedFutureContentTypes: ["application/pdf"],

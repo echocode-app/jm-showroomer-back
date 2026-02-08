@@ -5,6 +5,7 @@ import {
     normalizeAddress,
     normalizeAddressForCompare,
     normalizeInstagramUrl,
+    normalizeBrands,
     normalizeShowroomName,
     validateInstagramUrl,
     validatePhone,
@@ -41,6 +42,12 @@ export async function updateShowroomService(id, data, user) {
         }
     } else if (data.addressNormalized !== undefined) {
         delete data.addressNormalized;
+    }
+
+    if (data.brands !== undefined) {
+        data.brandsNormalized = normalizeBrands(data.brands);
+    } else if (data.brandsNormalized !== undefined) {
+        delete data.brandsNormalized;
     }
 
     if (data.contacts !== undefined) {

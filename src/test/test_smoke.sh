@@ -19,6 +19,18 @@ http_request "GET /showrooms" 200 "" "${BASE_URL}/showrooms"
 http_request "GET /showrooms?city=Kyiv" 200 "" "${BASE_URL}/showrooms?city=Kyiv"
 http_request "GET /lookbooks" 200 "" "${BASE_URL}/lookbooks"
 
+print_section "Public list validation (query errors)"
+http_request "GET /showrooms?limit=0 (invalid)" 400 "QUERY_INVALID" \
+  "${BASE_URL}/showrooms?limit=0"
+http_request "GET /showrooms?limit=101 (invalid)" 400 "QUERY_INVALID" \
+  "${BASE_URL}/showrooms?limit=101"
+http_request "GET /showrooms?fields=bad (invalid)" 400 "QUERY_INVALID" \
+  "${BASE_URL}/showrooms?fields=bad"
+http_request "GET /showrooms?cursor=invalid (invalid)" 400 "CURSOR_INVALID" \
+  "${BASE_URL}/showrooms?cursor=invalid"
+http_request "GET /showrooms?geohashPrefixes=a,b&cursor=xxxx (invalid combo)" 400 "CURSOR_INVALID" \
+  "${BASE_URL}/showrooms?geohashPrefixes=a,b&cursor=xxxx"
+
 LOOKBOOK_COUNT=$(json_get "$LAST_BODY" '.data.lookbooks // [] | length')
 if [[ "$LOOKBOOK_COUNT" != "0" ]]; then
   HAS_UNPUBLISHED=$(json_get "$LAST_BODY" '.data.lookbooks // [] | map(select(.published == false)) | length')

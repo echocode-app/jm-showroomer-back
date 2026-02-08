@@ -280,9 +280,22 @@ paths:
       description: |
         Unauthenticated users see approved only.
         Owners see their own showrooms; admins can filter by status.
+        Cursor is supported only for a single geohashPrefix. Cursor is not supported
+        for multiple geohashPrefixes or when combining geohashPrefix with q/name search.
       operationId: listShowrooms
       security: []
       parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: Prefix search over showroom name (nameNormalized). Ignored when city is provided or qMode=city.
+        - name: qMode
+          in: query
+          schema:
+            type: string
+            enum: [city, name]
+          description: Forces q to be treated as city search (geo.cityNormalized).
         - name: country
           in: query
           schema:
@@ -291,6 +304,12 @@ paths:
           in: query
           schema:
             type: string
+          description: Exact match on geo.cityNormalized.
+        - name: brand
+          in: query
+          schema:
+            type: string
+          description: Exact match via brandsNormalized (array-contains).
         - name: type
           in: query
           schema:
@@ -299,6 +318,33 @@ paths:
           in: query
           schema:
             type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: categories
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: false
+          description: Comma-separated list or repeated params.
+        - name: geohashPrefix
+          in: query
+          schema:
+            type: string
+          description: Single geohash prefix for viewport filtering (cursor supported).
+        - name: geohashPrefixes
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: false
+          description: Multiple geohash prefixes (cursor not supported; hasMore=false).
         - name: status
           in: query
           schema:
@@ -308,6 +354,19 @@ paths:
           schema:
             type: integer
             default: 20
+            minimum: 1
+            maximum: 100
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Base64 JSON cursor with version v. Not supported for multi geohash prefixes.
+        - name: fields
+          in: query
+          schema:
+            type: string
+            enum: [marker, card]
+          description: Payload mode for list/map rendering.
       responses:
         "200":
           description: Showrooms list
@@ -324,6 +383,68 @@ paths:
                             type: array
                             items:
                               $ref: '#/components/schemas/Showroom'
+                      meta:
+                        type: object
+                        properties:
+                          hasMore:
+                            type: boolean
+                          nextCursor:
+                            type: string
+                            nullable: true
+              examples:
+                marker:
+                  summary: Marker payload (fields=marker)
+                  value:
+                    success: true
+                    data:
+                      showrooms:
+                        - id: "abc123"
+                          ownerUid: "owner_001"
+                          name: "Atelier Nova"
+                          type: "multibrand"
+                          category: "womenswear"
+                          country: "Ukraine"
+                          status: "approved"
+                          geo:
+                            city: "Kyiv"
+                            coords:
+                              lat: 50.4501
+                              lng: 30.5234
+                    meta:
+                      hasMore: false
+                      nextCursor: null
+                card:
+                  summary: Card payload (fields=card)
+                  value:
+                    success: true
+                    data:
+                      showrooms:
+                        - id: "abc123"
+                          ownerUid: "owner_001"
+                          name: "Atelier Nova"
+                          nameNormalized: "atelier nova"
+                          type: "multibrand"
+                          availability: "open"
+                          category: "womenswear"
+                          brands: ["Brand A"]
+                          address: "Khreshchatyk 1"
+                          country: "Ukraine"
+                          city: "Kyiv"
+                          geo:
+                            city: "Kyiv"
+                            cityNormalized: "kyiv"
+                            country: "Ukraine"
+                            coords:
+                              lat: 50.4501
+                              lng: 30.5234
+                            geohash: "u9yx8f7f3"
+                            placeId: "ChIJBUVa4U7P1EAR_kYBF9IxSXY"
+                          status: "approved"
+                          createdAt: "2024-01-01T12:00:00.000Z"
+                          updatedAt: "2024-01-01T12:00:00.000Z"
+                    meta:
+                      hasMore: true
+                      nextCursor: "eyJ2IjoxLCJ2YWx1ZSI6IjIwMjQtMDEtMDEiLCJpZCI6ImFiYzEyMyJ9"
         "429":
           description: Rate limit exceeded
           content:

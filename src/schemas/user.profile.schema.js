@@ -1,5 +1,8 @@
+// Joi schema: user profile update validation rules.
+
 import Joi from "joi";
 
+// Profile update allows partial fields; at least one field is required.
 export const userProfileUpdateSchema = Joi.object({
     name: Joi.string().trim().min(2).max(60),
     country: Joi.string().trim().min(2).max(60),

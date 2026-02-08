@@ -1,3 +1,5 @@
+// Showroom service: constants.
+
 export const EDITABLE_FIELDS = [
     "name",
     "nameNormalized",
@@ -5,6 +7,7 @@ export const EDITABLE_FIELDS = [
     "availability",
     "category",
     "brands",
+    "brandsNormalized",
     "address",
     "addressNormalized",
     "country",

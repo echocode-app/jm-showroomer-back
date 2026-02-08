@@ -24,6 +24,28 @@ JM Showroomer Backend забезпечує:
 - **API контракт** у OpenAPI (`docs/openapi.yaml` + модульні файли).
 - **E2E тести** через bash скрипти.
 
+## Search & Pagination (Showrooms)
+- `limit`: 1..100, default 20
+- `fields`: `marker` або `card`
+- `q`: prefix search по `nameNormalized` (ігнорується, якщо задано `city` або `qMode=city`)
+- `city`: exact match по `geo.cityNormalized`
+- `brand`: exact match по `brandsNormalized`
+- `geohashPrefix` або `geohashPrefixes[]`
+- `cursor`: base64 JSON з версією `v`
+
+Обмеження курсора:
+- cursor працює тільки для одного `geohashPrefix`.
+- cursor **не** підтримується для `geohashPrefixes[]`.
+- cursor **не** підтримується для `geohashPrefix + q`.
+
+Помилки валідації:
+- `QUERY_INVALID`
+- `CURSOR_INVALID`
+
+Реалізація пошуку:
+- `src/services/showrooms/listShowrooms.js` (entry)
+- `src/services/showrooms/list/` (parse/utils/ordering/dev/firestore)
+
 ## Основні флоу (як працює для бізнесу)
 
 ### 0) Флоу в додатку (UX рівень)

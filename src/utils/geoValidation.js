@@ -1,3 +1,5 @@
+// Utils: geo validation.
+
 import ngeohash from "ngeohash";
 
 export function normalizeCity(city) {

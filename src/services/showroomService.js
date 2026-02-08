@@ -1,3 +1,5 @@
+// Service: showroom.
+
 export { createDraftShowroom } from "./showrooms/createDraftShowroom.js";
 export { createShowroom } from "./showrooms/createShowroom.js";
 export { listShowroomsService } from "./showrooms/listShowrooms.js";
