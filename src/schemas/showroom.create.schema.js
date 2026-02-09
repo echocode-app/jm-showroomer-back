@@ -23,10 +23,12 @@ const geoCoordsSchema = Joi.object({
 
 // Geo requires city + coords; additional fields are optional.
 const geoSchema = Joi.object({
-    city: Joi.string().required(),
-    country: Joi.string().allow(null),
+    city: Joi.string().trim().min(1).required(),
+    country: Joi.string().trim().min(1).required(),
     coords: geoCoordsSchema,
-    placeId: Joi.string().allow(null),
+    placeId: Joi.string().trim().min(1).optional(),
+    cityNormalized: Joi.string().trim().min(1).optional(),
+    geohash: Joi.string().trim().min(1).optional(),
 }).unknown(false);
 
 // Base payload for create; normalized/system fields are forbidden.

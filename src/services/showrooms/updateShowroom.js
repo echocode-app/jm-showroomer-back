@@ -21,11 +21,17 @@ export async function updateShowroomService(id, data, user) {
         throw forbidden("ACCESS_DENIED");
     }
 
-    normalizePatchData(data, user);
-
     if (useDevMock) {
         const showroom = DEV_STORE.showrooms.find(s => s.id === id);
         assertEditableShowroom(showroom, user);
+
+        normalizePatchData(data, user);
+
+        const nextCountry = data.country ?? showroom?.country ?? null;
+        const nextGeo = data.geo ?? showroom?.geo ?? null;
+        if (nextGeo && nextCountry && !isSameCountry(nextGeo.country, nextCountry)) {
+            throw badRequest("VALIDATION_ERROR");
+        }
 
         mergeContacts(showroom, data);
         applyCategoryPatch(data, showroom);
@@ -62,6 +68,14 @@ export async function updateShowroomService(id, data, user) {
 
     const showroom = snap.exists ? snap.data() : null;
     assertEditableShowroom(showroom, user);
+
+    normalizePatchData(data, user);
+
+    const nextCountry = data.country ?? showroom?.country ?? null;
+    const nextGeo = data.geo ?? showroom?.geo ?? null;
+    if (nextGeo && nextCountry && !isSameCountry(nextGeo.country, nextCountry)) {
+        throw badRequest("VALIDATION_ERROR");
+    }
 
     mergeContacts(showroom, data);
     applyCategoryPatch(data, showroom);

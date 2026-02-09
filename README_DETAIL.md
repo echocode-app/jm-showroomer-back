@@ -62,9 +62,13 @@ Geo payload example:
 
 Rules:
 - Send only `geo.city`, `geo.country`, `geo.coords`, `geo.placeId`.
-- Do **not** send `cityNormalized` or `geohash` (backend fills them).
+- `geo.city` and `geo.country` must be non-empty strings.
+- `geo.coords.lat`/`geo.coords.lng` must be valid coordinates.
+- `geo.placeId` is optional; if present it must be a non-empty string.
+- Do **not** send `cityNormalized` or `geohash` (backend ignores client values and recomputes).
 - `geo` is optional for drafts/legacy records.
 - `geo` is updated as a whole object (no partial or null removal).
+- `geo.country` must match top-level `country` (case-insensitive), otherwise 400.
 - `country` uses full name (e.g., `Ukraine`), **not** ISO2.
 
 Search by city (public): `GET /showrooms?city=Kyiv`  
@@ -96,6 +100,8 @@ Query params:
 - `geohashPrefix` or `geohashPrefixes[]`
 - `cursor`: base64 JSON (v2) with fields `{v,f,d,value,id}`
 
+Note: Showrooms from blocked countries are silently excluded from public lists.
+
 Examples:
 - `GET /showrooms?type=unique`
 - `GET /showrooms?categoryGroup=clothing`
@@ -105,10 +111,12 @@ Examples:
 Migration note:
 If existing showrooms lack `brandsMap`, run `scripts/migrate_brands_map.js` to backfill.
 
-Cursor limitations:
+Pagination contract (backend-owned):
+- Client must only follow `meta.nextCursor`; no client-side merging/deduping.
+- `meta.paging` values: `enabled` (more pages), `end` (no more results), `disabled` (paging unsupported).
 - Cursor works only with a single `geohashPrefix`.
-- Cursor is not supported for `geohashPrefixes[]`.
-- Cursor is not supported for `geohashPrefix + q`.
+- Cursor is not supported for `geohashPrefixes[]` (returns `paging=disabled`).
+- `geohashPrefix(es) + q` is rejected as `QUERY_INVALID`.
 
 Validation errors:
 - `QUERY_INVALID`

@@ -14,7 +14,7 @@ Backend API for JM Showroomer clients. Focus: authentication, showroom lifecycle
 ## Core Features
 - **Auth + RBAC**: guest / user / owner / admin
 - **Showrooms**: draft → pending → approved / rejected → deleted
-- **Geo model (MVP1)**: `geo` (city + coords + geohash), filter by `?city=`
+- **Geo model (MVP1)**: `geo` (city + country + coords + geohash), filter by `?city=`
 - **Lookbooks & Events**: standalone entities (MVP1: seeded lookbooks, events RSVP stub)
 - **Moderation**: submit + admin approve/reject
 - **Pending lock**: no edits while `pending`
@@ -34,10 +34,12 @@ Backend API for JM Showroomer clients. Focus: authentication, showroom lifecycle
 - `geohashPrefix` or `geohashPrefixes[]`
 - `cursor`: base64 JSON (v2) with fields `{v,f,d,value,id}`
 
-Cursor limitations:
+Pagination contract (backend-owned):
+- Client must only follow `meta.nextCursor`; no client-side merging/deduping.
+- `meta.paging` values: `enabled` (more pages), `end` (no more results), `disabled` (paging unsupported).
 - Cursor works only with a single `geohashPrefix`.
-- Cursor is not supported for `geohashPrefixes[]`.
-- Cursor is not supported for `geohashPrefix + q`.
+- Cursor is not supported for `geohashPrefixes[]` (returns `paging=disabled`).
+- `geohashPrefix(es) + q` is rejected as `QUERY_INVALID`.
 
 Validation errors:
 - `QUERY_INVALID`

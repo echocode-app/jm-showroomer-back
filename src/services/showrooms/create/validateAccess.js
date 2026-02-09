@@ -8,6 +8,9 @@ export function assertCreatePayload(data) {
     if (!data.name) throw badRequest("SHOWROOM_NAME_REQUIRED");
     if (!data.type) throw badRequest("SHOWROOM_TYPE_REQUIRED");
     if (!data.country) throw badRequest("COUNTRY_REQUIRED");
+    if (data.geo && !isSameCountry(data.geo.country, data.country)) {
+        throw badRequest("VALIDATION_ERROR");
+    }
 }
 
 export function assertCreateAccess(data, userCountry) {

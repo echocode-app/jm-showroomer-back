@@ -36,6 +36,27 @@ http_request "GET /showrooms?cursor=invalid (invalid)" 400 "CURSOR_INVALID" \
 http_request "GET /showrooms?geohashPrefixes=a,b&cursor=xxxx (invalid combo)" 400 "CURSOR_INVALID" \
   "${BASE_URL}/showrooms?geohashPrefixes=a,b&cursor=xxxx"
 
+print_section "Public list paging meta"
+MULTI_PREFIX=$(curl -s "${BASE_URL}/showrooms?geohashPrefixes=u4,u5&limit=2")
+echo "$MULTI_PREFIX"
+PAGING_MODE=$(json_get "$MULTI_PREFIX" '.meta.paging // empty')
+NEXT_CURSOR=$(json_get "$MULTI_PREFIX" '.meta.nextCursor')
+HAS_MORE=$(json_get "$MULTI_PREFIX" '.meta.hasMore')
+assert_eq "$PAGING_MODE" "disabled" "meta.paging for multi-prefix"
+assert_eq "$NEXT_CURSOR" "null" "meta.nextCursor for multi-prefix"
+assert_eq "$HAS_MORE" "false" "meta.hasMore for multi-prefix"
+
+NO_RESULTS=$(curl -s "${BASE_URL}/showrooms?q=zzzzzzzzzzzzzzzzzzzz&limit=5")
+echo "$NO_RESULTS"
+NO_COUNT=$(json_get "$NO_RESULTS" '.data.showrooms // [] | length')
+NO_PAGING=$(json_get "$NO_RESULTS" '.meta.paging // empty')
+NO_CURSOR=$(json_get "$NO_RESULTS" '.meta.nextCursor')
+NO_MORE=$(json_get "$NO_RESULTS" '.meta.hasMore')
+assert_eq "$NO_COUNT" "0" "no-results count"
+assert_eq "$NO_CURSOR" "null" "meta.nextCursor for no-results"
+assert_eq "$NO_MORE" "false" "meta.hasMore for no-results"
+assert_eq "$NO_PAGING" "end" "meta.paging for no-results"
+
 LOOKBOOK_COUNT=$(json_get "$LAST_BODY" '.data.lookbooks // [] | length')
 if [[ "$LOOKBOOK_COUNT" != "0" ]]; then
   HAS_UNPUBLISHED=$(json_get "$LAST_BODY" '.data.lookbooks // [] | map(select(.published == false)) | length')

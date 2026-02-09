@@ -309,27 +309,39 @@ if [[ -n "${TEST_ADMIN_TOKEN:-}" ]]; then
   fi
 
   print_section "Filters: brand + subcategories (public)"
-  LIST_RESPONSE=$(curl -s "${BASE_URL}/showrooms?subcategories=dresses&limit=20")
-  echo "$LIST_RESPONSE"
-  FOUND_COUNT=$(echo "$LIST_RESPONSE" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms // [] | map(select(.id == $id)) | length')
-  assert_eq "$FOUND_COUNT" "1" "showroom found by subcategories filter"
+  request_allow_status_or_index_not_ready "GET /showrooms?subcategories=dresses&limit=20" \
+    "${BASE_URL}/showrooms?subcategories=dresses&limit=20"
+  if [[ "$LAST_STATUS" == "503" ]]; then
+    echo "⚠ Firestore index is still building; skipping subcategories filter assertion"
+  else
+    FOUND_COUNT=$(echo "$LAST_BODY" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms // [] | map(select(.id == $id)) | length')
+    assert_eq "$FOUND_COUNT" "1" "showroom found by subcategories filter"
+  fi
 
-  LIST_RESPONSE=$(curl -s "${BASE_URL}/showrooms?brand=zara&limit=20")
-  echo "$LIST_RESPONSE"
-  FOUND_COUNT=$(echo "$LIST_RESPONSE" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms // [] | map(select(.id == $id)) | length')
-  assert_eq "$FOUND_COUNT" "1" "showroom found by brand filter"
+  request_allow_status_or_index_not_ready "GET /showrooms?brand=zara&limit=20" \
+    "${BASE_URL}/showrooms?brand=zara&limit=20"
+  if [[ "$LAST_STATUS" == "503" ]]; then
+    echo "⚠ Firestore index is still building; skipping brand filter assertion"
+  else
+    FOUND_COUNT=$(echo "$LAST_BODY" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms // [] | map(select(.id == $id)) | length')
+    assert_eq "$FOUND_COUNT" "1" "showroom found by brand filter"
+  fi
 
-  LIST_RESPONSE=$(curl -s "${BASE_URL}/showrooms?brand=zara&subcategories=dresses&limit=20")
-  echo "$LIST_RESPONSE"
-  FOUND_COUNT=$(echo "$LIST_RESPONSE" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms // [] | map(select(.id == $id)) | length')
-  assert_eq "$FOUND_COUNT" "1" "showroom found by brand+subcategory filter"
+  request_allow_status_or_index_not_ready "GET /showrooms?brand=zara&subcategories=dresses&limit=20" \
+    "${BASE_URL}/showrooms?brand=zara&subcategories=dresses&limit=20"
+  if [[ "$LAST_STATUS" == "503" ]]; then
+    echo "⚠ Firestore index is still building; skipping brand+subcategory filter assertion"
+  else
+    FOUND_COUNT=$(echo "$LAST_BODY" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms // [] | map(select(.id == $id)) | length')
+    assert_eq "$FOUND_COUNT" "1" "showroom found by brand+subcategory filter"
 
-  LIST_RESPONSE=$(curl -s "${BASE_URL}/showrooms?brand=zara&subcategories=dresses&limit=1")
-  echo "$LIST_RESPONSE"
-  NEXT_CURSOR=$(echo "$LIST_RESPONSE" | jq -r '.meta.nextCursor // empty')
-  if [[ -n "$NEXT_CURSOR" ]]; then
-    LIST_RESPONSE=$(curl -s "${BASE_URL}/showrooms?brand=zara&subcategories=dresses&limit=1&cursor=${NEXT_CURSOR}")
+    LIST_RESPONSE=$(curl -s "${BASE_URL}/showrooms?brand=zara&subcategories=dresses&limit=1")
     echo "$LIST_RESPONSE"
+    NEXT_CURSOR=$(echo "$LIST_RESPONSE" | jq -r '.meta.nextCursor // empty')
+    if [[ -n "$NEXT_CURSOR" ]]; then
+      LIST_RESPONSE=$(curl -s "${BASE_URL}/showrooms?brand=zara&subcategories=dresses&limit=1&cursor=${NEXT_CURSOR}")
+      echo "$LIST_RESPONSE"
+    fi
   fi
 
   print_section "Brand + name search (public)"

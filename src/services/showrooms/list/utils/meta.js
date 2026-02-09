@@ -3,9 +3,18 @@
 import { encodeCursor } from "../parse/index.js";
 import { getValueByPath } from "./values.js";
 
-export function buildMeta(items, limit, orderField, direction) {
-    const hasMore = items.length > limit;
+export function buildMeta(items, limit, orderField, direction, options = {}) {
+    const pagingMode = options.paging ?? "enabled";
+    const reason = options.reason ?? null;
     const pageItems = items.slice(0, limit);
+
+    if (pagingMode === "disabled") {
+        const meta = { nextCursor: null, hasMore: false, paging: "disabled" };
+        if (reason) meta.reason = reason;
+        return { pageItems, meta };
+    }
+
+    const hasMore = items.length > limit;
     let nextCursor = null;
     if (hasMore && pageItems.length > 0) {
         const last = pageItems[pageItems.length - 1];
@@ -18,5 +27,7 @@ export function buildMeta(items, limit, orderField, direction) {
             direction
         );
     }
-    return { pageItems, meta: { nextCursor, hasMore } };
+
+    const paging = hasMore ? "enabled" : "end";
+    return { pageItems, meta: { nextCursor, hasMore, paging } };
 }

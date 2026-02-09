@@ -30,25 +30,26 @@ components:
           maximum: 180
     GeoLocation:
       type: object
-      required: [city, coords]
+      required: [city, country, coords]
       properties:
         city:
           type: string
         cityNormalized:
           type: string
           readOnly: true
+          description: Server-computed. Client input is ignored.
         country:
           type: string
-          nullable: true
-          description: Full country name (e.g., Ukraine). Not ISO2.
+          description: Full country name (e.g., Ukraine). Must match showroom.country (case-insensitive). Not ISO2.
         coords:
           $ref: '#/components/schemas/GeoCoords'
         geohash:
           type: string
           readOnly: true
+          description: Server-computed. Client input is ignored.
         placeId:
           type: string
-          nullable: true
+          description: Optional place ID (non-empty when provided).
     Showroom:
       type: object
       required: [id, ownerUid, name, type, country, status]
@@ -317,8 +318,10 @@ paths:
       description: |
         Unauthenticated users see approved only.
         Owners see their own showrooms; admins can filter by status.
-        Cursor is supported only for a single geohashPrefix. Cursor is not supported
-        for multiple geohashPrefixes or when combining geohashPrefix with q/name search.
+        Cursor is backend-owned and stable per mode. Client must only follow nextCursor.
+        Map mode with multiple geohashPrefixes explicitly disables paging.
+        Combining geohashPrefix(es) with q/name search is rejected.
+        Showrooms from blocked countries are silently excluded.
       operationId: listShowrooms
       security: []
       parameters:
@@ -400,7 +403,7 @@ paths:
               type: string
           style: form
           explode: false
-          description: Multiple geohash prefixes (cursor not supported; hasMore=false).
+          description: Multiple geohash prefixes (paging disabled; nextCursor is null).
         - name: status
           in: query
           schema:
@@ -447,6 +450,12 @@ paths:
                           nextCursor:
                             type: string
                             nullable: true
+                          paging:
+                            type: string
+                            enum: [enabled, end, disabled]
+                          reason:
+                            type: string
+                            nullable: true
               examples:
                 marker:
                   summary: Marker payload (fields=marker)
@@ -463,12 +472,14 @@ paths:
                           status: "approved"
                           geo:
                             city: "Kyiv"
+                            country: "Ukraine"
                             coords:
                               lat: 50.4501
                               lng: 30.5234
                     meta:
                       hasMore: false
                       nextCursor: null
+                      paging: end
                 card:
                   summary: Card payload (fields=card)
                   value:
@@ -503,6 +514,7 @@ paths:
                     meta:
                       hasMore: true
                       nextCursor: "eyJ2IjoyLCJmIjoidXBkYXRlZEF0IiwiZCI6ImRlc2MiLCJ2YWx1ZSI6IjIwMjQtMDEtMDFUMDA6MDA6MDAuMDAwWiIsImlkIjoiYWJjMTIzIn0="
+                      paging: enabled
         "429":
           description: Rate limit exceeded
           content:

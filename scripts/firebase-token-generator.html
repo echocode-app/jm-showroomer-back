@@ -2,52 +2,317 @@
 <html>
 <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Firebase ID Token Generator (Production)</title>
+    <link rel="icon" type="image/svg+xml" href="./logo.svg" />
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
-        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
-        .error { background: #fee; color: #c00; border: 1px solid #fcc; }
-        .success { background: #efe; color: #060; border: 1px solid #cfc; }
-        .info { background: #eef; color: #006; border: 1px solid #ccf; }
-        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; border-radius: 4px; max-height: 200px; overflow-y: auto; word-break: break-all; font-size: 11px; }
-        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #4285f4; color: white; border: none; border-radius: 4px; }
-        button:hover { background: #357abd; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
-        #token-output { display: none; }
+        :root {
+            --bg: #f2f1f4;
+            --card: #ffffff;
+            --text: #1f1f27;
+            --muted: #6f6f7a;
+            --purple-900: #2b1464;
+            --purple-700: #4b2aa0;
+            --purple-600: #5b36b7;
+            --purple-500: #6a40cf;
+            --purple-400: #7a52df;
+            --accent: #ff6a3d;
+            --ring: rgba(106, 64, 207, 0.22);
+            --shadow: 0 20px 60px rgba(19, 14, 36, 0.15);
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: "Manrope", "SF Pro Display", "Segoe UI", -apple-system, sans-serif;
+            color: var(--text);
+            background: radial-gradient(1200px 600px at 10% -10%, #e9e4ff 0%, transparent 55%),
+                        radial-gradient(900px 500px at 90% 10%, #f7d9ee 0%, transparent 50%),
+                        var(--bg);
+            min-height: 100vh;
+        }
+
+        .page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 32px 20px 60px;
+        }
+
+        .hero {
+            display: grid;
+            gap: 16px;
+            background: linear-gradient(135deg, var(--purple-900), var(--purple-600));
+            color: #fff;
+            padding: 28px 28px 30px;
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::after {
+            content: "";
+            position: absolute;
+            right: -40px;
+            top: -40px;
+            width: 200px;
+            height: 200px;
+            border-radius: 999px;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.25), transparent 60%);
+        }
+        .hero h1 {
+            margin: 0;
+            font-weight: 700;
+            font-size: 26px;
+            letter-spacing: 0.2px;
+        }
+        .hero p {
+            margin: 0;
+            opacity: 0.85;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn {
+            border: none;
+            cursor: pointer;
+            border-radius: 999px;
+            padding: 12px 20px;
+            font-weight: 600;
+            font-size: 14px;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
+        }
+        .btn:active { transform: translateY(1px); }
+        .btn-primary {
+            background: #fff;
+            color: var(--purple-700);
+            box-shadow: 0 10px 24px rgba(22, 10, 62, 0.2);
+        }
+        .btn-primary:hover { background: #f7f4ff; }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.25); }
+
+        .grid {
+            display: grid;
+            gap: 22px;
+            margin-top: 24px;
+        }
+        .grid.two { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+
+        .card {
+            background: var(--card);
+            border-radius: 22px;
+            padding: 22px;
+            box-shadow: 0 12px 30px rgba(30, 22, 63, 0.08);
+        }
+
+        .card h3 {
+            margin: 0 0 10px;
+            font-size: 16px;
+        }
+        .card p {
+            margin: 0 0 14px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .status {
+            padding: 12px 16px;
+            border-radius: 14px;
+            font-size: 13px;
+        }
+        .status.info { background: #f4f2ff; color: #3f2a8d; }
+        .status.error { background: #ffecec; color: #b91c1c; display: none; }
+        .status.success { background: #e7fff2; color: #0f766e; display: none; }
+
+        .field {
+            display: grid;
+            gap: 8px;
+        }
+
+        .label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+        }
+
+        .textarea {
+            width: 100%;
+            min-height: 160px;
+            border-radius: 16px;
+            border: 1px solid #ece9f7;
+            padding: 14px 16px;
+            background: #faf9ff;
+            color: #2a2540;
+            font-family: "JetBrains Mono", "SF Mono", "Menlo", monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            resize: vertical;
+            box-shadow: inset 0 0 0 1px transparent;
+        }
+
+        .textarea:focus {
+            outline: none;
+            border-color: var(--purple-500);
+            box-shadow: 0 0 0 4px var(--ring);
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-copy {
+            background: var(--purple-500);
+            color: #fff;
+        }
+        .btn-copy:hover { background: var(--purple-400); }
+
+        .btn-ghost {
+            background: #f2effb;
+            color: var(--purple-700);
+        }
+        .btn-ghost:hover { background: #e9e4ff; }
+
+        .curl-list {
+            display: grid;
+            gap: 16px;
+        }
+
+        .curl-item {
+            background: #fbfaff;
+            border-radius: 18px;
+            padding: 16px;
+            border: 1px solid #efeaff;
+        }
+
+        .curl-item h4 {
+            margin: 0 0 8px;
+            font-size: 14px;
+        }
+
+        .curl-item textarea {
+            min-height: 96px;
+        }
+
+        .footer-note {
+            margin-top: 16px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        @media (max-width: 600px) {
+            .hero { padding: 22px; }
+            .btn { width: 100%; justify-content: center; }
+            .actions { flex-direction: column; }
+        }
     </style>
 </head>
 <body>
-    <h1>🔥 Firebase ID Token Generator (Production)</h1>
-    
-    <div id="info" class="status info">
-        <strong>Production Config:</strong><br>
-        Project: jm-showroom<br>
-        Auth Domain: jm-showroom.firebaseapp.com
+    <div class="page">
+        <section class="hero">
+            <div>
+                <h1>Firebase ID Token Generator</h1>
+                <p>Production: <strong>jm-showroom</strong></p>
+            </div>
+            <div class="controls">
+                <button id="login" class="btn btn-primary">Login with Google</button>
+                <button id="logout" class="btn btn-secondary" style="display:none;">Sign out</button>
+            </div>
+            <div id="loading" class="status info" style="display:none;">Processing…</div>
+        </section>
+
+        <div class="grid two">
+            <section class="card">
+                <h3>ID Token</h3>
+                <p>Token shown in full for easy copying. Backend computes geo fields; this token is only for auth.</p>
+                <div class="field">
+                    <span class="label">Token</span>
+                    <textarea id="token" class="textarea" readonly placeholder="Login to generate a token"></textarea>
+                </div>
+                <div class="actions" style="margin-top: 12px;">
+                    <button class="btn btn-copy" data-copy-target="token">Copy Token</button>
+                    <button class="btn btn-ghost" data-copy-target="bearer">Copy Bearer Header</button>
+                </div>
+                <div id="status-ok" class="status success" style="margin-top:12px;"></div>
+                <div id="error" class="status error" style="margin-top:12px;"></div>
+            </section>
+
+            <section class="card">
+                <h3>Primary curl Command</h3>
+                <p>Quick check with auth. Update base URL if needed.</p>
+                <div class="field">
+                    <span class="label">Base URL</span>
+                    <textarea id="base-url" class="textarea" style="min-height:64px;">https://jm-showroomer-back.onrender.com/api/v1</textarea>
+                </div>
+                <div class="field" style="margin-top: 12px;">
+                    <span class="label">Auth Test (GET /users/me)</span>
+                    <textarea id="curl-primary" class="textarea" readonly></textarea>
+                </div>
+                <div class="actions" style="margin-top:12px;">
+                    <button class="btn btn-copy" data-copy-target="curl-primary">Copy Command</button>
+                </div>
+            </section>
+        </div>
+
+        <section class="card" style="margin-top: 22px;">
+            <h3>Other curl Tests</h3>
+            <p>Ready-to-run commands for common backend checks. These update when token/base URL changes.</p>
+            <div class="curl-list">
+                <div class="curl-item">
+                    <h4>Public Health</h4>
+                    <textarea id="curl-health" class="textarea" readonly></textarea>
+                    <div class="actions" style="margin-top:10px;">
+                        <button class="btn btn-copy" data-copy-target="curl-health">Copy Command</button>
+                    </div>
+                </div>
+                <div class="curl-item">
+                    <h4>Public Showrooms List</h4>
+                    <textarea id="curl-showrooms" class="textarea" readonly></textarea>
+                    <div class="actions" style="margin-top:10px;">
+                        <button class="btn btn-copy" data-copy-target="curl-showrooms">Copy Command</button>
+                    </div>
+                </div>
+                <div class="curl-item">
+                    <h4>Public City Filter</h4>
+                    <textarea id="curl-city" class="textarea" readonly></textarea>
+                    <div class="actions" style="margin-top:10px;">
+                        <button class="btn btn-copy" data-copy-target="curl-city">Copy Command</button>
+                    </div>
+                </div>
+                <div class="curl-item">
+                    <h4>Owner Draft Create (POST /showrooms/draft)</h4>
+                    <textarea id="curl-draft" class="textarea" readonly></textarea>
+                    <div class="actions" style="margin-top:10px;">
+                        <button class="btn btn-copy" data-copy-target="curl-draft">Copy Command</button>
+                    </div>
+                </div>
+                <div class="curl-item">
+                    <h4>Owner Profile Update (PATCH /users/profile)</h4>
+                    <textarea id="curl-profile" class="textarea" readonly></textarea>
+                    <div class="actions" style="margin-top:10px;">
+                        <button class="btn btn-copy" data-copy-target="curl-profile">Copy Command</button>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-note">Tip: paging is backend-owned; follow nextCursor exactly when present.</div>
+        </section>
     </div>
-
-    <button id="login">Login with Google (Get ID Token)</button>
-    
-    <div id="loading" class="status info" style="display: none;">
-        Processing...
-    </div>
-
-    <div id="token-output">
-        <h3>✅ Success! Your Firebase ID Token:</h3>
-        <pre id="token"></pre>
-        
-        <h4>Use this curl command:</h4>
-        <pre id="curl"></pre>
-        
-
-    </div>
-
-    <div id="error" class="status error" style="display: none;"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // PRODUCTION Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyCKG_oI5avZzeM56ZN7euSU7tP4jVLMCX0",
             authDomain: "jm-showroom.firebaseapp.com",
@@ -61,88 +326,123 @@
         const auth = getAuth(app);
 
         const loginBtn = document.getElementById('login');
+        const logoutBtn = document.getElementById('logout');
         const loading = document.getElementById('loading');
-        const tokenOutput = document.getElementById('token-output');
         const errorDiv = document.getElementById('error');
+        const okDiv = document.getElementById('status-ok');
+
+        const tokenEl = document.getElementById('token');
+        const baseUrlEl = document.getElementById('base-url');
+
+        const primaryCurlEl = document.getElementById('curl-primary');
+        const curlHealthEl = document.getElementById('curl-health');
+        const curlShowroomsEl = document.getElementById('curl-showrooms');
+        const curlCityEl = document.getElementById('curl-city');
+        const curlDraftEl = document.getElementById('curl-draft');
+        const curlProfileEl = document.getElementById('curl-profile');
+
+        function buildCurl(baseUrl, token) {
+            const header = token ? `-H "Authorization: Bearer ${token}"` : "";
+            primaryCurlEl.textContent = `curl -X GET "${baseUrl}/users/me" \\\n  ${header}`.trim();
+
+            curlHealthEl.textContent = `curl -X GET "${baseUrl}/health"`;
+            curlShowroomsEl.textContent = `curl -X GET "${baseUrl}/showrooms?limit=10"`;
+            curlCityEl.textContent = `curl -X GET "${baseUrl}/showrooms?city=Kyiv&limit=10"`;
+
+            curlDraftEl.textContent = `curl -X POST "${baseUrl}/showrooms/draft" \\\n  ${header}`.trim();
+
+            curlProfileEl.textContent = `curl -X PATCH "${baseUrl}/users/profile" \\\n  ${header} \\\n  -H "Content-Type: application/json" \\\n  -d '{"appLanguage":"uk","notificationsEnabled":true}'`.trim();
+        }
+
+        function setStatus(message, type) {
+            okDiv.style.display = "none";
+            errorDiv.style.display = "none";
+            if (!message) return;
+            if (type === "error") {
+                errorDiv.textContent = message;
+                errorDiv.style.display = "block";
+            } else {
+                okDiv.textContent = message;
+                okDiv.style.display = "block";
+            }
+        }
 
         loginBtn.onclick = async () => {
             try {
                 loginBtn.disabled = true;
                 loading.style.display = 'block';
-                errorDiv.style.display = 'none';
-                tokenOutput.style.display = 'none';
+                setStatus("", "ok");
 
                 const provider = new GoogleAuthProvider();
-                // Add additional scopes if needed
                 provider.addScope('email');
                 provider.addScope('profile');
 
                 const result = await signInWithPopup(auth, provider);
                 const user = result.user;
-                
-                // Force refresh to get a fresh token
                 const idToken = await user.getIdToken(true);
 
-                // Display results
-                document.getElementById('token').textContent = idToken;
-                
-                // Create curl command
-                const curlCmd = `curl -X GET "https://jm-showroomer-back.onrender.com/api/v1/users/me" \\
-  -H "Authorization: Bearer ${idToken}"`;
-                document.getElementById('curl').textContent = curlCmd;
+                tokenEl.value = idToken;
+                buildCurl(baseUrlEl.value.trim(), idToken);
 
                 loading.style.display = 'none';
-                tokenOutput.style.display = 'block';
                 loginBtn.disabled = false;
-                
-                console.log('🔥 ID Token:', idToken);
-                console.log('👤 User:', user.email, user.uid);
+                logoutBtn.style.display = "inline-flex";
 
+                setStatus("Token generated successfully.", "ok");
+                console.log('ID Token:', idToken);
+                console.log('User:', user.email, user.uid);
             } catch (err) {
                 loading.style.display = 'none';
                 loginBtn.disabled = false;
-                
-                errorDiv.style.display = 'block';
-                errorDiv.innerHTML = `<strong>Error:</strong> ${err.message}<br><br>Code: ${err.code}`;
-                
+                setStatus(`Error: ${err.message} (${err.code})`, "error");
                 console.error('Login error:', err);
             }
         };
 
-        async function copyToken() {
-            const token = document.getElementById('token').textContent;
-            try {
-                await navigator.clipboard.writeText(token);
-                alert('Token copied! ✅');
-            } catch (err) {
-                // Fallback for older browsers
-                const textarea = document.createElement('textarea');
-                textarea.value = token;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-                alert('Token copied! ✅');
-            }
-        }
+        logoutBtn.onclick = async () => {
+            await signOut(auth);
+            tokenEl.value = "";
+            buildCurl(baseUrlEl.value.trim(), "");
+            logoutBtn.style.display = "none";
+            setStatus("Signed out.", "ok");
+        };
 
-        async function copyCurl() {
-            const curl = document.getElementById('curl').textContent;
-            try {
-                await navigator.clipboard.writeText(curl);
-                alert('curl command copied! ✅');
-            } catch (err) {
-                // Fallback for older browsers
-                const textarea = document.createElement('textarea');
-                textarea.value = curl;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-                alert('curl command copied! ✅');
-            }
-        }
+        baseUrlEl.addEventListener('input', () => {
+            buildCurl(baseUrlEl.value.trim(), tokenEl.value.trim());
+        });
+
+        document.querySelectorAll('[data-copy-target]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const targetId = btn.getAttribute('data-copy-target');
+                let text = "";
+                if (targetId === "bearer") {
+                    text = tokenEl.value ? `Authorization: Bearer ${tokenEl.value}` : "";
+                } else {
+                    const el = document.getElementById(targetId);
+                    text = el ? (el.value || el.textContent || "") : "";
+                }
+
+                if (!text) {
+                    setStatus("Nothing to copy yet.", "error");
+                    return;
+                }
+
+                try {
+                    await navigator.clipboard.writeText(text);
+                    setStatus("Copied to clipboard.", "ok");
+                } catch {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    setStatus("Copied to clipboard.", "ok");
+                }
+            });
+        });
+
+        buildCurl(baseUrlEl.value.trim(), "");
     </script>
 </body>
 </html>
-

@@ -81,4 +81,14 @@ describe("cursor mode safety (parseFilters)", () => {
     }
     throw new Error("Expected parseFilters to throw");
   });
+
+  it("rejects map mode combined with qName", () => {
+    try {
+      parseFilters({ geohashPrefix: "u4", q: "test" });
+    } catch (err) {
+      expect(err.code).toBe("QUERY_INVALID");
+      return;
+    }
+    throw new Error("Expected parseFilters to throw");
+  });
 });

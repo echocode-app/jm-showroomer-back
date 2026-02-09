@@ -8,6 +8,7 @@ export function normalizeCity(city) {
 }
 
 export function buildGeo(inputGeo = {}) {
+    // Ignore any client-provided cityNormalized/geohash and recompute server-side.
     const city = inputGeo.city ?? "";
     const cityNormalized = normalizeCity(city);
     const country = inputGeo.country ?? null;

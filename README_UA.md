@@ -16,7 +16,7 @@ JM Showroomer Backend забезпечує:
 - **Ролі**: guest | user | owner | admin (майбутні: manager, stylist).
 - **MVP2-резерв**: `role` зі значеннями `manager`/`stylist` та `roleRequest` зарезервовані для MVP2. Клієнти MVP1 мають їх ігнорувати, якщо вони присутні.
 - **Showroom draft flow**: чернетка → поетапні PATCH → submit.
-- **Geo model (MVP1)**: `geo` (місто + координати + geohash), фільтр `GET /showrooms?city=...`.
+- **Geo model (MVP1)**: `geo` (місто + країна + координати + geohash), фільтр `GET /showrooms?city=...`.
 - **Lookbooks & Events**: самостійні сутності (MVP1: seeded lookbooks, events RSVP stub).
 - **Валідації**: назва шоуруму, телефон (E.164), Instagram URL.
 - **Блок країн**: russia / belarus (RU/BY).
@@ -36,10 +36,12 @@ JM Showroomer Backend забезпечує:
 - `geohashPrefix` або `geohashPrefixes[]`
 - `cursor`: base64 JSON (v2) з полями `{v,f,d,value,id}`
 
-Обмеження курсора:
+Пагінація (backend‑owned):
+- Клієнт слідує тільки `meta.nextCursor`, без локального мерджу/дедупу.
+- `meta.paging`: `enabled` (є сторінки), `end` (кінець/порожній список), `disabled` (пагінація недоступна).
 - cursor працює тільки для одного `geohashPrefix`.
-- cursor **не** підтримується для `geohashPrefixes[]`.
-- cursor **не** підтримується для `geohashPrefix + q`.
+- cursor **не** підтримується для `geohashPrefixes[]` (paging disabled).
+- `geohashPrefix(es) + q` → `QUERY_INVALID`.
 
 Помилки валідації:
 - `QUERY_INVALID`
@@ -125,6 +127,7 @@ JM Showroomer Backend забезпечує:
 **Пошук:** `GET /showrooms?city=Kyiv` (фільтр по `geo.cityNormalized`).
 
 **Country формат:** повна назва країни (наприклад `Ukraine`), **не** ISO2.
+**Geo country:** `geo.country` має збігатися з top‑level `country` (case‑insensitive), інакше 400.
 
 **Статуси:**
 - `draft` — чернетка (редагується),

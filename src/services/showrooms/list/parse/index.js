@@ -54,9 +54,14 @@ export function parseFilters(filters = {}) {
 
     const categories = parseList(filters.categories);
     const geohashPrefixes = parseGeohashPrefixes(filters);
+    const hasGeohash = geohashPrefixes.length > 0;
+    const hasMultiPrefix = geohashPrefixes.length > 1;
 
-    const cursorDisabled =
-        geohashPrefixes.length > 1 || (geohashPrefixes.length > 0 && !!qName);
+    if (hasGeohash && qName) {
+        throw badRequest("QUERY_INVALID");
+    }
+
+    const cursorDisabled = hasMultiPrefix;
     if (cursor && cursorDisabled) {
         throw badRequest("QUERY_INVALID");
     }
@@ -79,6 +84,8 @@ export function parseFilters(filters = {}) {
         categories,
         geohashPrefixes,
         cursorDisabled,
+        hasGeohash,
+        hasMultiPrefix,
         qMode,
     };
 }

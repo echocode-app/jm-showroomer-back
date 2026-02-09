@@ -43,9 +43,12 @@ export async function runGeohashMode(baseQuery, parsed, user, orderField, direct
     });
 
     if (parsed.cursorDisabled) {
-        const pageItems = items.slice(0, parsed.limit);
+        const { pageItems, meta } = buildMeta(items, parsed.limit, orderField, direction, {
+            paging: "disabled",
+            reason: "multi_geohash_prefixes",
+        });
         const showrooms = pageItems.map(s => applyFieldMode(s, parsed.fields));
-        return { showrooms, meta: { nextCursor: null, hasMore: false } };
+        return { showrooms, meta };
     }
 
     const cursorFiltered = applyCursorFilter(items, parsed.cursor, orderField, direction);

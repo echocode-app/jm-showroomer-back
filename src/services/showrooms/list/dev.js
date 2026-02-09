@@ -24,7 +24,10 @@ export function listShowroomsDev(parsed, user) {
         result = result.filter(s => s.ownerUid === user.uid);
         if (visibility.status) {
             if (visibility.status === "deleted") {
-                return { showrooms: [], meta: { nextCursor: null, hasMore: false } };
+                return {
+                    showrooms: [],
+                    meta: { nextCursor: null, hasMore: false, paging: "end" },
+                };
             }
             result = result.filter(s => s.status === visibility.status);
         }
@@ -101,9 +104,12 @@ export function listShowroomsDev(parsed, user) {
     });
 
     if (parsed.cursorDisabled) {
-        const pageItems = result.slice(0, parsed.limit);
+        const { pageItems, meta } = buildMeta(result, parsed.limit, orderField, direction, {
+            paging: "disabled",
+            reason: "multi_geohash_prefixes",
+        });
         const showrooms = pageItems.map(s => applyFieldMode(s, parsed.fields));
-        return { showrooms, meta: { nextCursor: null, hasMore: false } };
+        return { showrooms, meta };
     }
 
     const cursorFiltered = applyCursorFilter(result, parsed.cursor, orderField, direction);
