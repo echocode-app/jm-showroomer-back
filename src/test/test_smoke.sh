@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # shellcheck source=./_lib.sh
+# shellcheck disable=SC1091
 source "$SCRIPT_DIR/_lib.sh"
 
 load_env

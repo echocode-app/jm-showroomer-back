@@ -11,10 +11,13 @@ load_env() {
   fi
 
   # Export .env entries (skip comments + private key line)
-  if ! export $(grep -v '^#' "$ENV_FILE" | grep -v FIREBASE_PRIVATE_KEY | xargs); then
-    echo "❌ Failed to parse $ENV_FILE" >&2
-    exit 1
-  fi
+  while IFS= read -r line; do
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    if ! export "$line"; then
+      echo "❌ Failed to parse $ENV_FILE" >&2
+      exit 1
+    fi
+  done < <(grep -v '^#' "$ENV_FILE" | grep -v FIREBASE_PRIVATE_KEY)
 }
 
 # require_env
