@@ -13,7 +13,10 @@ load_env() {
   # Export .env entries (skip comments + private key line)
   while IFS= read -r line; do
     [[ -z "$line" || "$line" == \#* ]] && continue
-    if ! export "$line"; then
+    [[ "$line" != *"="* ]] && continue
+    local key="${line%%=*}"
+    local value="${line#*=}"
+    if ! export "${key}=${value}"; then
       echo "❌ Failed to parse $ENV_FILE" >&2
       exit 1
     fi
