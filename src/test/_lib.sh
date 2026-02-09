@@ -48,16 +48,36 @@ require_cmd() {
 # preflight_server
 preflight_server() {
   local base_url=$1
-  local status
-  status=$(curl -s -o /dev/null -w "%{http_code}" "${base_url}/health")
-  if [[ "$status" != "200" ]]; then
-    if [[ "$base_url" == http://localhost* ]]; then
-      echo "❌ Server not running at ${base_url} (try: npm run dev)" >&2
-    else
-      echo "❌ Server not reachable at ${base_url}" >&2
+  local status=""
+  local rc=0
+  local attempt=1
+  local max_attempts=${HEALTH_MAX_ATTEMPTS:-20}
+  local delay=${HEALTH_RETRY_DELAY:-1}
+  local max_time=${CURL_MAX_TIME:-10}
+  local connect_timeout=${CURL_CONNECT_TIMEOUT:-3}
+
+  echo "ℹ️  Preflight ${base_url}/health"
+
+  while (( attempt <= max_attempts )); do
+    set +e
+    status=$(curl -s -o /dev/null -w "%{http_code}" --max-time "$max_time" --connect-timeout "$connect_timeout" "${base_url}/health")
+    rc=$?
+    set -e
+
+    if [[ "$rc" -eq 0 && "$status" == "200" ]]; then
+      return 0
     fi
-    exit 1
+    echo "⚠ Health check attempt ${attempt}/${max_attempts} failed (curl=$rc, status=${status:-none})"
+    sleep "$delay"
+    attempt=$((attempt + 1))
+  done
+
+  if [[ "$base_url" == http://localhost* ]]; then
+    echo "❌ Server not running at ${base_url} (try: npm run dev)" >&2
+  else
+    echo "❌ Server not reachable at ${base_url}" >&2
   fi
+  exit 1
 }
 
 # resolve_base_url
@@ -154,7 +174,14 @@ http_request() {
   local connect_timeout=${CURL_CONNECT_TIMEOUT:-5}
 
   while true; do
-    RESPONSE=$(curl -s --max-time "$max_time" --connect-timeout "$connect_timeout" -w "\nHTTP_STATUS:%{http_code}" "$@") || fail "curl failed"
+    set +e
+    RESPONSE=$(curl -s --max-time "$max_time" --connect-timeout "$connect_timeout" -w "\nHTTP_STATUS:%{http_code}" "$@")
+    local rc=$?
+    set -e
+    if [[ "$rc" -ne 0 ]]; then
+      echo "❌ curl failed (exit=$rc) for: $label" >&2
+      fail "curl failed"
+    fi
     LAST_STATUS=$(echo "$RESPONSE" | sed -n 's/.*HTTP_STATUS://p')
     LAST_BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS/d')
 

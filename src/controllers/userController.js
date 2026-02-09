@@ -116,8 +116,9 @@ export async function updateUserProfile(req, res) {
             req.user?.role === "owner" &&
             normalizeCountry(trimmedCountry) !== normalizeCountry(currentCountry)
         ) {
+            const ownerUid = req.auth?.uid || req.user?.uid;
             const [hasShowrooms, hasLookbooks, hasEvents] = await Promise.all([
-                ownerHasActiveShowrooms(req.user.uid),
+                ownerHasActiveShowrooms(ownerUid),
                 ownerHasLookbooks(req.user.uid),
                 ownerHasEvents(req.user.uid),
             ]);

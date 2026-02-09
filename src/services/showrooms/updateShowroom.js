@@ -1,19 +1,15 @@
 import { getFirestoreInstance } from "../../config/firebase.js";
-import { badRequest, forbidden, notFound } from "../../core/error.js";
+import { badRequest, forbidden } from "../../core/error.js";
 import { isCountryBlocked } from "../../constants/countries.js";
-import {
-    normalizeAddress,
-    normalizeAddressForCompare,
-    normalizeInstagramUrl,
-    normalizeBrands,
-    normalizeShowroomName,
-    validateInstagramUrl,
-    validatePhone,
-    validateShowroomName,
-} from "../../utils/showroomValidation.js";
-import { buildGeo } from "../../utils/geoValidation.js";
-import { appendHistory, buildDiff, isSameCountry, makeHistoryEntry } from "./_helpers.js";
+import { buildDiff, isSameCountry } from "./_helpers.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
+import { normalizePatchData } from "./update/normalizePatch.js";
+import {
+    applyCategoryPatch,
+    assertEditableShowroom,
+    buildHistoryUpdate,
+    mergeContacts,
+} from "./update/helpers.js";
 
 // updateShowroomService
 export async function updateShowroomService(id, data, user) {
@@ -25,80 +21,14 @@ export async function updateShowroomService(id, data, user) {
         throw forbidden("ACCESS_DENIED");
     }
 
-    if (data.name !== undefined) {
-        validateShowroomName(data.name);
-        data.nameNormalized = normalizeShowroomName(data.name);
-    } else if (data.nameNormalized !== undefined) {
-        delete data.nameNormalized;
-    }
-
-    if (data.address !== undefined) {
-        if (data.address) {
-            data.address = normalizeAddress(data.address);
-            data.addressNormalized = normalizeAddressForCompare(data.address);
-        } else {
-            data.address = null;
-            data.addressNormalized = null;
-        }
-    } else if (data.addressNormalized !== undefined) {
-        delete data.addressNormalized;
-    }
-
-    if (data.brands !== undefined) {
-        data.brandsNormalized = normalizeBrands(data.brands);
-    } else if (data.brandsNormalized !== undefined) {
-        delete data.brandsNormalized;
-    }
-
-    if (data.contacts !== undefined) {
-        const contacts = { ...(data.contacts ?? {}) };
-        if (contacts.instagram !== undefined) {
-            if (contacts.instagram) {
-                const normalizedInstagram = normalizeInstagramUrl(contacts.instagram);
-                validateInstagramUrl(normalizedInstagram);
-                contacts.instagram = normalizedInstagram;
-            } else {
-                contacts.instagram = null;
-            }
-        }
-
-        if (contacts.phone !== undefined) {
-            if (contacts.phone) {
-                const { e164 } = validatePhone(contacts.phone, user?.country ?? null);
-                contacts.phone = e164;
-            } else {
-                contacts.phone = null;
-            }
-        }
-
-        data.contacts = contacts;
-    }
-
-    if (data.geo !== undefined) {
-        if (data.geo) {
-            data.geo = buildGeo(data.geo);
-        } else {
-            data.geo = null;
-        }
-    }
+    normalizePatchData(data, user);
 
     if (useDevMock) {
         const showroom = DEV_STORE.showrooms.find(s => s.id === id);
-        if (!showroom) throw notFound("SHOWROOM_NOT_FOUND");
-        if (showroom.ownerUid !== user.uid) throw forbidden("ACCESS_DENIED");
-        if (showroom.status === "pending") {
-            throw badRequest("SHOWROOM_LOCKED_PENDING");
-        }
-        if (showroom.status === "deleted") {
-            throw badRequest("SHOWROOM_NOT_EDITABLE");
-        }
-        if (!['draft', 'rejected', 'approved'].includes(showroom.status)) {
-            throw badRequest("SHOWROOM_NOT_EDITABLE");
-        }
+        assertEditableShowroom(showroom, user);
 
-        if (data.contacts !== undefined) {
-            data.contacts = { ...(showroom.contacts || {}), ...data.contacts };
-        }
+        mergeContacts(showroom, data);
+        applyCategoryPatch(data, showroom);
 
         const proposed = { ...showroom, ...data };
         const { diff, changedFields } = buildDiff(showroom, proposed);
@@ -111,20 +41,17 @@ export async function updateShowroomService(id, data, user) {
             showroom[field] = diff[field].to;
         });
 
-        showroom.editCount = (showroom.editCount || 0) + 1;
-        showroom.updatedAt = new Date().toISOString();
-        showroom.editHistory = appendHistory(
-            showroom.editHistory || [],
-            makeHistoryEntry({
-                action: "patch",
-                actor: user,
-                statusBefore: showroom.status,
-                statusAfter: showroom.status,
-                changedFields,
-                diff,
-                at: showroom.updatedAt,
-            })
+        const updatedAt = new Date().toISOString();
+        const historyUpdate = buildHistoryUpdate(
+            showroom,
+            changedFields,
+            diff,
+            user,
+            updatedAt
         );
+        showroom.editCount = historyUpdate.editCount;
+        showroom.updatedAt = historyUpdate.updatedAt;
+        showroom.editHistory = historyUpdate.editHistory;
 
         return showroom;
     }
@@ -133,23 +60,11 @@ export async function updateShowroomService(id, data, user) {
     const ref = db.collection("showrooms").doc(id);
     const snap = await ref.get();
 
-    if (!snap.exists) throw notFound("SHOWROOM_NOT_FOUND");
+    const showroom = snap.exists ? snap.data() : null;
+    assertEditableShowroom(showroom, user);
 
-    const showroom = snap.data();
-    if (showroom.ownerUid !== user.uid) throw forbidden("ACCESS_DENIED");
-    if (showroom.status === "pending") {
-        throw badRequest("SHOWROOM_LOCKED_PENDING");
-    }
-    if (showroom.status === "deleted") {
-        throw badRequest("SHOWROOM_NOT_EDITABLE");
-    }
-    if (!['draft', 'rejected', 'approved'].includes(showroom.status)) {
-        throw badRequest("SHOWROOM_NOT_EDITABLE");
-    }
-
-    if (data.contacts !== undefined) {
-        data.contacts = { ...(showroom.contacts || {}), ...data.contacts };
-    }
+    mergeContacts(showroom, data);
+    applyCategoryPatch(data, showroom);
 
     const proposed = { ...showroom, ...data };
     const { diff, changedFields } = buildDiff(showroom, proposed);
@@ -163,20 +78,17 @@ export async function updateShowroomService(id, data, user) {
         updates[field] = diff[field].to;
     });
 
-    updates.editCount = (showroom.editCount || 0) + 1;
-    updates.updatedAt = new Date().toISOString();
-    updates.editHistory = appendHistory(
-        showroom.editHistory || [],
-        makeHistoryEntry({
-            action: "patch",
-            actor: user,
-            statusBefore: showroom.status,
-            statusAfter: showroom.status,
-            changedFields,
-            diff,
-            at: updates.updatedAt,
-        })
+    const updatedAt = new Date().toISOString();
+    const historyUpdate = buildHistoryUpdate(
+        showroom,
+        changedFields,
+        diff,
+        user,
+        updatedAt
     );
+    updates.editCount = historyUpdate.editCount;
+    updates.updatedAt = historyUpdate.updatedAt;
+    updates.editHistory = historyUpdate.editHistory;
 
     await ref.update(updates);
     return { id, ...showroom, ...updates };

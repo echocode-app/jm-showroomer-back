@@ -1,19 +1,7 @@
 import { getFirestoreInstance } from "../../config/firebase.js";
-import { badRequest, forbidden } from "../../core/error.js";
-import { isCountryBlocked } from "../../constants/countries.js";
-import {
-    normalizeAddress,
-    normalizeAddressForCompare,
-    normalizeInstagramUrl,
-    normalizeBrands,
-    normalizeShowroomName,
-    validateInstagramUrl,
-    validatePhone,
-    validateShowroomName,
-} from "../../utils/showroomValidation.js";
-import { buildGeo } from "../../utils/geoValidation.js";
 import { createDraftShowroom } from "./createDraftShowroom.js";
-import { isSameCountry } from "./_helpers.js";
+import { normalizeCreatePayload } from "./create/normalizePayload.js";
+import { assertCreateAccess, assertCreatePayload } from "./create/validateAccess.js";
 import { DEV_STORE, generateId, useDevMock } from "./_store.js";
 
 // createShowroom
@@ -22,52 +10,10 @@ export async function createShowroom(data, ownerUid, options = {}) {
         return createDraftShowroom(ownerUid);
     }
 
-    if (!data.name) throw badRequest("SHOWROOM_NAME_REQUIRED");
-    if (!data.type) throw badRequest("SHOWROOM_TYPE_REQUIRED");
-    if (!data.country) throw badRequest("COUNTRY_REQUIRED");
+    assertCreatePayload(data);
+    assertCreateAccess(data, options.userCountry);
 
-    if (isCountryBlocked(data.country)) {
-        throw forbidden("COUNTRY_BLOCKED");
-    }
-
-    if (
-        options.userCountry &&
-        !isSameCountry(data.country, options.userCountry)
-    ) {
-        throw forbidden("ACCESS_DENIED");
-    }
-
-    validateShowroomName(data.name);
-    const nameNormalized = normalizeShowroomName(data.name);
-
-    const address = data.address ? normalizeAddress(data.address) : null;
-    const addressNormalized = address ? normalizeAddressForCompare(address) : null;
-
-    const geo = data.geo ? buildGeo(data.geo) : null;
-    const brandsNormalized = normalizeBrands(data.brands ?? []);
-
-    const contacts = {
-        phone: null,
-        instagram: null,
-    };
-
-    if (data.contacts?.instagram) {
-        const normalizedInstagram = normalizeInstagramUrl(data.contacts.instagram);
-        validateInstagramUrl(normalizedInstagram);
-        contacts.instagram = normalizedInstagram;
-    } else if (data.contacts?.instagram === "") {
-        contacts.instagram = null;
-    }
-
-    if (data.contacts?.phone) {
-        const { e164 } = validatePhone(
-            data.contacts.phone,
-            options.userCountry ?? data.country ?? null
-        );
-        contacts.phone = e164;
-    } else if (data.contacts?.phone === "") {
-        contacts.phone = null;
-    }
+    const normalized = normalizeCreatePayload(data, options);
 
     if (useDevMock) {
         const id = generateId();
@@ -82,12 +28,7 @@ export async function createShowroom(data, ownerUid, options = {}) {
             createdAt: now,
             updatedAt: now,
             ...data,
-            nameNormalized,
-            address,
-            addressNormalized,
-            geo,
-            brandsNormalized,
-            contacts,
+            ...normalized,
         };
 
         DEV_STORE.showrooms.push(showroom);
@@ -115,21 +56,21 @@ export async function createShowroom(data, ownerUid, options = {}) {
     const showroom = {
         ownerUid,
         name: data.name,
-        nameNormalized,
+        nameNormalized: normalized.nameNormalized,
         type: data.type,
         availability: data.availability ?? null,
         category: data.category ?? null,
+        categoryGroup: normalized.categoryGroup,
+        subcategories: normalized.subcategories,
         brands: data.brands ?? [],
-        brandsNormalized,
-        address,
-        addressNormalized,
+        brandsNormalized: normalized.brandsNormalized,
+        brandsMap: normalized.brandsMap,
+        address: normalized.address,
+        addressNormalized: normalized.addressNormalized,
         country: data.country,
         city: data.city ?? null,
-        geo,
-        contacts: {
-            phone: contacts?.phone ?? null,
-            instagram: contacts?.instagram ?? null,
-        },
+        geo: normalized.geo,
+        contacts: normalized.contacts,
         location: data.location ?? null,
         status: "draft",
         editCount: 0,

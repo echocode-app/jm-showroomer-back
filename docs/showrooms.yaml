@@ -72,10 +72,23 @@ components:
         category:
           type: string
           nullable: true
+        categoryGroup:
+          type: string
+          description: Canonical category group key (e.g., clothing, footwear).
+          nullable: true
+        subcategories:
+          type: array
+          items:
+            type: string
         brands:
           type: array
           items:
             type: string
+        brandsMap:
+          type: object
+          additionalProperties:
+            type: boolean
+          readOnly: true
         address:
           type: string
           nullable: true
@@ -189,6 +202,14 @@ components:
               enum: [open, appointment]
             category:
               type: string
+            categoryGroup:
+              type: string
+              enum: [clothing, footwear, lingerie_swim, accessories]
+            subcategories:
+              type: array
+              items:
+                type: string
+                enum: [outerwear, dresses, suits]
             brands:
               type: array
               items:
@@ -222,6 +243,14 @@ components:
               enum: [open, appointment]
             category:
               type: string
+            categoryGroup:
+              type: string
+              enum: [clothing, footwear, lingerie_swim, accessories]
+            subcategories:
+              type: array
+              items:
+                type: string
+                enum: [outerwear, dresses, suits]
             brands:
               type: array
               items:
@@ -254,6 +283,14 @@ components:
           enum: [open, appointment]
         category:
           type: string
+        categoryGroup:
+          type: string
+          enum: [clothing, footwear, lingerie_swim, accessories]
+        subcategories:
+          type: array
+          items:
+            type: string
+            enum: [outerwear, dresses, suits]
         brands:
           type: array
           items:
@@ -309,11 +346,12 @@ paths:
           in: query
           schema:
             type: string
-          description: Exact match via brandsNormalized (array-contains).
+          description: Exact match via brandsMap.<brandKey> (map equality).
         - name: type
           in: query
           schema:
             type: string
+            enum: [unique, multibrand]
         - name: availability
           in: query
           schema:
@@ -322,6 +360,24 @@ paths:
           in: query
           schema:
             type: string
+        - name: categoryGroup
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          description: Comma-separated list or repeated params. Canonical group keys.
+          style: form
+          explode: false
+        - name: subcategories
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          description: Comma-separated list or repeated params. Uses array-contains-any.
+          style: form
+          explode: false
         - name: categories
           in: query
           schema:
@@ -360,7 +416,7 @@ paths:
           in: query
           schema:
             type: string
-          description: Base64 JSON cursor with version v. Not supported for multi geohash prefixes.
+          description: "Base64 JSON cursor (v2) with mode safety. Format: {v:2,f,d,value,id}. Not supported for multi geohash prefixes."
         - name: fields
           in: query
           schema:
@@ -426,6 +482,8 @@ paths:
                           type: "multibrand"
                           availability: "open"
                           category: "womenswear"
+                          categoryGroup: "clothing"
+                          subcategories: ["dresses"]
                           brands: ["Brand A"]
                           address: "Khreshchatyk 1"
                           country: "Ukraine"
@@ -444,7 +502,7 @@ paths:
                           updatedAt: "2024-01-01T12:00:00.000Z"
                     meta:
                       hasMore: true
-                      nextCursor: "eyJ2IjoxLCJ2YWx1ZSI6IjIwMjQtMDEtMDEiLCJpZCI6ImFiYzEyMyJ9"
+                      nextCursor: "eyJ2IjoyLCJmIjoidXBkYXRlZEF0IiwiZCI6ImRlc2MiLCJ2YWx1ZSI6IjIwMjQtMDEtMDFUMDA6MDA6MDAuMDAwWiIsImlkIjoiYWJjMTIzIn0="
         "429":
           description: Rate limit exceeded
           content:

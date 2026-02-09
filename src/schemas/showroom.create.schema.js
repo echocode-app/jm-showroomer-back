@@ -36,6 +36,8 @@ const baseSchema = Joi.object({
     country: Joi.string(),
     availability: Joi.any(),
     category: Joi.any(),
+    categoryGroup: Joi.string(),
+    subcategories: Joi.array().unique(),
     brands: Joi.array(),
     address: Joi.string().allow("", null),
     city: Joi.string().allow("", null),
@@ -51,6 +53,7 @@ const baseSchema = Joi.object({
     nameNormalized: Joi.forbidden(),
     addressNormalized: Joi.forbidden(),
     brandsNormalized: Joi.forbidden(),
+    brandsMap: Joi.forbidden(),
     submittedAt: Joi.forbidden(),
 }).unknown(false);
 

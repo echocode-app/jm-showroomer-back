@@ -36,7 +36,7 @@ export function listShowroomsDev(parsed, user) {
     if (parsed.cityNormalized) {
         result = result.filter(s => s.geo?.cityNormalized === parsed.cityNormalized);
     }
-    if (filters.type) result = result.filter(s => s.type === filters.type);
+    if (parsed.type) result = result.filter(s => s.type === parsed.type);
     if (filters.availability) {
         result = result.filter(s => s.availability === filters.availability);
     }
@@ -46,8 +46,21 @@ export function listShowroomsDev(parsed, user) {
     if (parsed.categories.length > 0) {
         result = result.filter(s => parsed.categories.includes(s.category));
     }
-    if (parsed.brandNormalized) {
+    if (parsed.categoryGroups.length > 0) {
         result = result.filter(s =>
+            parsed.categoryGroups.includes(s.categoryGroup)
+        );
+    }
+    if (parsed.subcategories.length > 0) {
+        result = result.filter(s =>
+            (s.subcategories ?? []).some(sub =>
+                parsed.subcategories.includes(sub)
+            )
+        );
+    }
+    if (parsed.brandKey) {
+        result = result.filter(s =>
+            s.brandsMap?.[parsed.brandKey] === true ||
             (s.brandsNormalized ?? []).includes(parsed.brandNormalized)
         );
     }

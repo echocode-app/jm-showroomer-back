@@ -1,4 +1,5 @@
 import { getFirestoreInstance } from "../../config/firebase.js";
+import { DEV_STORE, useDevMock } from "../showrooms/_store.js";
 
 // getUserRef
 function getUserRef(userId) {
@@ -49,6 +50,14 @@ export async function makeOwnerDevUser(userId) {
 
 // ownerHasActiveShowrooms
 export async function ownerHasActiveShowrooms(ownerUid) {
+    if (!ownerUid) return false;
+    if (useDevMock) {
+        return DEV_STORE.showrooms.some(
+            s =>
+                s.ownerUid === ownerUid &&
+                ["draft", "pending", "approved", "rejected"].includes(s.status)
+        );
+    }
     const db = getFirestoreInstance();
     const snapshot = await db
         .collection("showrooms")

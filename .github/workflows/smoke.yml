@@ -50,6 +50,29 @@ jobs:
           fi
           echo "NODE_ENV=${{ inputs.node_env }}" >> "$GITHUB_ENV"
 
+      - name: Start local server (if no base_url)
+        if: ${{ inputs.base_url == '' }}
+        run: |
+          NODE_ENV=${{ inputs.node_env }} node src/core/server.js > /tmp/server.log 2>&1 &
+          echo $! > /tmp/server.pid
+
+      - name: Wait for health (if no base_url)
+        if: ${{ inputs.base_url == '' }}
+        run: |
+          for i in {1..30}; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:3005/api/v1/health" || true)
+            if [ "$code" = "200" ]; then
+              echo "✅ Server is ready"
+              exit 0
+            fi
+            echo "⏳ Waiting for server... ($i/30) status=$code"
+            sleep 1
+          done
+          echo "❌ Server did not become ready"
+          echo "---- server log ----"
+          cat /tmp/server.log || true
+          exit 1
+
       - name: Smoke tests
         if: ${{ inputs.run_smoke }}
         run: ./src/test/run.sh smoke

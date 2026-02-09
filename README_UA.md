@@ -30,9 +30,11 @@ JM Showroomer Backend забезпечує:
 - `fields`: `marker` або `card`
 - `q`: prefix search по `nameNormalized` (ігнорується, якщо задано `city` або `qMode=city`)
 - `city`: exact match по `geo.cityNormalized`
-- `brand`: exact match по `brandsNormalized`
+- `brand`: exact match по `brandsMap.<brandKey>`
+- `categoryGroup`
+- `subcategories` (array-contains-any)
 - `geohashPrefix` або `geohashPrefixes[]`
-- `cursor`: base64 JSON з версією `v`
+- `cursor`: base64 JSON (v2) з полями `{v,f,d,value,id}`
 
 Обмеження курсора:
 - cursor працює тільки для одного `geohashPrefix`.

@@ -23,6 +23,7 @@ scripts/seed_assets/**
 !scripts/seed_assets/.gitkeep
 !scripts/seed_assets/**/meta.json.example
 !scripts/seed_assets/README.md
+scripts/seed_owner_showrooms_prod.js
 
 # Personal/local docs
 DEV.md

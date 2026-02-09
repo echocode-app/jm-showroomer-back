@@ -17,6 +17,9 @@ export const ERROR_STATUS = {
     SHOWROOM_TYPE_REQUIRED: 400,
     COUNTRY_REQUIRED: 400,
     SHOWROOM_NAME_INVALID: 400,
+    SHOWROOM_CATEGORY_GROUP_INVALID: 400,
+    SHOWROOM_SUBCATEGORY_INVALID: 400,
+    SHOWROOM_SUBCATEGORY_GROUP_MISMATCH: 400,
     INSTAGRAM_INVALID: 400,
     PHONE_INVALID: 400,
     SHOWROOM_INCOMPLETE: 400,
@@ -51,6 +54,9 @@ export const ERROR_MESSAGE = {
     INDEX_NOT_READY: "Search temporarily unavailable. Please retry later.",
     SHOWROOM_LOCKED_PENDING: "Showroom is under review",
     SHOWROOM_PENDING_SNAPSHOT_MISSING: "Pending snapshot missing; cannot approve",
+    SHOWROOM_CATEGORY_GROUP_INVALID: "Category group is invalid",
+    SHOWROOM_SUBCATEGORY_INVALID: "Subcategory is invalid",
+    SHOWROOM_SUBCATEGORY_GROUP_MISMATCH: "Subcategories require clothing group",
     USER_COUNTRY_CHANGE_BLOCKED:
         "To change country, delete your showrooms and lookbooks or create a new account",
 };

@@ -78,7 +78,8 @@ Location vs Geo:
 - `geo.coords` is the canonical geo used for search.
 
 Possible Firestore index:
-If combining `city` with other filters (e.g., `status`, `ownerUid`), Firestore may require a composite index.
+If combining `city`, `categoryGroup`, `subcategories`, or `brand` with other filters (e.g., `status`, `ownerUid`),
+Firestore may require a composite index. For brand filtering, indexes are needed per `brandsMap.<brandKey>`.
 
 ## Showroom Search & Pagination
 
@@ -88,10 +89,21 @@ Query params:
 - `q`: prefix search by `nameNormalized` (ignored when `city` is set or `qMode=city`)
 - `qMode`: `city` or `name` (forces how `q` is interpreted)
 - `city`: exact match on `geo.cityNormalized`
-- `brand`: exact match on `brandsNormalized`
+- `brand`: exact match on `brandsMap.<brandKey>`
 - `category` or `categories`
+- `categoryGroup`
+- `subcategories` (array-contains-any)
 - `geohashPrefix` or `geohashPrefixes[]`
-- `cursor`: base64 JSON with version `v`
+- `cursor`: base64 JSON (v2) with fields `{v,f,d,value,id}`
+
+Examples:
+- `GET /showrooms?type=unique`
+- `GET /showrooms?categoryGroup=clothing`
+- `GET /showrooms?subcategories=dresses,suits`
+- `GET /showrooms?brand=zara&subcategories=dresses`
+
+Migration note:
+If existing showrooms lack `brandsMap`, run `scripts/migrate_brands_map.js` to backfill.
 
 Cursor limitations:
 - Cursor works only with a single `geohashPrefix`.

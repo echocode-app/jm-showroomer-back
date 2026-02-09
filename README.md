@@ -28,9 +28,11 @@ Backend API for JM Showroomer clients. Focus: authentication, showroom lifecycle
 - `fields`: `marker` or `card`
 - `q`: prefix search by `nameNormalized` (ignored when `city` is set or `qMode=city`)
 - `city`: exact match on `geo.cityNormalized`
-- `brand`: exact match on `brandsNormalized`
+- `brand`: exact match on `brandsMap.<brandKey>`
+- `categoryGroup`
+- `subcategories` (array-contains-any)
 - `geohashPrefix` or `geohashPrefixes[]`
-- `cursor`: base64 JSON with version `v`
+- `cursor`: base64 JSON (v2) with fields `{v,f,d,value,id}`
 
 Cursor limitations:
 - Cursor works only with a single `geohashPrefix`.

@@ -20,6 +20,20 @@ export function normalizeBrand(brand) {
     return normalized.replace(/^[\p{P}\p{S}]+|[\p{P}\p{S}]+$/gu, "");
 }
 
+// normalizeKey
+export function normalizeKey(value) {
+    let normalized = String(value ?? "")
+        .trim()
+        .replace(/[’‘`]/g, "'")
+        .toLowerCase();
+
+    normalized = normalized.replace(/[^\p{L}\p{N}]+/gu, "_");
+    normalized = normalized.replace(/^_+|_+$/g, "");
+    normalized = normalized.replace(/_+/g, "_");
+
+    return normalized;
+}
+
 // normalizeBrands
 export function normalizeBrands(brands = []) {
     if (!Array.isArray(brands)) return [];
@@ -27,6 +41,28 @@ export function normalizeBrands(brands = []) {
         .map(brand => normalizeBrand(brand))
         .filter(Boolean);
     return Array.from(new Set(normalized));
+}
+
+// normalizeSubcategories
+export function normalizeSubcategories(subcategories = []) {
+    if (!Array.isArray(subcategories)) return [];
+    const normalized = subcategories
+        .map(value => normalizeKey(value))
+        .filter(Boolean);
+    return Array.from(new Set(normalized));
+}
+
+// buildBrandsMap
+export function buildBrandsMap(brands = []) {
+    if (!Array.isArray(brands)) return {};
+    const map = {};
+    const keys = brands
+        .map(value => normalizeKey(value))
+        .filter(Boolean);
+    keys.forEach(key => {
+        map[key] = true;
+    });
+    return map;
 }
 
 // normalizeInstagramUrl

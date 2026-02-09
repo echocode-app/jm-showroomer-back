@@ -22,6 +22,10 @@ ME_RESPONSE=$(curl -s "${AUTH_HEADER[@]}" "${BASE_URL}/users/me")
 echo "$ME_RESPONSE"
 USER_ROLE=$(json_get "$ME_RESPONSE" '.data.role // empty')
 assert_non_empty "$USER_ROLE" "role"
+USER_COUNTRY=$(json_get "$ME_RESPONSE" '.data.country // empty')
+if [[ -z "$USER_COUNTRY" || "$USER_COUNTRY" == "null" ]]; then
+  USER_COUNTRY="Ukraine"
+fi
 
 if [[ "$USER_ROLE" != "owner" ]]; then
   http_request "POST /users/complete-owner-profile (upgrade)" 200 "" \
@@ -32,6 +36,10 @@ if [[ "$USER_ROLE" != "owner" ]]; then
   ME_RESPONSE=$(curl -s "${AUTH_HEADER[@]}" "${BASE_URL}/users/me")
   USER_ROLE=$(json_get "$ME_RESPONSE" '.data.role // empty')
   assert_eq "$USER_ROLE" "owner" "role"
+  USER_COUNTRY=$(json_get "$ME_RESPONSE" '.data.country // empty')
+  if [[ -z "$USER_COUNTRY" || "$USER_COUNTRY" == "null" ]]; then
+    USER_COUNTRY="Ukraine"
+  fi
 fi
 
 print_section "Profile update"
@@ -87,8 +95,16 @@ fi
 
 http_request "PATCH step2 (country/availability)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d "{\"country\":\"Ukraine\",\"availability\":\"${AVAILABILITY_NEXT}\",\"category\":\"womenswear\",\"brands\":[\"Brand A\",\"Brand B\"]}" \
+  -d "{\"country\":\"${USER_COUNTRY}\",\"availability\":\"${AVAILABILITY_NEXT}\",\"category\":\"womenswear\",\"categoryGroup\":\"clothing\",\"subcategories\":[\"dresses\",\"suits\"],\"brands\":[\"Zara\",\"Brand B\"]}" \
   "${BASE_URL}/showrooms/$SHOWROOM_ID"
+
+http_request "GET after step2" 200 "" \
+  "${AUTH_HEADER[@]}" \
+  "${BASE_URL}/showrooms/$SHOWROOM_ID"
+
+assert_eq "$(json_get "$LAST_BODY" '.data.showroom.categoryGroup')" "clothing" "categoryGroup"
+assert_eq "$(json_get "$LAST_BODY" '.data.showroom.subcategories | sort | join(",")')" "dresses,suits" "subcategories"
+assert_eq "$(json_get "$LAST_BODY" '.data.showroom.brandsMap.zara // empty')" "true" "brandsMap.zara"
 
 http_request "PATCH step3 (address/city/location)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
@@ -279,12 +295,44 @@ if [[ -n "${TEST_ADMIN_TOKEN:-}" ]]; then
   assert_non_empty "$MARKER_TYPE" "marker type"
   assert_eq "$MARKER_CATEGORY" "womenswear" "marker category"
 
-  print_section "Brand + name search (public)"
-  LIST_RESPONSE=$(curl -s "${BASE_URL}/showrooms?brand=brand%20a&limit=20")
+  print_section "Geohash paging (public)"
+  PAGE1=$(curl -s "${BASE_URL}/showrooms?geohashPrefix=${GEO_PREFIX}&limit=2")
+  echo "$PAGE1"
+  CURSOR1=$(echo "$PAGE1" | jq -r '.meta.nextCursor // empty')
+  IDS_PAGE1=$(echo "$PAGE1" | jq -r '.data.showrooms // [] | map(.id) | @json')
+  if [[ -n "$CURSOR1" ]]; then
+    PAGE2=$(curl -s "${BASE_URL}/showrooms?geohashPrefix=${GEO_PREFIX}&limit=2&cursor=${CURSOR1}")
+    echo "$PAGE2"
+    IDS_PAGE2=$(echo "$PAGE2" | jq -r '.data.showrooms // [] | map(.id) | @json')
+    DUP_COUNT=$(jq -n --argjson a "$IDS_PAGE1" --argjson b "$IDS_PAGE2" '$a + $b | group_by(.) | map(select(length>1)) | length')
+    assert_eq "$DUP_COUNT" "0" "geohash paging should not duplicate ids"
+  fi
+
+  print_section "Filters: brand + subcategories (public)"
+  LIST_RESPONSE=$(curl -s "${BASE_URL}/showrooms?subcategories=dresses&limit=20")
+  echo "$LIST_RESPONSE"
+  FOUND_COUNT=$(echo "$LIST_RESPONSE" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms // [] | map(select(.id == $id)) | length')
+  assert_eq "$FOUND_COUNT" "1" "showroom found by subcategories filter"
+
+  LIST_RESPONSE=$(curl -s "${BASE_URL}/showrooms?brand=zara&limit=20")
   echo "$LIST_RESPONSE"
   FOUND_COUNT=$(echo "$LIST_RESPONSE" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms // [] | map(select(.id == $id)) | length')
   assert_eq "$FOUND_COUNT" "1" "showroom found by brand filter"
 
+  LIST_RESPONSE=$(curl -s "${BASE_URL}/showrooms?brand=zara&subcategories=dresses&limit=20")
+  echo "$LIST_RESPONSE"
+  FOUND_COUNT=$(echo "$LIST_RESPONSE" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms // [] | map(select(.id == $id)) | length')
+  assert_eq "$FOUND_COUNT" "1" "showroom found by brand+subcategory filter"
+
+  LIST_RESPONSE=$(curl -s "${BASE_URL}/showrooms?brand=zara&subcategories=dresses&limit=1")
+  echo "$LIST_RESPONSE"
+  NEXT_CURSOR=$(echo "$LIST_RESPONSE" | jq -r '.meta.nextCursor // empty')
+  if [[ -n "$NEXT_CURSOR" ]]; then
+    LIST_RESPONSE=$(curl -s "${BASE_URL}/showrooms?brand=zara&subcategories=dresses&limit=1&cursor=${NEXT_CURSOR}")
+    echo "$LIST_RESPONSE"
+  fi
+
+  print_section "Brand + name search (public)"
   NAME_PREFIX="${SUBMITTED_NAME:0:3}"
   LIST_RESPONSE=$(curl -s "${BASE_URL}/showrooms?q=${NAME_PREFIX}&limit=20")
   echo "$LIST_RESPONSE"
@@ -305,9 +353,13 @@ else
 fi
 
 print_section "Country change blocked"
+TARGET_COUNTRY="Poland"
+if [[ "$USER_COUNTRY" == "Poland" ]]; then
+  TARGET_COUNTRY="Ukraine"
+fi
 http_request "PATCH /users/profile (country change blocked)" 409 "USER_COUNTRY_CHANGE_BLOCKED" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d '{"country":"Poland"}' \
+  -d "{\"country\":\"${TARGET_COUNTRY}\"}" \
   "${BASE_URL}/users/profile"
 
 http_request "PATCH /users/profile (blocked country)" 403 "COUNTRY_BLOCKED" \
