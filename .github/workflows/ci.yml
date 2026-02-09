@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  lint-and-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve Node version
+        id: node
+        run: |
+          if [ -f package.json ] && jq -e '.engines.node' package.json >/dev/null 2>&1; then
+            echo "version=$(jq -r '.engines.node' package.json)" >> "$GITHUB_OUTPUT"
+          elif [ -f .nvmrc ]; then
+            echo "version=$(cat .nvmrc)" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=20" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.node.outputs.version }}
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Unit tests
+        run: |
+          if npm run | grep -q "test:unit"; then
+            npm run test:unit
+          else
+            npm test
+          fi
+
+      - name: OpenAPI lint
+        run: npx @redocly/cli lint docs/openapi.yaml
+
+      - name: Lint (optional)
+        run: npm run lint --if-present
+
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Shellcheck (bash scripts)
+        run: |
+          shopt -s nullglob
+          files=(src/test/*.sh scripts/*.sh)
+          if [ ${#files[@]} -gt 0 ]; then
+            shellcheck -x "${files[@]}"
+          else
+            echo "No shell scripts found to check."
+          fi

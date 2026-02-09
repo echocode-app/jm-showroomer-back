@@ -11,7 +11,10 @@ load_env() {
   fi
 
   # Export .env entries (skip comments + private key line)
-  export $(grep -v '^#' "$ENV_FILE" | grep -v FIREBASE_PRIVATE_KEY | xargs)
+  if ! export $(grep -v '^#' "$ENV_FILE" | grep -v FIREBASE_PRIVATE_KEY | xargs); then
+    echo "❌ Failed to parse $ENV_FILE" >&2
+    exit 1
+  fi
 }
 
 # require_env
@@ -42,8 +45,32 @@ preflight_server() {
   local status
   status=$(curl -s -o /dev/null -w "%{http_code}" "${base_url}/health")
   if [[ "$status" != "200" ]]; then
-    echo "❌ Server not running, start with: npm run dev" >&2
+    if [[ "$base_url" == http://localhost* ]]; then
+      echo "❌ Server not running at ${base_url} (try: npm run dev)" >&2
+    else
+      echo "❌ Server not reachable at ${base_url}" >&2
+    fi
     exit 1
+  fi
+}
+
+# resolve_base_url
+resolve_base_url() {
+  local base_url=${BASE_URL:-""}
+  if [[ -z "$base_url" ]]; then
+    base_url="http://localhost:${PORT:-3005}/api/v1"
+  fi
+  # strip trailing slash
+  base_url="${base_url%/}"
+  echo "$base_url"
+}
+
+# warn_if_prod_write
+warn_if_prod_write() {
+  local base_url=$1
+  local env=${NODE_ENV:-dev}
+  if [[ "$env" == "prod" || "$base_url" != http://localhost* ]]; then
+    echo "⚠ NOT for prod: this test writes data"
   fi
 }
 
@@ -181,6 +208,34 @@ request_allow_status() {
     if [[ "$CODE" != "$expected_error_code" ]]; then
       fail "Expected error.code=$expected_error_code, got $CODE"
     fi
+  fi
+
+  echo "✔ HTTP $LAST_STATUS"
+}
+
+# request_allow_status_or_index_not_ready
+request_allow_status_or_index_not_ready() {
+  local label=$1
+  shift || true
+
+  echo
+  echo "▶ $label"
+
+  local max_time=${CURL_MAX_TIME:-30}
+  local connect_timeout=${CURL_CONNECT_TIMEOUT:-5}
+  RESPONSE=$(curl -s --max-time "$max_time" --connect-timeout "$connect_timeout" -w "\nHTTP_STATUS:%{http_code}" "$@") || fail "curl failed"
+  LAST_STATUS=$(echo "$RESPONSE" | sed -n 's/.*HTTP_STATUS://p')
+  LAST_BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS/d')
+
+  echo "$LAST_BODY"
+
+  if [[ "$LAST_STATUS" == "503" ]]; then
+    CODE=$(echo "$LAST_BODY" | jq -r '.error.code // empty')
+    if [[ "$CODE" != "INDEX_NOT_READY" ]]; then
+      fail "Expected error.code=INDEX_NOT_READY, got $CODE"
+    fi
+  elif [[ "$LAST_STATUS" != "200" ]]; then
+    fail "Expected HTTP 200 or 503, got $LAST_STATUS"
   fi
 
   echo "✔ HTTP $LAST_STATUS"

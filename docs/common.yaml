@@ -35,6 +35,7 @@ components:
       enum:
         - QUERY_INVALID
         - CURSOR_INVALID
+        - INDEX_NOT_READY
     HealthResponse:
       type: object
       properties:

@@ -5,6 +5,7 @@ import userRouter from "./user.js";
 import authRouter from "./auth.js";
 import showroomsRouter from "./showrooms.js";
 import lookbooksRouter from "./lookbooks.js";
+import eventsRouter from "./events.js";
 import adminRouter from "./admin.js";
 import collectionsRouter from "./collections.js";
 
@@ -16,6 +17,7 @@ router.use("/users", userRouter);
 router.use("/auth", authRouter);
 router.use("/showrooms", showroomsRouter);
 router.use("/lookbooks", lookbooksRouter);
+router.use("/events", eventsRouter);
 router.use("/collections", collectionsRouter);
 router.use("/admin", adminRouter);
 

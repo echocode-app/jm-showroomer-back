@@ -64,7 +64,7 @@ export async function ownerHasLookbooks(ownerUid) {
     const db = getFirestoreInstance();
     const snapshot = await db
         .collection("lookbooks")
-        .where("owner", "==", ownerUid)
+        .where("ownerUid", "==", ownerUid)
         .limit(1)
         .get();
     return !snapshot.empty;
@@ -75,7 +75,7 @@ export async function ownerHasEvents(ownerUid) {
     const db = getFirestoreInstance();
     const snapshot = await db
         .collection("events")
-        .where("owner", "==", ownerUid)
+        .where("ownerUid", "==", ownerUid)
         .limit(1)
         .get();
     return !snapshot.empty;

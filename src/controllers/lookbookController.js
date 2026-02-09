@@ -9,7 +9,7 @@ export async function createLookbook(req, res, next) {
         // TODO
         const { name, description } = req.body;
         // TODO
-        return ok(res, { lookbook: { name, description, owner: req.user.uid } });
+        return ok(res, { lookbook: { name, description, ownerUid: req.user.uid } });
     } catch (err) {
         next(err);
     }
@@ -44,12 +44,11 @@ export async function listLookbooks(req, res, next) {
     }
 }
 
-// rsvpEvent
-export async function rsvpEvent(req, res, next) {
+// rsvpLookbook
+export async function rsvpLookbook(req, res, next) {
     try {
         const { id } = req.params;
-        // TODO RSVP
-        return ok(res, { eventId: id, user: req.user.uid, status: "RSVPed" });
+        return ok(res, { lookbookId: id, user: req.user.uid, status: "RSVPed" });
     } catch (err) {
         next(err);
     }

@@ -7,14 +7,15 @@ source "$SCRIPT_DIR/_lib.sh"
 
 load_env
 require_cmd curl jq
-require_env BASE_URL TEST_USER_TOKEN TEST_ADMIN_TOKEN
+require_env TEST_USER_TOKEN TEST_ADMIN_TOKEN
 
-BASE_URL="${BASE_URL}"
+BASE_URL="$(resolve_base_url)"
 preflight_server "${BASE_URL}"
 AUTH_HEADER=(-H "$(auth_header "${TEST_USER_TOKEN}")")
 ADMIN_HEADER=(-H "$(auth_header "${TEST_ADMIN_TOKEN}")")
 JSON_HEADER=(-H "$(json_header)")
 NOW=$(now_ns)
+warn_if_prod_write "${BASE_URL}"
 SHORT_NOW="${NOW: -6}"
 
 print_section "Collections stubs (public)"
@@ -51,7 +52,7 @@ http_request "POST /admin/showrooms/{id}/reject (draft)" 400 "SHOWROOM_NOT_EDITA
 NAME_MAIN="Admin Review ${SHORT_NOW}"
 http_request "PATCH /showrooms/{id} (complete data)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d "{\"name\":\"${NAME_MAIN}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"address\":\"Main St 2\",\"city\":\"Kyiv\",\"availability\":\"open\",\"contacts\":{\"phone\":\"+380501112244\",\"instagram\":\"https://instagram.com/review${SHORT_NOW}\"},\"location\":{\"lat\":50.45,\"lng\":30.52}}" \
+  -d "{\"name\":\"${NAME_MAIN}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"address\":\"Cherkasy, Main St 2\",\"city\":\"Cherkasy\",\"availability\":\"open\",\"contacts\":{\"phone\":\"+380501112244\",\"instagram\":\"https://instagram.com/review${SHORT_NOW}\"},\"location\":{\"lat\":49.4444,\"lng\":32.0598}}" \
   "${BASE_URL}/showrooms/${SHOWROOM_ID}"
 
 http_request "POST /showrooms/{id}/submit" 200 "" \
@@ -167,7 +168,7 @@ assert_non_empty "$ADMIN_DEL_ID" "admin delete showroom id"
 
 http_request "PATCH /showrooms/{id} (admin delete target)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d "{\"name\":\"Admin Delete ${NOW}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"address\":\"Main St 3\",\"city\":\"Kyiv\",\"availability\":\"open\",\"contacts\":{\"phone\":\"+380501112255\",\"instagram\":\"https://instagram.com/admindelete${NOW}\"},\"location\":{\"lat\":50.45,\"lng\":30.52}}" \
+  -d "{\"name\":\"Admin Delete ${NOW}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"address\":\"Zaporizhzhia, Main St 3\",\"city\":\"Zaporizhzhia\",\"availability\":\"open\",\"contacts\":{\"phone\":\"+380501112255\",\"instagram\":\"https://instagram.com/admindelete${NOW}\"},\"location\":{\"lat\":47.8388,\"lng\":35.1396}}" \
   "${BASE_URL}/showrooms/${ADMIN_DEL_ID}"
 
 http_request "POST /showrooms/{id}/submit (admin delete target)" 200 "" \

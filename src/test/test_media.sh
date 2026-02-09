@@ -7,7 +7,6 @@ source "$SCRIPT_DIR/_lib.sh"
 
 load_env
 require_cmd curl jq node rg
-require_env BASE_URL
 ENV_FILE=".env.${NODE_ENV:-dev}"
 if [ -f "$ENV_FILE" ]; then
   FIREBASE_PRIVATE_KEY=$(grep -v '^#' "$ENV_FILE" | grep -m1 '^FIREBASE_PRIVATE_KEY=' | cut -d= -f2-)
@@ -16,7 +15,7 @@ if [ -f "$ENV_FILE" ]; then
   export FIREBASE_PRIVATE_KEY
 fi
 
-BASE_URL="${BASE_URL}"
+BASE_URL="$(resolve_base_url)"
 preflight_server "${BASE_URL}"
 
 print_section "Safety guard"

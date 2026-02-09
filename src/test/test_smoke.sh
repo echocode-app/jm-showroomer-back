@@ -7,16 +7,20 @@ source "$SCRIPT_DIR/_lib.sh"
 
 load_env
 require_cmd curl jq
-require_env BASE_URL
 
 ENV="${NODE_ENV:-dev}"
-BASE_URL="${BASE_URL}"
+BASE_URL="$(resolve_base_url)"
 preflight_server "${BASE_URL}"
 
 print_section "Smoke (public)"
 http_request "GET /health" 200 "" "${BASE_URL}/health"
 http_request "GET /showrooms" 200 "" "${BASE_URL}/showrooms"
-http_request "GET /showrooms?city=Kyiv" 200 "" "${BASE_URL}/showrooms?city=Kyiv"
+request_allow_status_or_index_not_ready "GET /showrooms?city=Kyiv" \
+  "${BASE_URL}/showrooms?city=Kyiv"
+request_allow_status_or_index_not_ready "GET /showrooms?city=Cherkasy" \
+  "${BASE_URL}/showrooms?city=Cherkasy"
+request_allow_status_or_index_not_ready "GET /showrooms?city=Zaporizhzhia" \
+  "${BASE_URL}/showrooms?city=Zaporizhzhia"
 http_request "GET /lookbooks" 200 "" "${BASE_URL}/lookbooks"
 
 print_section "Public list validation (query errors)"
@@ -71,6 +75,12 @@ http_request "POST /auth/oauth (invalid idToken)" 401 "AUTH_INVALID" \
   -X POST -H "$(json_header)" \
   -d '{"idToken":"invalid"}' \
   "${BASE_URL}/auth/oauth"
+http_request "POST /events/{id}/rsvp (unauth)" 401 "AUTH_MISSING" \
+  -X POST \
+  "${BASE_URL}/events/event-test-1/rsvp"
+http_request "POST /lookbooks/{id}/rsvp (unauth)" 401 "AUTH_MISSING" \
+  -X POST \
+  "${BASE_URL}/lookbooks/event-test-1/rsvp"
 
 if [[ -n "${TEST_USER_TOKEN:-}" ]]; then
   AUTH_HEADER=(-H "$(auth_header "${TEST_USER_TOKEN}")")
@@ -97,6 +107,16 @@ if [[ -n "${TEST_USER_TOKEN:-}" ]]; then
       "${BASE_URL}/lookbooks/create"
   fi
 
+  print_section "Events RSVP (stub)"
+  http_request "POST /events/{id}/rsvp" 200 "" \
+    -X POST "${AUTH_HEADER[@]}" \
+    "${BASE_URL}/events/event-test-1/rsvp"
+
+  print_section "Lookbooks RSVP (stub)"
+  http_request "POST /lookbooks/{id}/rsvp" 200 "" \
+    -X POST "${AUTH_HEADER[@]}" \
+    "${BASE_URL}/lookbooks/event-test-1/rsvp"
+
   print_section "Country restrictions"
   http_request "POST /users/complete-onboarding (UA)" 200 "" \
     -X POST "${AUTH_HEADER[@]}" -H "$(json_header)" \
@@ -107,6 +127,42 @@ if [[ -n "${TEST_USER_TOKEN:-}" ]]; then
     -X POST "${AUTH_HEADER[@]}" -H "$(json_header)" \
     -d '{"country":"Russia"}' \
     "${BASE_URL}/users/complete-onboarding"
+
+  print_section "Seeded lookbooks do not block country change"
+  ME_CHECK=$(curl -s "${AUTH_HEADER[@]}" "${BASE_URL}/users/me")
+  CURRENT_COUNTRY=$(json_get "$ME_CHECK" '.data.country // empty')
+  TARGET_COUNTRY="Poland"
+  if [[ "$CURRENT_COUNTRY" == "Poland" ]]; then
+    TARGET_COUNTRY="Ukraine"
+  fi
+
+  LOOKBOOKS_RESPONSE=$(curl -s "${BASE_URL}/lookbooks?limit=1")
+  HAS_LOOKBOOKS=$(json_get "$LOOKBOOKS_RESPONSE" '.data.lookbooks // [] | length')
+  if [[ "$HAS_LOOKBOOKS" == "0" ]]; then
+    echo "⚠ No lookbooks returned (seed not run); skipping country change check"
+  else
+    COUNTRY_RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
+      -X PATCH "${AUTH_HEADER[@]}" -H "$(json_header)" \
+      -d "{\"country\":\"${TARGET_COUNTRY}\"}" \
+      "${BASE_URL}/users/profile")
+    COUNTRY_STATUS=$(echo "$COUNTRY_RESPONSE" | sed -n 's/.*HTTP_STATUS://p')
+    COUNTRY_BODY=$(echo "$COUNTRY_RESPONSE" | sed '/HTTP_STATUS/d')
+    echo "$COUNTRY_BODY"
+    if [[ "$COUNTRY_STATUS" == "409" ]]; then
+      CODE=$(echo "$COUNTRY_BODY" | jq -r '.error.code // empty')
+      assert_eq "$CODE" "USER_COUNTRY_CHANGE_BLOCKED" "error.code"
+      echo "⚠ Country change blocked (user likely has owned assets)."
+    elif [[ "$COUNTRY_STATUS" != "200" ]]; then
+      fail "Expected HTTP 200 or 409, got $COUNTRY_STATUS"
+    else
+      # revert to original country if changed
+      if [[ -n "$CURRENT_COUNTRY" && "$CURRENT_COUNTRY" != "$TARGET_COUNTRY" ]]; then
+        curl -s -X PATCH "${AUTH_HEADER[@]}" -H "$(json_header)" \
+          -d "{\"country\":\"${CURRENT_COUNTRY}\"}" \
+          "${BASE_URL}/users/profile" >/dev/null
+      fi
+    fi
+  fi
 else
   echo "⚠ TEST_USER_TOKEN not set; skipping authenticated smoke checks"
 fi

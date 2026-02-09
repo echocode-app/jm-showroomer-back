@@ -59,6 +59,8 @@ paths:
     $ref: './lookbooks.yaml#/paths/~1lookbooks~1create'
   /lookbooks/{id}/rsvp:
     $ref: './lookbooks.yaml#/paths/~1lookbooks~1{id}~1rsvp'
+  /events/{id}/rsvp:
+    $ref: './events.yaml#/paths/~1events~1{id}~1rsvp'
 
 components:
   securitySchemes:

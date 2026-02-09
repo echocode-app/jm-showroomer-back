@@ -321,7 +321,7 @@ async function seedEvents() {
             source: "seed",
             published: true,
             createdBy: null,
-            owner: null,
+            ownerUid: null,
             seedKey: id,
             createdAt: snap.exists ? snap.data().createdAt ?? now : now,
             updatedAt: now,

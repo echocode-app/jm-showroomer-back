@@ -17,6 +17,7 @@ JM Showroomer Backend забезпечує:
 - **MVP2-резерв**: `role` зі значеннями `manager`/`stylist` та `roleRequest` зарезервовані для MVP2. Клієнти MVP1 мають їх ігнорувати, якщо вони присутні.
 - **Showroom draft flow**: чернетка → поетапні PATCH → submit.
 - **Geo model (MVP1)**: `geo` (місто + координати + geohash), фільтр `GET /showrooms?city=...`.
+- **Lookbooks & Events**: самостійні сутності (MVP1: seeded lookbooks, events RSVP stub).
 - **Валідації**: назва шоуруму, телефон (E.164), Instagram URL.
 - **Блок країн**: russia / belarus (RU/BY).
 - **Анти‑дублі**: дубль імені для власника, глобальний дубль (name + address) у pending/approved.

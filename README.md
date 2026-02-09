@@ -1,5 +1,8 @@
 # JM Showroomer Backend
 
+[![CI](https://github.com/echocode-app/jm-showroomer-back/actions/workflows/ci.yml/badge.svg)](https://github.com/echocode-app/jm-showroomer-back/actions/workflows/ci.yml)
+[![Smoke Tests (Manual)](https://github.com/echocode-app/jm-showroomer-back/actions/workflows/smoke.yml/badge.svg)](https://github.com/echocode-app/jm-showroomer-back/actions/workflows/smoke.yml)
+
 Backend API for JM Showroomer clients. Focus: authentication, showroom lifecycle, moderation, and geo search.
 
 ## Overview
@@ -12,6 +15,7 @@ Backend API for JM Showroomer clients. Focus: authentication, showroom lifecycle
 - **Auth + RBAC**: guest / user / owner / admin
 - **Showrooms**: draft → pending → approved / rejected → deleted
 - **Geo model (MVP1)**: `geo` (city + coords + geohash), filter by `?city=`
+- **Lookbooks & Events**: standalone entities (MVP1: seeded lookbooks, events RSVP stub)
 - **Moderation**: submit + admin approve/reject
 - **Pending lock**: no edits while `pending`
 - **Country rules**: RU/BY blocked, showroom country must match owner
@@ -40,6 +44,8 @@ Validation errors:
 Search implementation:
 - `src/services/showrooms/listShowrooms.js` (entry)
 - `src/services/showrooms/list/` (parse/utils/ordering/dev/firestore)
+
+Deploy note: run `firebase deploy --only firestore:indexes` for test/stage/prod before integration tests or releases.
 
 ## UI‑Relevant Errors
 - `USER_COUNTRY_CHANGE_BLOCKED` (409)
@@ -72,3 +78,15 @@ docs/          OpenAPI specs (modular)
 npm i
 npm run dev
 ```
+
+## CI Overview
+- `ci.yml` runs unit tests (Jest), OpenAPI lint, and shellcheck. No secrets required.
+- `smoke.yml` is manual (workflow_dispatch) for integration tests after deploy. Provide `BASE_URL` and set repo secrets (`TEST_USER_TOKEN`, `TEST_ADMIN_TOKEN`) if you want to run showrooms/admin tests. Missing secrets will skip those steps gracefully.
+
+Deploy note: run `firebase deploy --only firestore:indexes` for test/stage/prod before integration tests or releases.
+
+## Firestore Indexes (Manual Deploy)
+- Workflow: `.github/workflows/firestore-indexes.yml` (manual only).
+- Required secrets: `FIREBASE_SERVICE_ACCOUNT_JSON`, `FIREBASE_PROJECT_ID`.
+- Command: `firebase deploy --only firestore:indexes --project "$FIREBASE_PROJECT_ID"`.
+- Current Firebase is corporate; later will be switched to client project.

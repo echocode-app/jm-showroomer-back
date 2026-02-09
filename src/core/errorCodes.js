@@ -26,6 +26,7 @@ export const ERROR_STATUS = {
     NO_FIELDS_TO_UPDATE: 400,
     QUERY_INVALID: 400,
     CURSOR_INVALID: 400,
+    INDEX_NOT_READY: 503,
     SHOWROOM_LOCKED_PENDING: 409,
     SHOWROOM_PENDING_SNAPSHOT_MISSING: 409,
     USER_COUNTRY_CHANGE_BLOCKED: 409,
@@ -47,6 +48,7 @@ export const ERROR_MESSAGE = {
     VALIDATION_ERROR: "Validation error",
     QUERY_INVALID: "Query parameters are invalid",
     CURSOR_INVALID: "Cursor is invalid",
+    INDEX_NOT_READY: "Search temporarily unavailable. Please retry later.",
     SHOWROOM_LOCKED_PENDING: "Showroom is under review",
     SHOWROOM_PENDING_SNAPSHOT_MISSING: "Pending snapshot missing; cannot approve",
     USER_COUNTRY_CHANGE_BLOCKED:

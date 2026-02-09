@@ -34,6 +34,7 @@ Notes:
 - When status is `pending`, owner cannot PATCH/DELETE (review freeze).
 - Soft delete sets status=`deleted` and hides from public/owner lists.
 - Each action appends to `editHistory` with before/after diff (audit log).
+- Lookbooks and events are standalone entities (no showroom linkage or geo inheritance).
 - Profile settings: `PATCH /users/profile` (name/country/instagram/position/settings).
   - Owner country change is blocked if there are active showrooms/lookbooks/events → `409 USER_COUNTRY_CHANGE_BLOCKED`.
 - Showroom country must match owner country; changing it to a different country is blocked on PATCH/submit.
@@ -168,6 +169,7 @@ API Table (actual)
 | Lookbooks   | GET    | /lookbooks                    | Public. Seeded content (MVP1).                                                          |
 | Lookbooks   | POST   | /lookbooks/create             | OWNER/MANAGER. Stub (MVP2).                                                             |
 | Lookbooks   | POST   | /lookbooks/{id}/rsvp          | Authenticated users. Stub.                                                              |
+| Events      | POST   | /events/{id}/rsvp             | Authenticated users. Stub.                                                              |
 | Collections | GET    | /collections/favorites/showrooms | Public/any role. Stub (empty list).                                                 |
 | Collections | GET    | /collections/favorites/lookbooks | Public/any role. Stub (empty list).                                                 |
 | Collections | GET    | /collections/want-to-visit/events | Public/any role. Stub (empty list).                                                |

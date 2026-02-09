@@ -1,0 +1,46 @@
+paths:
+  /events/{id}/rsvp:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [Events]
+      summary: RSVP to event (stub)
+      description: MVP2. Stub in MVP1.
+      operationId: rsvpEvent
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: RSVP response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          eventId:
+                            type: string
+                          user:
+                            type: string
+                          status:
+                            type: string
+                            example: "RSVPed"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'

@@ -28,3 +28,6 @@ scripts/seed_assets/**
 DEV.md
 README_BACKEND_MAP_UA.md
 DEV_POSTMAN_TESTS.md
+
+# Test archive (legacy)
+src/test/archive/

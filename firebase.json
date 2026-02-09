@@ -13,6 +13,9 @@
       }
     ]
   },
+  "firestore": {
+    "indexes": "firestore.indexes.json"
+  },
   "emulators": {
     "firestore": {
       "port": 8085

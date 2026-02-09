@@ -3,6 +3,7 @@
 // Showroom list (Firestore) implementation.
 import { getFirestoreInstance } from "../../../config/firebase.js";
 import { isCountryBlocked } from "../../../constants/countries.js";
+import { getMessageForCode, getStatusForCode } from "../../../core/errorCodes.js";
 import { FieldPath } from "firebase-admin/firestore";
 import { getOrdering } from "./ordering.js";
 import {
@@ -22,55 +23,72 @@ export async function listShowroomsFirestore(parsed, user) {
     const baseQuery = buildBaseQuery(db.collection("showrooms"), parsed, user);
     const { orderField, direction } = getOrdering(parsed);
 
-    if (parsed.geohashPrefixes.length > 0) {
-        const snapshots = await Promise.all(
-            parsed.geohashPrefixes.map(prefix =>
-                buildGeohashQuery(baseQuery, prefix, parsed, orderField, direction).get()
-            )
-        );
+    try {
+        if (parsed.geohashPrefixes.length > 0) {
+            const snapshots = await Promise.all(
+                parsed.geohashPrefixes.map(prefix =>
+                    buildGeohashQuery(baseQuery, prefix, parsed, orderField, direction).get()
+                )
+            );
 
-        let items = mergeSnapshots(snapshots);
-        items = applyVisibilityPostFilter(items, user);
-        items = items.filter(s => !isCountryBlocked(s.country));
+            let items = mergeSnapshots(snapshots);
+            items = applyVisibilityPostFilter(items, user);
+            items = items.filter(s => !isCountryBlocked(s.country));
 
-        if (parsed.qName) {
-            items = items.filter(s => {
-                const nameOk = parsed.qName
-                    ? String(s.nameNormalized ?? "").startsWith(parsed.qName)
-                    : false;
-                return nameOk;
+            if (parsed.qName) {
+                items = items.filter(s => {
+                    const nameOk = parsed.qName
+                        ? String(s.nameNormalized ?? "").startsWith(parsed.qName)
+                        : false;
+                    return nameOk;
+                });
+            }
+
+            items.sort((a, b) => {
+                const cmp = compareValues(
+                    getValueByPath(a, orderField),
+                    getValueByPath(b, orderField),
+                    direction
+                );
+                if (cmp !== 0) return cmp;
+                return a.id.localeCompare(b.id);
             });
-        }
 
-        items.sort((a, b) => {
-            const cmp = compareValues(
-                getValueByPath(a, orderField),
-                getValueByPath(b, orderField),
+            if (parsed.cursorDisabled) {
+                const pageItems = items.slice(0, parsed.limit);
+                const showrooms = pageItems.map(s => applyFieldMode(s, parsed.fields));
+                return { showrooms, meta: { nextCursor: null, hasMore: false } };
+            }
+
+            const cursorFiltered = applyCursorFilter(items, parsed.cursor, orderField, direction);
+            const { pageItems, meta } = buildMeta(
+                cursorFiltered,
+                parsed.limit,
+                orderField,
                 direction
             );
-            if (cmp !== 0) return cmp;
-            return a.id.localeCompare(b.id);
-        });
-
-        if (parsed.cursorDisabled) {
-            const pageItems = items.slice(0, parsed.limit);
             const showrooms = pageItems.map(s => applyFieldMode(s, parsed.fields));
-            return { showrooms, meta: { nextCursor: null, hasMore: false } };
+            return { showrooms, meta };
         }
 
-        const cursorFiltered = applyCursorFilter(items, parsed.cursor, orderField, direction);
-        const { pageItems, meta } = buildMeta(
-            cursorFiltered,
-            parsed.limit,
-            orderField,
-            direction
-        );
-        const showrooms = pageItems.map(s => applyFieldMode(s, parsed.fields));
-        return { showrooms, meta };
-    }
+        if (parsed.qName) {
+            let query = buildPrefixQuery(baseQuery, "nameNormalized", parsed.qName);
+            if (parsed.cursor) {
+                query = query.startAfter(parsed.cursor.value, parsed.cursor.id);
+            }
+            query = query.limit(parsed.limit + 1);
 
-    if (parsed.qName) {
-        let query = buildPrefixQuery(baseQuery, "nameNormalized", parsed.qName);
+            const snapshot = await query.get();
+            let items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            items = applyVisibilityPostFilter(items, user);
+            items = items.filter(s => !isCountryBlocked(s.country));
+            const { pageItems, meta } = buildMeta(items, parsed.limit, "nameNormalized", "asc");
+            const showrooms = pageItems.map(s => applyFieldMode(s, parsed.fields));
+            return { showrooms, meta };
+        }
+
+        let query = baseQuery;
+        query = applyOrdering(query, orderField, direction);
         if (parsed.cursor) {
             query = query.startAfter(parsed.cursor.value, parsed.cursor.id);
         }
@@ -80,25 +98,33 @@ export async function listShowroomsFirestore(parsed, user) {
         let items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         items = applyVisibilityPostFilter(items, user);
         items = items.filter(s => !isCountryBlocked(s.country));
-        const { pageItems, meta } = buildMeta(items, parsed.limit, "nameNormalized", "asc");
+        const { pageItems, meta } = buildMeta(items, parsed.limit, orderField, direction);
         const showrooms = pageItems.map(s => applyFieldMode(s, parsed.fields));
         return { showrooms, meta };
+    } catch (err) {
+        if (isIndexNotReadyError(err)) {
+            throw buildDomainError("INDEX_NOT_READY");
+        }
+        throw err;
     }
+}
 
-    let query = baseQuery;
-    query = applyOrdering(query, orderField, direction);
-    if (parsed.cursor) {
-        query = query.startAfter(parsed.cursor.value, parsed.cursor.id);
-    }
-    query = query.limit(parsed.limit + 1);
+function isIndexNotReadyError(err) {
+    if (!err) return false;
+    const code = err.code;
+    const message = String(err.message ?? "").toLowerCase();
+    return (
+        code === 9 ||
+        code === "FAILED_PRECONDITION" ||
+        message.includes("failed_precondition")
+    ) && message.includes("requires an index");
+}
 
-    const snapshot = await query.get();
-    let items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    items = applyVisibilityPostFilter(items, user);
-    items = items.filter(s => !isCountryBlocked(s.country));
-    const { pageItems, meta } = buildMeta(items, parsed.limit, orderField, direction);
-    const showrooms = pageItems.map(s => applyFieldMode(s, parsed.fields));
-    return { showrooms, meta };
+function buildDomainError(code) {
+    const err = new Error(getMessageForCode(code, code));
+    err.code = code;
+    err.status = getStatusForCode(code) ?? 500;
+    return err;
 }
 
 function buildBaseQuery(query, parsed, user) {

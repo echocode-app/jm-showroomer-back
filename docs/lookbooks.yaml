@@ -188,9 +188,9 @@ paths:
           type: string
     post:
       tags: [Lookbooks]
-      summary: RSVP to event (stub)
+      summary: RSVP to lookbook (stub)
       description: MVP2. Stub in MVP1.
-      operationId: rsvpLookbookEvent
+      operationId: rsvpLookbook
       security:
         - bearerAuth: []
       responses:
@@ -205,7 +205,7 @@ paths:
                       data:
                         type: object
                         properties:
-                          eventId:
+                          lookbookId:
                             type: string
                           user:
                             type: string

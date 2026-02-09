@@ -7,13 +7,14 @@ source "$SCRIPT_DIR/_lib.sh"
 
 load_env
 require_cmd curl jq
-require_env BASE_URL TEST_USER_TOKEN
+require_env TEST_USER_TOKEN
 
-BASE_URL="${BASE_URL}"
+BASE_URL="$(resolve_base_url)"
 preflight_server "${BASE_URL}"
 AUTH_HEADER=(-H "$(auth_header "${TEST_USER_TOKEN}")")
 JSON_HEADER=(-H "$(json_header)")
 NOW=$(now_ns)
+warn_if_prod_write "${BASE_URL}"
 
 print_section "Auth + role"
 ME_RESPONSE=$(curl -s "${AUTH_HEADER[@]}" "${BASE_URL}/users/me")
@@ -45,7 +46,7 @@ http_request "PATCH /users/profile (name)" 200 "" \
 
 print_section "Draft flow"
 NAME_MAIN="My Showroom 01 ${NOW}"
-ADDRESS_MAIN="Kyiv, Khreshchatyk ${NOW}"
+ADDRESS_MAIN="Cherkasy, Shevchenka Ave ${NOW}"
 
 http_request "POST /showrooms/draft" 200 "" \
   -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
@@ -90,16 +91,16 @@ http_request "PATCH step2 (country/availability)" 200 "" \
 
 http_request "PATCH step3 (address/city/location)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d "{\"address\":\"${ADDRESS_MAIN}\",\"city\":\"Kyiv\",\"location\":{\"lat\":50.45,\"lng\":30.52}}" \
+  -d "{\"address\":\"${ADDRESS_MAIN}\",\"city\":\"Cherkasy\",\"location\":{\"lat\":49.4444,\"lng\":32.0598}}" \
   "${BASE_URL}/showrooms/$SHOWROOM_ID"
 
 print_section "Geo model"
-GEO_CITY_1="Kyiv"
-GEO_CITY_2="Lviv"
+GEO_CITY_1="Cherkasy"
+GEO_CITY_2="Zaporizhzhia"
 
 http_request "PATCH geo (initial)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d "{\"geo\":{\"city\":\"${GEO_CITY_1}\",\"country\":\"Ukraine\",\"coords\":{\"lat\":50.4501,\"lng\":30.5234},\"placeId\":\"test-place-${NOW}\"}}" \
+  -d "{\"geo\":{\"city\":\"${GEO_CITY_1}\",\"country\":\"Ukraine\",\"coords\":{\"lat\":49.4444,\"lng\":32.0598},\"placeId\":\"test-place-${NOW}\"}}" \
   "${BASE_URL}/showrooms/$SHOWROOM_ID"
 
 http_request "GET after geo (initial)" 200 "" \
@@ -107,14 +108,14 @@ http_request "GET after geo (initial)" 200 "" \
   "${BASE_URL}/showrooms/$SHOWROOM_ID"
 
 assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.city')" "$GEO_CITY_1" "geo.city"
-assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.cityNormalized')" "kyiv" "geo.cityNormalized"
-assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.coords.lat')" "50.4501" "geo.coords.lat"
-assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.coords.lng')" "30.5234" "geo.coords.lng"
+assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.cityNormalized')" "cherkasy" "geo.cityNormalized"
+assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.coords.lat')" "49.4444" "geo.coords.lat"
+assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.coords.lng')" "32.0598" "geo.coords.lng"
 assert_non_empty "$(json_get "$LAST_BODY" '.data.showroom.geo.geohash')" "geo.geohash"
 
 http_request "PATCH geo (update)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d "{\"geo\":{\"city\":\"${GEO_CITY_2}\",\"country\":\"Ukraine\",\"coords\":{\"lat\":49.8397,\"lng\":24.0297},\"placeId\":\"test-place-${NOW}-2\"}}" \
+  -d "{\"geo\":{\"city\":\"${GEO_CITY_2}\",\"country\":\"Ukraine\",\"coords\":{\"lat\":47.8388,\"lng\":35.1396},\"placeId\":\"test-place-${NOW}-2\"}}" \
   "${BASE_URL}/showrooms/$SHOWROOM_ID"
 
 http_request "GET after geo (update)" 200 "" \
@@ -122,9 +123,9 @@ http_request "GET after geo (update)" 200 "" \
   "${BASE_URL}/showrooms/$SHOWROOM_ID"
 
 assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.city')" "$GEO_CITY_2" "geo.city updated"
-assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.cityNormalized')" "lviv" "geo.cityNormalized updated"
-assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.coords.lat')" "49.8397" "geo.coords.lat updated"
-assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.coords.lng')" "24.0297" "geo.coords.lng updated"
+assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.cityNormalized')" "zaporizhzhia" "geo.cityNormalized updated"
+assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.coords.lat')" "47.8388" "geo.coords.lat updated"
+assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.coords.lng')" "35.1396" "geo.coords.lng updated"
 assert_non_empty "$(json_get "$LAST_BODY" '.data.showroom.geo.geohash')" "geo.geohash updated"
 
 print_section "Submit incomplete"
@@ -245,17 +246,21 @@ if [[ -n "${TEST_ADMIN_TOKEN:-}" ]]; then
     "${BASE_URL}/showrooms/$SHOWROOM_ID"
 
   assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.city')" "$GEO_CITY_2" "geo.city after approve"
-  assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.cityNormalized')" "lviv" "geo.cityNormalized after approve"
-  assert_non_empty "$(json_get "$LAST_BODY" '.data.showroom.geo.geohash')" "geo.geohash after approve"
+  assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.cityNormalized')" "zaporizhzhia" "geo.cityNormalized after approve"
+  GEOHASH=$(json_get "$LAST_BODY" '.data.showroom.geo.geohash // empty')
+  assert_non_empty "$GEOHASH" "geo.geohash after approve"
 
   print_section "City search (public)"
-  LIST_RESPONSE=$(curl -s "${BASE_URL}/showrooms?city=${GEO_CITY_2}")
-  echo "$LIST_RESPONSE"
-  FOUND_COUNT=$(echo "$LIST_RESPONSE" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms // [] | map(select(.id == $id)) | length')
-  assert_eq "$FOUND_COUNT" "1" "showroom found by city filter"
+  request_allow_status_or_index_not_ready "GET /showrooms?city=${GEO_CITY_2}" \
+    "${BASE_URL}/showrooms?city=${GEO_CITY_2}"
+  if [[ "$LAST_STATUS" == "503" ]]; then
+    echo "⚠ Firestore index is still building; skipping city search assertion"
+  else
+    FOUND_COUNT=$(echo "$LAST_BODY" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms // [] | map(select(.id == $id)) | length')
+    assert_eq "$FOUND_COUNT" "1" "showroom found by city filter"
+  fi
 
   print_section "Search + marker payload"
-  GEOHASH=$(json_get "$LAST_BODY" '.data.showroom.geo.geohash // empty')
   assert_non_empty "$GEOHASH" "geo.geohash"
   GEO_PREFIX="${GEOHASH:0:5}"
 
@@ -286,10 +291,14 @@ if [[ -n "${TEST_ADMIN_TOKEN:-}" ]]; then
   assert_eq "$FOUND_COUNT" "1" "showroom found by name prefix"
 
   print_section "qMode=city (public)"
-  LIST_RESPONSE=$(curl -s "${BASE_URL}/showrooms?q=${GEO_CITY_2}&qMode=city&limit=20")
-  echo "$LIST_RESPONSE"
-  FOUND_COUNT=$(echo "$LIST_RESPONSE" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms // [] | map(select(.id == $id)) | length')
-  assert_eq "$FOUND_COUNT" "1" "showroom found by qMode=city"
+  request_allow_status_or_index_not_ready "GET /showrooms?q=${GEO_CITY_2}&qMode=city&limit=20" \
+    "${BASE_URL}/showrooms?q=${GEO_CITY_2}&qMode=city&limit=20"
+  if [[ "$LAST_STATUS" == "503" ]]; then
+    echo "⚠ Firestore index is still building; skipping qMode=city assertion"
+  else
+    FOUND_COUNT=$(echo "$LAST_BODY" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms // [] | map(select(.id == $id)) | length')
+    assert_eq "$FOUND_COUNT" "1" "showroom found by qMode=city"
+  fi
 else
   echo "⚠ Skipping admin approve + city search (TEST_ADMIN_TOKEN not set)"
 fi
@@ -320,7 +329,7 @@ http_request "POST /showrooms/{id}/favorite (stub)" 200 "" \
 
 http_request "PATCH second showroom (set required fields + duplicate name)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d "{\"name\":\"${SUBMITTED_NAME}\",\"availability\":\"open\",\"address\":\"${SUBMITTED_ADDRESS}\",\"city\":\"Kyiv\",\"location\":{\"lat\":50.45,\"lng\":30.52},\"contacts\":{\"phone\":\"+380999111223\",\"instagram\":\"https://instagram.com/newhandle\"}}" \
+  -d "{\"name\":\"${SUBMITTED_NAME}\",\"availability\":\"open\",\"address\":\"${SUBMITTED_ADDRESS}\",\"city\":\"Cherkasy\",\"location\":{\"lat\":49.4444,\"lng\":32.0598},\"contacts\":{\"phone\":\"+380999111223\",\"instagram\":\"https://instagram.com/newhandle\"}}" \
   "${BASE_URL}/showrooms/$SECOND_ID"
 
 http_request "POST /showrooms/{id}/submit (owner duplicate name)" 400 "SHOWROOM_NAME_ALREADY_EXISTS" \
@@ -347,7 +356,7 @@ if [[ -n "${TEST_OWNER_TOKEN_2:-}" ]]; then
 
   http_request "PATCH other draft (complete fields, duplicate name+address)" 200 "" \
     -X PATCH "${OWNER2_AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-    -d "{\"name\":\"${SUBMITTED_NAME}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"availability\":\"open\",\"address\":\"${SUBMITTED_ADDRESS}\",\"city\":\"Kyiv\",\"location\":{\"lat\":50.45,\"lng\":30.52},\"contacts\":{\"phone\":\"+380999111223\",\"instagram\":\"https://instagram.com/newhandle\"}}" \
+    -d "{\"name\":\"${SUBMITTED_NAME}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"availability\":\"open\",\"address\":\"${SUBMITTED_ADDRESS}\",\"city\":\"Cherkasy\",\"location\":{\"lat\":49.4444,\"lng\":32.0598},\"contacts\":{\"phone\":\"+380999111223\",\"instagram\":\"https://instagram.com/newhandle\"}}" \
     "${BASE_URL}/showrooms/$OTHER_ID"
 
   http_request "POST /showrooms/{id}/submit (global duplicate)" 400 "SHOWROOM_DUPLICATE" \
@@ -369,11 +378,11 @@ SHOWROOM_E_ID=$(json_get "$LAST_BODY" '.data.showroom.id // empty')
 assert_non_empty "$SHOWROOM_E_ID" "showroom E id"
 
 NAME_E="Address Norm ${NOW}"
-ADDRESS_E="Kyiv ,  Khreshchatyk 1"
+ADDRESS_E="Cherkasy ,  Shevchenka Ave 1"
 
 http_request "PATCH E (messy address)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d "{\"name\":\"${NAME_E}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"availability\":\"open\",\"address\":\"${ADDRESS_E}\",\"city\":\"Kyiv\",\"location\":{\"lat\":50.45,\"lng\":30.52},\"contacts\":{\"phone\":\"+380999111223\",\"instagram\":\"https://instagram.com/showroom${NOW}\"}}" \
+  -d "{\"name\":\"${NAME_E}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"availability\":\"open\",\"address\":\"${ADDRESS_E}\",\"city\":\"Cherkasy\",\"location\":{\"lat\":49.4444,\"lng\":32.0598},\"contacts\":{\"phone\":\"+380999111223\",\"instagram\":\"https://instagram.com/showroom${NOW}\"}}" \
   "${BASE_URL}/showrooms/$SHOWROOM_E_ID"
 
 http_request "SUBMIT E" 200 "" \
@@ -394,7 +403,7 @@ if [[ -n "${TEST_OWNER_TOKEN_2:-}" ]]; then
 
   http_request "OWNER2 PATCH F (normalized address)" 200 "" \
     -X PATCH "${OWNER2_AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-    -d "{\"name\":\"${NAME_E}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"availability\":\"open\",\"address\":\"kyiv,khreshchatyk 1\",\"city\":\"Kyiv\",\"location\":{\"lat\":50.45,\"lng\":30.52},\"contacts\":{\"phone\":\"+380999111223\",\"instagram\":\"https://instagram.com/showroom${NOW}\"}}" \
+    -d "{\"name\":\"${NAME_E}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"availability\":\"open\",\"address\":\"cherkasy, shevchenka ave 1\",\"city\":\"Cherkasy\",\"location\":{\"lat\":49.4444,\"lng\":32.0598},\"contacts\":{\"phone\":\"+380999111223\",\"instagram\":\"https://instagram.com/showroom${NOW}\"}}" \
     "${BASE_URL}/showrooms/$SHOWROOM_F_ID"
 
   http_request "OWNER2 SUBMIT F (duplicate)" 400 "SHOWROOM_DUPLICATE" \
@@ -418,11 +427,11 @@ if [[ -n "${TEST_OWNER_TOKEN_2:-}" ]]; then
   assert_non_empty "$SHOWROOM_G_ID" "showroom G id"
 
   NAME_G="Draft Only ${NOW}"
-  ADDRESS_G="Kyiv, Khreshchatyk 2"
+  ADDRESS_G="Zaporizhzhia, Sobornyi Ave 2"
 
   http_request "PATCH G (draft only)" 200 "" \
     -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-    -d "{\"name\":\"${NAME_G}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"availability\":\"open\",\"address\":\"${ADDRESS_G}\",\"city\":\"Kyiv\",\"location\":{\"lat\":50.46,\"lng\":30.53},\"contacts\":{\"phone\":\"+380999111223\",\"instagram\":\"https://instagram.com/showroom${NOW}\"}}" \
+    -d "{\"name\":\"${NAME_G}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"availability\":\"open\",\"address\":\"${ADDRESS_G}\",\"city\":\"Zaporizhzhia\",\"location\":{\"lat\":47.8388,\"lng\":35.1396},\"contacts\":{\"phone\":\"+380999111223\",\"instagram\":\"https://instagram.com/showroom${NOW}\"}}" \
     "${BASE_URL}/showrooms/$SHOWROOM_G_ID"
 
   http_request "OWNER2 /showrooms/draft (H)" 200 "" \
@@ -435,7 +444,7 @@ if [[ -n "${TEST_OWNER_TOKEN_2:-}" ]]; then
 
   http_request "OWNER2 PATCH H (same as draft G)" 200 "" \
     -X PATCH "${OWNER2_AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-    -d "{\"name\":\"${NAME_G}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"availability\":\"open\",\"address\":\"${ADDRESS_G}\",\"city\":\"Kyiv\",\"location\":{\"lat\":50.46,\"lng\":30.53},\"contacts\":{\"phone\":\"+380999111223\",\"instagram\":\"https://instagram.com/showroom${NOW}\"}}" \
+    -d "{\"name\":\"${NAME_G}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"availability\":\"open\",\"address\":\"${ADDRESS_G}\",\"city\":\"Zaporizhzhia\",\"location\":{\"lat\":47.8388,\"lng\":35.1396},\"contacts\":{\"phone\":\"+380999111223\",\"instagram\":\"https://instagram.com/showroom${NOW}\"}}" \
     "${BASE_URL}/showrooms/$SHOWROOM_H_ID"
 
   http_request "OWNER2 SUBMIT H (should not fail due to draft)" 200 "" \
