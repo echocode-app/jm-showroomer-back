@@ -13,6 +13,7 @@ import {
   completeOwnerProfile,
   updateUserProfile,
   makeOwnerDev,
+  deleteMyProfile,
 } from "../controllers/userController.js";
 
 import { registerTestUser } from "../controllers/testUserController.js";
@@ -27,6 +28,15 @@ router.get(
   authMiddleware,
   loadUser,
   getMyProfile
+);
+
+/**
+ * DELETE /users/me
+ */
+router.delete(
+  "/me",
+  authMiddleware,
+  deleteMyProfile
 );
 
 /**

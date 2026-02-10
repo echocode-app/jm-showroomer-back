@@ -33,6 +33,7 @@ export const ERROR_STATUS = {
     SHOWROOM_LOCKED_PENDING: 409,
     SHOWROOM_PENDING_SNAPSHOT_MISSING: 409,
     USER_COUNTRY_CHANGE_BLOCKED: 409,
+    USER_DELETE_BLOCKED: 409,
 
     LOAD_USER_ERROR: 500,
     AUTH_ERROR: 500,
@@ -59,6 +60,7 @@ export const ERROR_MESSAGE = {
     SHOWROOM_SUBCATEGORY_GROUP_MISMATCH: "Subcategories require clothing group",
     USER_COUNTRY_CHANGE_BLOCKED:
         "To change country, delete your showrooms and lookbooks or create a new account",
+    USER_DELETE_BLOCKED: "Delete your showrooms before deleting your account.",
 };
 
 // getStatusForCode

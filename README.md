@@ -22,6 +22,7 @@ Backend API for JM Showroomer clients. Focus: authentication, showroom lifecycle
 - **Anti‑duplicate**: owner + global checks
 - **Audit**: edit history with diffs
 - **Soft delete**: hidden from public/owner lists
+- **User delete (MVP1)**: soft-delete profile, PII nulling; owner blocked if they have any showrooms/assets
 
 ## Search & Pagination (Showrooms)
 - `limit`: 1..100, default 20
@@ -62,6 +63,7 @@ Deploy note: run `firebase deploy --only firestore:indexes` for test/stage/prod 
 ## UI‑Relevant Errors
 - `USER_COUNTRY_CHANGE_BLOCKED` (409)
 - `SHOWROOM_LOCKED_PENDING` (409)
+- `USER_DELETE_BLOCKED` (409)
 
 ## Tech Stack
 - Node.js (ESM), Express

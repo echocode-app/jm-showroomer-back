@@ -33,6 +33,9 @@ Notes:
 - Owner can edit `approved` showrooms and submit changes again.
 - When status is `pending`, owner cannot PATCH/DELETE (review freeze).
 - Soft delete sets status=`deleted` and hides from public/owner lists.
+- User delete: `DELETE /users/me` performs soft delete with PII nulling.
+  - Owner deletion is blocked if the user has any showrooms/lookbooks/events → `409 USER_DELETE_BLOCKED`.
+  - Deleted users get `404 USER_NOT_FOUND` on `GET /users/me`.
 - Each action appends to `editHistory` with before/after diff (audit log).
 - Lookbooks and events are standalone entities (no showroom linkage or geo inheritance).
 - Profile settings: `PATCH /users/profile` (name/country/instagram/position/settings).
@@ -159,6 +162,7 @@ Rules:
 ## Endpoints (essentials)
 
 - `GET /users/me`
+- `DELETE /users/me`
 - `POST /users/complete-onboarding`
 - `POST /users/complete-owner-profile`
 - `PATCH /users/profile`
@@ -181,7 +185,8 @@ API Table (actual)
 | ----------- | ------ | ----------------------------- | --------------------------------------------------------------------------------------- |
 | Health      | GET    | /health                       | Public. Service health check.                                                           |
 | Auth        | POST   | /auth/oauth                   | Public. Login via Firebase ID token (Google/Apple/any).                                 |
-| Users       | GET    | /users/me                     | Authenticated only. Returns current profile.                                            |
+| Users       | GET    | /users/me                     | Authenticated only. Returns current profile. Deleted users get 404 USER_NOT_FOUND.      |
+| Users       | DELETE | /users/me                     | Authenticated only. Soft delete + PII nulling; owner blocked if any assets.             |
 | Users       | POST   | /users/complete-onboarding    | Authenticated only. Finishes onboarding flow.                                           |
 | Users       | POST   | /users/complete-owner-profile | USER/OWNER. Upgrades to OWNER; requires schema validation.                              |
 | Users       | PATCH  | /users/profile                | Authenticated. Update profile; owner country change blocked with active assets.         |

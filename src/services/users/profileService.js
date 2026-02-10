@@ -7,6 +7,14 @@ function getUserRef(userId) {
     return db.collection("users").doc(userId);
 }
 
+// getUserById
+export async function getUserById(userId) {
+    if (!userId) return null;
+    const ref = getUserRef(userId);
+    const snap = await ref.get();
+    return snap.exists ? snap.data() : null;
+}
+
 // updateUserOnboarding
 export async function updateUserOnboarding(userId, country) {
     const ref = getUserRef(userId);
@@ -36,6 +44,27 @@ export async function updateOwnerProfile(userId, payload) {
 export async function updateUserProfileDoc(userId, updates) {
     const ref = getUserRef(userId);
     await ref.update(updates);
+}
+
+// softDeleteUserProfile
+export async function softDeleteUserProfile(userId) {
+    const ref = getUserRef(userId);
+    const now = new Date().toISOString();
+    await ref.update({
+        isDeleted: true,
+        deletedAt: now,
+        updatedAt: now,
+        email: null,
+        name: null,
+        avatar: null,
+        instagram: null,
+        position: null,
+        appLanguage: null,
+        notificationsEnabled: null,
+        "ownerProfile.name": null,
+        "ownerProfile.position": null,
+        "ownerProfile.instagram": null,
+    });
 }
 
 // makeOwnerDevUser

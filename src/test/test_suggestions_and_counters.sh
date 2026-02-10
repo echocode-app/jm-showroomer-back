@@ -74,13 +74,12 @@ print_section "Seed showrooms"
 NAME_TOTAL="Total White ${SHORT_NOW}"
 NAME_COAT="The Coat ${SHORT_NOW}"
 NAME_ROAR="Roar ${SHORT_NOW}"
-BRAND_KYIV="BrandKyiv${SHORT_NOW}"
-BRAND_LVIV="BrandLviv${SHORT_NOW}"
+BRAND_TEST="BrandTest${SHORT_NOW}"
 
 # create_and_approve_showroom logs multiple lines; keep only the final "id|geohash" row.
-INFO_TOTAL=$(create_and_approve_showroom "$NAME_TOTAL" "Kyiv" 50.4501 30.5234 "$BRAND_KYIV" | tail -n1)
-create_and_approve_showroom "$NAME_COAT" "Kyiv" 50.4502 30.5235 "$BRAND_KYIV" >/dev/null
-INFO_ROAR=$(create_and_approve_showroom "$NAME_ROAR" "Lviv" 49.8397 24.0297 "$BRAND_LVIV" | tail -n1)
+INFO_TOTAL=$(create_and_approve_showroom "$NAME_TOTAL" "Kyiv" 50.4501 30.5234 "$BRAND_TEST" | tail -n1)
+create_and_approve_showroom "$NAME_COAT" "Kyiv" 50.4502 30.5235 "$BRAND_TEST" >/dev/null
+INFO_ROAR=$(create_and_approve_showroom "$NAME_ROAR" "Lviv" 49.8397 24.0297 "$BRAND_TEST" | tail -n1)
 
 GEOHASH_A=$(printf '%s' "$INFO_TOTAL" | cut -d'|' -f2)
 GEOHASH_B=$(printf '%s' "$INFO_ROAR" | cut -d'|' -f2)
@@ -117,8 +116,8 @@ if [[ -n "$FOUND_LVIV" ]]; then
 fi
 
 print_section "Counters by city"
-http_request "GET /showrooms/counters?city=Kyiv&brand=BrandKyiv" 200 "" \
-  "${BASE_URL}/showrooms/counters?city=Kyiv&brand=${BRAND_KYIV}"
+http_request "GET /showrooms/counters?city=Kyiv&brand=BrandTest" 200 "" \
+  "${BASE_URL}/showrooms/counters?city=Kyiv&brand=${BRAND_TEST}"
 
 TOTAL_CITY=$(json_get "$LAST_BODY" '.data.total // 0')
 assert_eq "$TOTAL_CITY" "2" "Kyiv total"
@@ -129,6 +128,7 @@ echo "▶ GET /showrooms/counters (multi-prefix)"
 RESPONSE=$(curl -sS -G -w "\nHTTP_STATUS:%{http_code}" \
   --data "geohashPrefixes=${PREFIX_A}" \
   --data "geohashPrefixes=${PREFIX_B}" \
+  --data "brand=${BRAND_TEST}" \
   "${BASE_URL}/showrooms/counters") || fail "curl failed"
 LAST_STATUS=$(echo "$RESPONSE" | sed -n 's/.*HTTP_STATUS://p')
 LAST_BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS/d')

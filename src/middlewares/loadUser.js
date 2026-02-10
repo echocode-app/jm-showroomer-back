@@ -16,10 +16,14 @@ export async function loadUser(req, res, next) {
             return fail(res, "USER_NOT_FOUND", "User profile not found", 404);
         }
 
-        req.user = snap.data();
+        const user = snap.data();
+        if (user?.isDeleted) {
+            return fail(res, "USER_NOT_FOUND", "User profile not found", 404);
+        }
+
+        req.user = user;
         next();
     } catch (err) {
         return fail(res, "LOAD_USER_ERROR", err.message, 500);
     }
 }
-

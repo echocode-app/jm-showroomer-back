@@ -10,7 +10,6 @@ export async function authMiddleware(req, res, next) {
         }
 
         const token = header.split(" ")[1];
-
         const auth = getAuthInstance();
         const decoded = await auth.verifyIdToken(token);
 

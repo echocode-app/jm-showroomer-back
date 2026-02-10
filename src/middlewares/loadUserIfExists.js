@@ -12,7 +12,10 @@ export async function loadUserIfExists(req, res, next) {
         const snap = await ref.get();
 
         if (snap.exists) {
-            req.user = snap.data();
+            const user = snap.data();
+            if (!user?.isDeleted) {
+                req.user = user;
+            }
         }
     } catch (e) {
         // user optional, fail silently

@@ -22,6 +22,7 @@ JM Showroomer Backend забезпечує:
 - **Блок країн**: russia / belarus (RU/BY).
 - **Анти‑дублі**: дубль імені для власника, глобальний дубль (name + address) у pending/approved.
 - **Оновлення профілю** через `PATCH /users/profile`.
+- **Видалення профілю** через `DELETE /users/me` (soft delete + затирання PII; owner блокується, якщо має будь‑які showrooms/assets).
 - **API контракт** у OpenAPI (`docs/openapi.yaml` + модульні файли).
 - **E2E тести** через bash скрипти.
 
@@ -107,6 +108,15 @@ JM Showroomer Backend забезпечує:
 **Зміна країни для owner:**
 якщо є активні шоуруми або лукбуки/івенти → 409 `USER_COUNTRY_CHANGE_BLOCKED`  
 Повідомлення: «Щоб змінити країну, видаліть свої шоуруми та лукбуки або створіть новий акаунт».
+
+### 3.2) Видалення профілю
+**Endpoint:** `DELETE /users/me`
+
+**Правила:**
+- soft delete у Firestore (`isDeleted`, `deletedAt`) + затирання PII.
+- owner блокується, якщо має **будь‑які** showrooms або інші assets → 409 `USER_DELETE_BLOCKED`.
+- повторний DELETE → 200 OK.
+**Після видалення:** `GET /users/me` повертає 404 `USER_NOT_FOUND`.
 
 ### 4) Створення шоуруму (draft → submit)
 **Кроки:**

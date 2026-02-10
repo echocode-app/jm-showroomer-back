@@ -67,6 +67,13 @@ components:
         updatedAt:
           type: string
           format: date-time
+        isDeleted:
+          type: boolean
+          nullable: true
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
         ownerProfile:
           type: object
           nullable: true
@@ -148,7 +155,45 @@ paths:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "404":
+          description: User not found (deleted users return 404)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+    delete:
+      tags: [Users]
+      summary: Delete current user (soft-delete)
+      operationId: deleteMyProfile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: User deleted (idempotent)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "404":
           description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "409":
+          description: Delete blocked (active assets, USER_DELETE_BLOCKED)
           content:
             application/json:
               schema:

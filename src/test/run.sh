@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 usage() {
-  echo "Usage: $0 smoke|showrooms|admin|media|suggestions|all"
+  echo "Usage: $0 smoke|showrooms|admin|media|suggestions|user-delete|all"
 }
 
 TARGET=${1:-}
@@ -28,6 +28,9 @@ case "$TARGET" in
     ;;
   suggestions)
     "$SCRIPT_DIR/test_suggestions_and_counters.sh"
+    ;;
+  user-delete)
+    "$SCRIPT_DIR/test_user_delete.sh"
     ;;
   all)
     "$SCRIPT_DIR/test_smoke.sh"
