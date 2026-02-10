@@ -3,7 +3,6 @@
 import { isCountryBlocked } from "../../../../constants/countries.js";
 import { FieldPath } from "firebase-admin/firestore";
 import {
-    applyCursorFilter,
     applyFieldMode,
     applyVisibilityPostFilter,
     buildMeta,
@@ -13,9 +12,19 @@ import {
 } from "../utils/index.js";
 
 export async function runGeohashMode(baseQuery, parsed, user, orderField, direction) {
+    const isSinglePrefix = parsed.geohashPrefixes.length === 1;
+    const cursor = isSinglePrefix ? parsed.cursor : null;
+
     const snapshots = await Promise.all(
         parsed.geohashPrefixes.map(prefix =>
-            buildGeohashQuery(baseQuery, prefix, parsed, orderField, direction).get()
+            buildGeohashQuery(
+                baseQuery,
+                prefix,
+                parsed,
+                orderField,
+                direction,
+                cursor
+            ).get()
         )
     );
 
@@ -51,9 +60,8 @@ export async function runGeohashMode(baseQuery, parsed, user, orderField, direct
         return { showrooms, meta };
     }
 
-    const cursorFiltered = applyCursorFilter(items, parsed.cursor, orderField, direction);
     const { pageItems, meta } = buildMeta(
-        cursorFiltered,
+        items,
         parsed.limit,
         orderField,
         direction
@@ -62,11 +70,14 @@ export async function runGeohashMode(baseQuery, parsed, user, orderField, direct
     return { showrooms, meta };
 }
 
-function buildGeohashQuery(baseQuery, prefix, parsed, orderField, direction) {
+function buildGeohashQuery(baseQuery, prefix, parsed, orderField, direction, cursor) {
     let query = baseQuery
         .where("geo.geohash", ">=", prefix)
         .where("geo.geohash", "<=", `${prefix}\uf8ff`);
     query = applyOrdering(query, orderField, direction);
+    if (cursor) {
+        query = query.startAfter(cursor.value, cursor.id);
+    }
     query = query.limit(parsed.limit + 1);
     return query;
 }

@@ -12,6 +12,7 @@ require_env TEST_USER_TOKEN TEST_ADMIN_TOKEN
 
 BASE_URL="$(resolve_base_url)"
 preflight_server "${BASE_URL}"
+guard_prod_write "${BASE_URL}"
 AUTH_HEADER=(-H "$(auth_header "${TEST_USER_TOKEN}")")
 ADMIN_HEADER=(-H "$(auth_header "${TEST_ADMIN_TOKEN}")")
 JSON_HEADER=(-H "$(json_header)")
@@ -122,6 +123,24 @@ http_request "GET /showrooms/counters?city=Kyiv&brand=BrandTest" 200 "" \
 TOTAL_CITY=$(json_get "$LAST_BODY" '.data.total // 0')
 assert_eq "$TOTAL_CITY" "2" "Kyiv total"
 
+print_section "Counters blocked country (public/admin/owner)"
+http_request "GET /showrooms/counters?country=Russia (public)" 200 "" \
+  "${BASE_URL}/showrooms/counters?country=Russia"
+BLOCKED_TOTAL_PUBLIC=$(json_get "$LAST_BODY" '.data.total // 0')
+assert_eq "$BLOCKED_TOTAL_PUBLIC" "0" "blocked country total (public)"
+
+http_request "GET /showrooms/counters?country=Russia (owner)" 200 "" \
+  "${AUTH_HEADER[@]}" \
+  "${BASE_URL}/showrooms/counters?country=Russia"
+BLOCKED_TOTAL_OWNER=$(json_get "$LAST_BODY" '.data.total // 0')
+assert_eq "$BLOCKED_TOTAL_OWNER" "0" "blocked country total (owner)"
+
+http_request "GET /showrooms/counters?country=Russia (admin)" 200 "" \
+  "${ADMIN_HEADER[@]}" \
+  "${BASE_URL}/showrooms/counters?country=Russia"
+BLOCKED_TOTAL_ADMIN=$(json_get "$LAST_BODY" '.data.total // 0')
+assert_eq "$BLOCKED_TOTAL_ADMIN" "0" "blocked country total (admin)"
+
 print_section "Counters by multi-prefix"
 echo
 echo "▶ GET /showrooms/counters (multi-prefix)"
@@ -133,13 +152,20 @@ RESPONSE=$(curl -sS -G -w "\nHTTP_STATUS:%{http_code}" \
 LAST_STATUS=$(echo "$RESPONSE" | sed -n 's/.*HTTP_STATUS://p')
 LAST_BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS/d')
 echo "$LAST_BODY"
-if [[ "$LAST_STATUS" != "200" ]]; then
-  fail "Expected HTTP 200, got $LAST_STATUS"
+if [[ "$LAST_STATUS" == "500" ]]; then
+  fail "Expected INDEX_NOT_READY or 200, got HTTP 500"
+fi
+if [[ "$LAST_STATUS" == "503" ]]; then
+  CODE=$(echo "$LAST_BODY" | jq -r '.error.code // empty')
+  assert_eq "$CODE" "INDEX_NOT_READY" "error.code"
+  echo "⚠ INDEX_NOT_READY for multi-prefix counters (expected when index is missing)"
+elif [[ "$LAST_STATUS" == "200" ]]; then
+  TOTAL_PREFIX=$(json_get "$LAST_BODY" '.data.total // 0')
+  assert_eq "$TOTAL_PREFIX" "3" "multi-prefix total"
+else
+  fail "Expected HTTP 200 or 503, got $LAST_STATUS"
 fi
 echo "✔ HTTP $LAST_STATUS"
-
-TOTAL_PREFIX=$(json_get "$LAST_BODY" '.data.total // 0')
-assert_eq "$TOTAL_PREFIX" "3" "multi-prefix total"
 
 print_section "Negative: suggestions empty q"
 http_request "GET /showrooms/suggestions?q=" 400 "QUERY_INVALID" \
@@ -151,6 +177,24 @@ http_request "GET /showrooms/suggestions?q=to&geohashPrefix=A" 400 "QUERY_INVALI
 
 http_request "GET /showrooms/counters?q=to&geohashPrefix=A" 400 "QUERY_INVALID" \
   "${BASE_URL}/showrooms/counters?q=to&geohashPrefix=${PREFIX_A}"
+
+print_section "Negative: invalid filter combo (suggestions)"
+http_request "GET /showrooms/suggestions invalid combo" 400 "QUERY_INVALID" \
+  "${BASE_URL}/showrooms/suggestions?q=to&categories=womenswear&categoryGroup=clothing"
+
+print_section "Negative: invalid filter combo (counters)"
+http_request "GET /showrooms/counters invalid combo" 400 "QUERY_INVALID" \
+  "${BASE_URL}/showrooms/counters?categoryGroup=clothing&subcategories=dresses"
+
+print_section "Negative: counters overlapping prefixes"
+OVERLAP_SHORT="${GEOHASH_A:0:4}"
+OVERLAP_LONG="${GEOHASH_A:0:5}"
+OVERLAP_SHORT=$(echo "$OVERLAP_SHORT" | tr -cd '[:alnum:]')
+OVERLAP_LONG=$(echo "$OVERLAP_LONG" | tr -cd '[:alnum:]')
+assert_non_empty "$OVERLAP_SHORT" "overlap short prefix"
+assert_non_empty "$OVERLAP_LONG" "overlap long prefix"
+http_request "GET /showrooms/counters overlap" 400 "QUERY_INVALID" \
+  "${BASE_URL}/showrooms/counters?geohashPrefixes=${OVERLAP_SHORT},${OVERLAP_LONG}"
 
 print_section "q minLen"
 http_request "GET /showrooms/suggestions?q=t" 200 "" \

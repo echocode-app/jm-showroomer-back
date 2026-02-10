@@ -12,6 +12,7 @@ require_env TEST_USER_TOKEN TEST_ADMIN_TOKEN
 
 BASE_URL="$(resolve_base_url)"
 preflight_server "${BASE_URL}"
+guard_prod_write "${BASE_URL}"
 AUTH_HEADER=(-H "$(auth_header "${TEST_USER_TOKEN}")")
 ADMIN_HEADER=(-H "$(auth_header "${TEST_ADMIN_TOKEN}")")
 JSON_HEADER=(-H "$(json_header)")

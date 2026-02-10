@@ -18,9 +18,7 @@ AUTH_HEADER=(-H "$(auth_header "${TEST_USER_TOKEN}")")
 ADMIN_HEADER=(-H "$(auth_header "${TEST_ADMIN_TOKEN}")")
 JSON_HEADER=(-H "$(json_header)")
 
-if [[ "${NODE_ENV:-}" != "test" && ! "$BASE_URL" =~ (localhost|127\.0\.0\.1) ]]; then
-  fail "Seeding is blocked for non-local BASE_URL=${BASE_URL}"
-fi
+guard_prod_write "${BASE_URL}"
 
 seed_geo_showroom() {
   local lat=$1

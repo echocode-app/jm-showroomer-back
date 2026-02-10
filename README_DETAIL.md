@@ -140,6 +140,18 @@ Rules:
 - `suggestions`: geo params are not supported.
 - `counters`: `q` is optional; `cursor/fields/limit` are rejected.
 - `counters`: `geohashPrefix(es) + q` is rejected as `QUERY_INVALID`.
+- `suggestions/counters`: `categoryGroup`, `subcategories`, `categories` are mutually exclusive (2+ → `QUERY_INVALID`).
+
+## Firestore Index Runbook
+
+If you see `INDEX_NOT_READY`, Firestore is missing a required composite index for the query. This is not a server crash; it means the index must be created before the query can run.
+
+How to deploy indexes:
+```bash
+firebase deploy --only firestore:indexes --project "$FIREBASE_PROJECT_ID"
+```
+
+Important: brand filtering uses `brandsMap.<brandKey>`. For **new brand keys**, Firestore may require a **new composite index** that includes that specific `brandsMap.<brandKey>` field. Until it exists, queries can return `INDEX_NOT_READY`.
 
 ## Base URL
 

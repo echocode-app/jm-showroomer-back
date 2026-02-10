@@ -47,6 +47,18 @@ function parseGeohashPrefixes(filters) {
     return geohashPrefixes;
 }
 
+function hasOverlappingPrefixes(prefixes) {
+    if (prefixes.length < 2) return false;
+    const sorted = [...prefixes].sort((a, b) => a.length - b.length);
+    for (let i = 0; i < sorted.length; i += 1) {
+        const short = sorted[i];
+        for (let j = i + 1; j < sorted.length; j += 1) {
+            if (sorted[j].startsWith(short)) return true;
+        }
+    }
+    return false;
+}
+
 export function parseCountersFilters(filters = {}) {
     if (filters.cursor !== undefined || filters.fields !== undefined || filters.limit !== undefined) {
         throw badRequest("QUERY_INVALID");
@@ -64,6 +76,9 @@ export function parseCountersFilters(filters = {}) {
     }
 
     const geohashPrefixes = parseGeohashPrefixes(filters);
+    if (hasOverlappingPrefixes(geohashPrefixes)) {
+        throw badRequest("QUERY_INVALID");
+    }
     if (geohashPrefixes.length > 0 && qName) {
         throw badRequest("QUERY_INVALID");
     }
@@ -79,6 +94,13 @@ export function parseCountersFilters(filters = {}) {
         }
     }
     const categories = parseList(filters.categories);
+    const listFilterCount =
+        (categories.length > 0 ? 1 : 0) +
+        (categoryGroups.length > 0 ? 1 : 0) +
+        (subcategories.length > 0 ? 1 : 0);
+    if (listFilterCount > 1) {
+        throw badRequest("QUERY_INVALID");
+    }
 
     return {
         raw: filters,

@@ -12,6 +12,7 @@ require_cmd curl jq
 ENV="${NODE_ENV:-dev}"
 BASE_URL="$(resolve_base_url)"
 preflight_server "${BASE_URL}"
+guard_prod_write "${BASE_URL}"
 
 print_section "Smoke (public)"
 http_request "GET /health" 200 "" "${BASE_URL}/health"

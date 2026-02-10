@@ -59,6 +59,10 @@ JM Showroomer Backend забезпечує:
 - `suggestions`: geo параметри не підтримуються.
 - `counters`: `q` опційний; `cursor/fields/limit` відхиляються.
 - `counters`: `geohashPrefix(es) + q` → `QUERY_INVALID`.
+- `suggestions/counters`: `categoryGroup`, `subcategories`, `categories` взаємовиключні (2+ → `QUERY_INVALID`).
+
+Індекс:
+- `INDEX_NOT_READY` означає, що Firestore не має потрібного композитного індексу; перед релізом задеплойте індекси.
 
 ## Основні флоу (як працює для бізнесу)
 

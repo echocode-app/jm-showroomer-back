@@ -57,6 +57,10 @@ Search implementation:
 - `suggestions`: geo params are not supported.
 - `counters`: `q` is optional; `cursor/fields/limit` are rejected.
 - `counters`: `geohashPrefix(es) + q` is rejected as `QUERY_INVALID`.
+- `suggestions/counters`: `categoryGroup`, `subcategories`, `categories` are mutually exclusive (any combination of 2+ → `QUERY_INVALID`).
+
+Index note:
+- `INDEX_NOT_READY` means Firestore is missing a required composite index; deploy indexes before release.
 
 Deploy note: run `firebase deploy --only firestore:indexes` for test/stage/prod before integration tests or releases.
 
@@ -98,6 +102,12 @@ npm run dev
 - `smoke.yml` is manual (workflow_dispatch) for integration tests after deploy. Provide `BASE_URL` and set repo secrets (`TEST_USER_TOKEN`, `TEST_ADMIN_TOKEN`) if you want to run showrooms/admin tests. Missing secrets will skip those steps gracefully.
 
 Deploy note: run `firebase deploy --only firestore:indexes` for test/stage/prod before integration tests or releases.
+
+## Prod Write Guard (Tests)
+Write tests will refuse to run against production URLs unless you set:
+```bash
+ALLOW_PROD_WRITE=1
+```
 
 ## Firestore Indexes (Manual Deploy)
 - Workflow: `.github/workflows/firestore-indexes.yml` (manual only).

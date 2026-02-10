@@ -14,6 +14,7 @@ BASE_URL="$(resolve_base_url)"
 preflight_server "${BASE_URL}"
 JSON_HEADER=(-H "$(json_header)")
 warn_if_prod_write "${BASE_URL}"
+guard_prod_write "${BASE_URL}"
 
 EPHEMERAL_HEADER=(-H "$(auth_header "${TEST_DELETE_USER_TOKEN}")")
 

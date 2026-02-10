@@ -7,6 +7,7 @@ import { normalizeCity } from "../../utils/geoValidation.js";
 import { normalizeBrand, normalizeKey } from "../../utils/showroomValidation.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 import { buildBaseQuery } from "./list/firestore/baseQuery.js";
+import { buildDomainError, isIndexNotReadyError } from "./list/firestore/indexErrors.js";
 import { parseSuggestionsFilters } from "./list/parse/suggestions.js";
 import {
     applyVisibilityPostFilter,
@@ -27,59 +28,66 @@ export async function suggestShowroomsService(filters = {}, user = null) {
         return suggestShowroomsDev(parsed, user);
     }
 
-    const db = getFirestoreInstance();
-    const baseQuery = buildBaseQuery(db.collection("showrooms"), parsed, user);
+    try {
+        const db = getFirestoreInstance();
+        const baseQuery = buildBaseQuery(db.collection("showrooms"), parsed, user);
 
-    const suggestions = [];
-    const pushUnique = (item, seen) => {
-        const key = `${item.type}:${String(item.value).toLowerCase()}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        suggestions.push(item);
-        return true;
-    };
+        const suggestions = [];
+        const pushUnique = (item, seen) => {
+            const key = `${item.type}:${String(item.value).toLowerCase()}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            suggestions.push(item);
+            return true;
+        };
 
-    const seen = new Set();
+        const seen = new Set();
 
-    if (parsed.qMode !== "city") {
-        const showroomSuggestions = await fetchShowroomSuggestions(
-            baseQuery,
-            parsed,
-            user
-        );
-        for (const item of showroomSuggestions) {
-            if (suggestions.length >= parsed.limit) break;
-            pushUnique(item, seen);
+        if (parsed.qMode !== "city") {
+            const showroomSuggestions = await fetchShowroomSuggestions(
+                baseQuery,
+                parsed,
+                user
+            );
+            for (const item of showroomSuggestions) {
+                if (suggestions.length >= parsed.limit) break;
+                pushUnique(item, seen);
+            }
         }
-    }
 
-    if (parsed.qMode === "city" && suggestions.length < parsed.limit) {
-        const citySuggestions = await fetchCitySuggestions(
-            baseQuery,
-            parsed,
-            user,
-            SAMPLE_LIMIT
-        );
-        for (const item of citySuggestions) {
-            if (suggestions.length >= parsed.limit) break;
-            pushUnique(item, seen);
+        if (parsed.qMode === "city" && suggestions.length < parsed.limit) {
+            const citySuggestions = await fetchCitySuggestions(
+                baseQuery,
+                parsed,
+                user,
+                SAMPLE_LIMIT
+            );
+            for (const item of citySuggestions) {
+                if (suggestions.length >= parsed.limit) break;
+                pushUnique(item, seen);
+            }
         }
-    }
 
-    if (parsed.qMode !== "city" && suggestions.length < parsed.limit) {
-        const brandSuggestions = await fetchBrandSuggestions(
-            baseQuery,
-            parsed,
-            user,
-            SAMPLE_LIMIT
-        );
-        for (const item of brandSuggestions) {
-            if (suggestions.length >= parsed.limit) break;
-            pushUnique(item, seen);
+        if (parsed.qMode !== "city" && suggestions.length < parsed.limit) {
+            const brandSuggestions = await fetchBrandSuggestions(
+                baseQuery,
+                parsed,
+                user,
+                SAMPLE_LIMIT
+            );
+            for (const item of brandSuggestions) {
+                if (suggestions.length >= parsed.limit) break;
+                pushUnique(item, seen);
+            }
         }
-    }
 
-    return { suggestions, meta: { limit: parsed.limit, q: parsed.q } };
+        return { suggestions, meta: { limit: parsed.limit, q: parsed.q } };
+    } catch (err) {
+        if (isIndexNotReadyError(err)) {
+            throw buildDomainError("INDEX_NOT_READY");
+        }
+        throw err;
+    }
 }
 
 function suggestShowroomsDev(parsed, user) {

@@ -83,6 +83,13 @@ export function parseSuggestionsFilters(filters = {}) {
         }
     }
     const categories = parseList(filters.categories);
+    const listFilterCount =
+        (categories.length > 0 ? 1 : 0) +
+        (categoryGroups.length > 0 ? 1 : 0) +
+        (subcategories.length > 0 ? 1 : 0);
+    if (listFilterCount > 1) {
+        throw badRequest("QUERY_INVALID");
+    }
 
     const qTooShort = q.length < 2;
     let qName = null;

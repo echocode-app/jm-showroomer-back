@@ -1,14 +1,34 @@
 // Service: showroom counters.
 
 import { getFirestoreInstance } from "../../config/firebase.js";
-import { isCountryBlocked } from "../../constants/countries.js";
+import {
+    BLOCKED_COUNTRY_CODES,
+    BLOCKED_COUNTRY_NAMES,
+    isCountryBlocked,
+} from "../../constants/countries.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 import { buildBaseQuery } from "./list/firestore/baseQuery.js";
+import { buildDomainError, isIndexNotReadyError } from "./list/firestore/indexErrors.js";
 import { parseCountersFilters } from "./list/parse/counters.js";
 import { getVisibilityFilter } from "./list/utils/visibility.js";
 
 export async function countShowroomsService(filters = {}, user = null) {
     const parsed = parseCountersFilters(filters);
+    if (parsed.raw?.country && isCountryBlocked(parsed.raw.country)) {
+        const mode =
+            parsed.geohashPrefixes.length > 1
+                ? "multi_prefix"
+                : parsed.geohashPrefixes.length === 1
+                  ? "single_prefix"
+                  : "no_geo";
+        return {
+            total: 0,
+            meta: {
+                mode,
+                prefixesCount: parsed.geohashPrefixes.length,
+            },
+        };
+    }
     if (useDevMock) {
         return countShowroomsDev(parsed, user);
     }
@@ -157,6 +177,46 @@ async function countForPrefix(db, parsed, user, prefix) {
             .orderBy("nameNormalized", "asc");
     }
 
-    const snapshot = await query.count().get();
-    return snapshot.data().count ?? 0;
+    return await countWithBlockedFilter(query, parsed);
+}
+
+function getBlockedCountryVariants() {
+    const variants = new Set();
+    const addVariants = value => {
+        if (!value) return;
+        const raw = String(value);
+        variants.add(raw);
+        variants.add(raw.toLowerCase());
+        variants.add(raw.toUpperCase());
+        variants.add(raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase());
+    };
+    BLOCKED_COUNTRY_CODES.forEach(addVariants);
+    BLOCKED_COUNTRY_NAMES.forEach(addVariants);
+    return Array.from(variants);
+}
+
+async function countWithBlockedFilter(query, parsed) {
+    const total = await countQuery(query);
+    if (parsed.raw?.country) return total;
+
+    const blocked = getBlockedCountryVariants();
+    if (blocked.length === 0) return total;
+
+    const blockedTotals = await Promise.all(
+        blocked.map(value => countQuery(query.where("country", "==", value)))
+    );
+    const blockedSum = blockedTotals.reduce((sum, v) => sum + v, 0);
+    return Math.max(0, total - blockedSum);
+}
+
+async function countQuery(query) {
+    try {
+        const snapshot = await query.count().get();
+        return snapshot.data().count ?? 0;
+    } catch (err) {
+        if (isIndexNotReadyError(err)) {
+            throw buildDomainError("INDEX_NOT_READY");
+        }
+        throw err;
+    }
 }

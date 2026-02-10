@@ -100,6 +100,27 @@ warn_if_prod_write() {
   fi
 }
 
+# is_prod_base_url
+is_prod_base_url() {
+  local base_url=$1
+  if [[ "${NODE_ENV:-}" == "prod" || "${PROD_GUARD:-}" == "1" ]]; then
+    return 0
+  fi
+  if [[ "$base_url" == *"onrender.com"* || "$base_url" == *"render.com"* || "$base_url" == *"production"* || "$base_url" == *"prod."* ]]; then
+    return 0
+  fi
+  return 1
+}
+
+# guard_prod_write
+guard_prod_write() {
+  local base_url=$1
+  if is_prod_base_url "$base_url" && [[ "${ALLOW_PROD_WRITE:-}" != "1" ]]; then
+    echo "❌ Prod write guard: refusing to run write tests against ${base_url} without ALLOW_PROD_WRITE=1" >&2
+    exit 1
+  fi
+}
+
 # print_section
 print_section() {
   echo
