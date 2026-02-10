@@ -126,6 +126,18 @@ Search implementation:
 - `src/services/showrooms/listShowrooms.js` (entry)
 - `src/services/showrooms/list/` (parse/utils/ordering/dev/firestore)
 
+## Suggestions & Counters
+
+Endpoints:
+- `GET /showrooms/suggestions` (lightweight hints)
+- `GET /showrooms/counters` (total count for current filters)
+
+Rules:
+- `suggestions`: `q` is required; `q.length < 2` returns `[]`.
+- `suggestions`: geo params are not supported.
+- `counters`: `q` is optional; `cursor/fields/limit` are rejected.
+- `counters`: `geohashPrefix(es) + q` is rejected as `QUERY_INVALID`.
+
 ## Base URL
 
 `https://<BACKEND_URL>/api/v1`
@@ -174,6 +186,8 @@ API Table (actual)
 | Users       | POST   | /users/complete-owner-profile | USER/OWNER. Upgrades to OWNER; requires schema validation.                              |
 | Users       | PATCH  | /users/profile                | Authenticated. Update profile; owner country change blocked with active assets.         |
 | Showrooms   | GET    | /showrooms                    | Public: approved only. OWNER: own (excludes deleted). ADMIN: all; can filter by status. |
+| Showrooms   | GET    | /showrooms/suggestions         | Public. Lightweight suggestions (q required).                                           |
+| Showrooms   | GET    | /showrooms/counters            | Public. Total count for current filters.                                                |
 | Showrooms   | POST   | /showrooms/create             | OWNER/MANAGER. Creates showroom. `?mode=draft` to create draft.                         |
 | Showrooms   | POST   | /showrooms/draft              | OWNER only. Create/reuse draft.                                                         |
 | Showrooms   | GET    | /showrooms/{id}               | Public for approved; OWNER/ADMIN for own/any (incl pending/deleted).                    |

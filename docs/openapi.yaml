@@ -26,6 +26,10 @@ paths:
 
   /showrooms:
     $ref: './showrooms.yaml#/paths/~1showrooms'
+  /showrooms/suggestions:
+    $ref: './showrooms.yaml#/paths/~1showrooms~1suggestions'
+  /showrooms/counters:
+    $ref: './showrooms.yaml#/paths/~1showrooms~1counters'
   /showrooms/create:
     $ref: './showrooms.yaml#/paths/~1showrooms~1create'
   /showrooms/draft:

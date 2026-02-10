@@ -185,6 +185,99 @@ components:
           format: date-time
           readOnly: true
 
+    ShowroomSuggestion:
+      oneOf:
+        - type: object
+          required: [type, value, payload]
+          properties:
+            type:
+              type: string
+              enum: [showroom]
+            value:
+              type: string
+            payload:
+              type: object
+              required: [id, name]
+              properties:
+                id:
+                  type: string
+                name:
+                  type: string
+                city:
+                  type: string
+                  nullable: true
+                country:
+                  type: string
+                  nullable: true
+        - type: object
+          required: [type, value, payload]
+          properties:
+            type:
+              type: string
+              enum: [city]
+            value:
+              type: string
+            payload:
+              type: object
+              properties:
+                cityNormalized:
+                  type: string
+                country:
+                  type: string
+                  nullable: true
+        - type: object
+          required: [type, value, payload]
+          properties:
+            type:
+              type: string
+              enum: [brand]
+            value:
+              type: string
+            payload:
+              type: object
+              properties:
+                brandKey:
+                  type: string
+
+    ShowroomSuggestionsResponse:
+      allOf:
+        - $ref: './common.yaml#/components/schemas/ApiSuccess'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                suggestions:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ShowroomSuggestion'
+            meta:
+              type: object
+              properties:
+                limit:
+                  type: integer
+                q:
+                  type: string
+
+    ShowroomCountersResponse:
+      allOf:
+        - $ref: './common.yaml#/components/schemas/ApiSuccess'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                total:
+                  type: integer
+            meta:
+              type: object
+              properties:
+                mode:
+                  type: string
+                  enum: [single_prefix, multi_prefix, no_geo]
+                prefixesCount:
+                  type: integer
+
     CreateShowroomInput:
       oneOf:
         - type: object
@@ -521,6 +614,163 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+
+  /showrooms/suggestions:
+    get:
+      tags: [Showrooms]
+      summary: Showroom search suggestions
+      description: |
+        Returns lightweight suggestions for showroom search.
+        q is required; q length < 2 returns empty suggestions.
+        Geo params are not supported for suggestions.
+      operationId: listShowroomSuggestions
+      security: []
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+          required: true
+        - name: qMode
+          in: query
+          schema:
+            type: string
+            enum: [name, city]
+          description: When city, suggestions are based on city prefix.
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 20
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: brand
+          in: query
+          schema:
+            type: string
+        - name: country
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Suggestions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShowroomSuggestionsResponse'
+              examples:
+                suggestions:
+                  summary: suggestions?q=to
+                  value:
+                    success: true
+                    data:
+                      suggestions:
+                        - type: showroom
+                          value: "Total White"
+                          payload:
+                            id: "abc123"
+                            name: "Total White"
+                            city: "Kyiv"
+                            country: "Ukraine"
+                q_short:
+                  summary: q length < 2
+                  value:
+                    success: true
+                    data:
+                      suggestions: []
+                    meta:
+                      limit: 10
+                      q: "t"
+        "400":
+          description: Invalid query
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+              examples:
+                invalid_q:
+                  summary: q is missing or empty
+                  value:
+                    success: false
+                    error:
+                      code: QUERY_INVALID
+                      message: Query parameters are invalid
+
+  /showrooms/counters:
+    get:
+      tags: [Showrooms]
+      summary: Showroom counters
+      description: |
+        Returns count of showrooms by current filters.
+        q is optional. geohashPrefix(es) with q is invalid.
+        cursor/fields/limit are not supported.
+      operationId: getShowroomCounters
+      security: []
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: brand
+          in: query
+          schema:
+            type: string
+        - name: country
+          in: query
+          schema:
+            type: string
+        - name: geohashPrefix
+          in: query
+          schema:
+            type: string
+        - name: geohashPrefixes
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: false
+      responses:
+        "200":
+          description: Counters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShowroomCountersResponse'
+              examples:
+                by_city:
+                  summary: counters?city=Kyiv
+                  value:
+                    success: true
+                    data:
+                      total: 2
+                    meta:
+                      mode: no_geo
+                      prefixesCount: 0
+        "400":
+          description: Invalid query
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+              examples:
+                invalid_geo_q:
+                  summary: q + geohashPrefix invalid
+                  value:
+                    success: false
+                    error:
+                      code: QUERY_INVALID
+                      message: Query parameters are invalid
         "503":
           description: Search index is not ready yet
           content:

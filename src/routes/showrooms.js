@@ -11,6 +11,8 @@ import { showroomCreateSchema } from "../schemas/showroom.create.schema.js";
 import { showroomUpdateSchema } from "../schemas/showroom.update.schema.js";
 import {
     listShowrooms,
+    listShowroomSuggestions,
+    getShowroomCounters,
     createShowroomController,
     createDraftShowroomController,
     getShowroomById,
@@ -24,6 +26,12 @@ const router = Router();
 
 // LIST
 router.get("/", optionalAuth, loadUserIfExists, listShowrooms);
+
+// SUGGESTIONS
+router.get("/suggestions", optionalAuth, loadUserIfExists, listShowroomSuggestions);
+
+// COUNTERS
+router.get("/counters", optionalAuth, loadUserIfExists, getShowroomCounters);
 
 // GET BY ID
 router.get("/:id", optionalAuth, loadUserIfExists, getShowroomById);

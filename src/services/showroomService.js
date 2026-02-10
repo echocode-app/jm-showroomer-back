@@ -9,3 +9,5 @@ export { submitShowroomForReviewService } from "./showrooms/submitShowroomForRev
 export { deleteShowroomService } from "./showrooms/deleteShowroom.js";
 export { approveShowroomService } from "./showrooms/approveShowroom.js";
 export { rejectShowroomService } from "./showrooms/rejectShowroom.js";
+export { suggestShowroomsService } from "./showrooms/suggestShowrooms.js";
+export { countShowroomsService } from "./showrooms/countShowrooms.js";

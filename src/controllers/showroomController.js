@@ -3,6 +3,8 @@ import {
     createDraftShowroom,
     submitShowroomForReviewService,
     listShowroomsService,
+    suggestShowroomsService,
+    countShowroomsService,
     getShowroomByIdService,
     updateShowroomService,
     deleteShowroomService,
@@ -42,6 +44,32 @@ export async function listShowrooms(req, res, next) {
             req.user ?? null
         );
         return ok(res, { showrooms }, meta);
+    } catch (err) {
+        next(err);
+    }
+}
+
+// SUGGESTIONS
+export async function listShowroomSuggestions(req, res, next) {
+    try {
+        const { suggestions, meta } = await suggestShowroomsService(
+            req.query,
+            req.user ?? null
+        );
+        return ok(res, { suggestions }, meta);
+    } catch (err) {
+        next(err);
+    }
+}
+
+// COUNTERS
+export async function getShowroomCounters(req, res, next) {
+    try {
+        const { total, meta } = await countShowroomsService(
+            req.query,
+            req.user ?? null
+        );
+        return ok(res, { total }, meta);
     } catch (err) {
         next(err);
     }

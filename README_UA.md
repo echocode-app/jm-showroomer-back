@@ -51,6 +51,14 @@ JM Showroomer Backend забезпечує:
 - `src/services/showrooms/listShowrooms.js` (entry)
 - `src/services/showrooms/list/` (parse/utils/ordering/dev/firestore)
 
+## Suggestions & Counters
+- `GET /showrooms/suggestions`: легкі підказки для пошуку.
+- `GET /showrooms/counters`: лічильник за поточними фільтрами.
+- `suggestions`: `q` обовʼязковий; `q.length < 2` повертає `[]`.
+- `suggestions`: geo параметри не підтримуються.
+- `counters`: `q` опційний; `cursor/fields/limit` відхиляються.
+- `counters`: `geohashPrefix(es) + q` → `QUERY_INVALID`.
+
 ## Основні флоу (як працює для бізнесу)
 
 ### 0) Флоу в додатку (UX рівень)

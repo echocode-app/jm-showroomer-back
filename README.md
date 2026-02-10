@@ -49,6 +49,14 @@ Search implementation:
 - `src/services/showrooms/listShowrooms.js` (entry)
 - `src/services/showrooms/list/` (parse/utils/ordering/dev/firestore)
 
+## Suggestions & Counters
+- `GET /showrooms/suggestions`: lightweight search hints.
+- `GET /showrooms/counters`: total count by current filters.
+- `suggestions`: `q` is required; `q.length < 2` returns `[]`.
+- `suggestions`: geo params are not supported.
+- `counters`: `q` is optional; `cursor/fields/limit` are rejected.
+- `counters`: `geohashPrefix(es) + q` is rejected as `QUERY_INVALID`.
+
 Deploy note: run `firebase deploy --only firestore:indexes` for test/stage/prod before integration tests or releases.
 
 ## UI‑Relevant Errors
