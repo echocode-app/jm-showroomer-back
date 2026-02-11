@@ -129,6 +129,43 @@ components:
         notificationsEnabled:
           type: boolean
 
+    SyncGuestEventsInput:
+      type: object
+      additionalProperties: false
+      properties:
+        wantToVisitIds:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+        dismissedIds:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+      description: |
+        Guest-local state sync payload. If the same id appears in both lists, server applies want-to-visit and drops dismiss for that id.
+
+    SyncGuestEventsResult:
+      type: object
+      properties:
+        applied:
+          type: object
+          properties:
+            wantToVisit:
+              type: array
+              items:
+                type: string
+            dismissed:
+              type: array
+              items:
+                type: string
+        skipped:
+          type: array
+          description: Event ids skipped due to not found, unpublished, blocked country, or past start time.
+          items:
+            type: string
+
 paths:
   /users/me:
     get:
@@ -425,12 +462,22 @@ paths:
   /collections/want-to-visit/events:
     get:
       tags: [Collections]
-      summary: Events to visit (stub)
+      summary: Events marked as want-to-visit
+      description: Auth-only. Returns upcoming published events from user want-to-visit collection (past excluded).
       operationId: listWantToVisitEvents
-      security: []
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 100
       responses:
         "200":
-          description: Empty list
+          description: Events list
           content:
             application/json:
               schema:
@@ -442,9 +489,73 @@ paths:
                         properties:
                           items:
                             type: array
-                            items: {}
+                            items:
+                              $ref: './events.yaml#/components/schemas/EventListItem'
+                      meta:
+                        type: object
+                        properties:
+                          total:
+                            type: integer
+                            description: Total upcoming events after server-side filtering (before limit).
+                          returned:
+                            type: integer
+                            description: Number of items returned in this response.
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
         "429":
           description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
+  /collections/want-to-visit/events/sync:
+    post:
+      tags: [Collections]
+      summary: Sync guest event state after login
+      description: |
+        Auth-only batch sync for guest-local event likes/dismiss state.
+        Server validates each id and applies only upcoming published events from non-blocked countries.
+        Max 100 ids per list. If the same id is present in both lists, want-to-visit wins.
+        Unknown/unpublished/blocked/past ids are returned in `skipped`.
+        Endpoint is idempotent.
+      operationId: syncGuestEvents
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncGuestEventsInput'
+            examples:
+              basic:
+                value:
+                  wantToVisitIds: ["event_1", "event_2"]
+                  dismissedIds: ["event_3"]
+      responses:
+        "200":
+          description: Sync result
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/SyncGuestEventsResult'
+        "400":
+          description: Invalid payload (`QUERY_INVALID`) or size limit exceeded (`EVENT_SYNC_LIMIT_EXCEEDED`)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Unauthorized
           content:
             application/json:
               schema:

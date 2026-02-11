@@ -19,13 +19,17 @@ JSON_HEADER=(-H "$(json_header)")
 NOW=$(now_ns)
 warn_if_prod_write "${BASE_URL}"
 SHORT_NOW="${NOW: -6}"
+SAFE_SUFFIX=$(printf '%s' "$SHORT_NOW" | tr '0-9' 'a-j')
 
 print_section "Collections stubs (public)"
 http_request "GET /collections/favorites/showrooms" 200 "" \
   "${BASE_URL}/collections/favorites/showrooms"
 http_request "GET /collections/favorites/lookbooks" 200 "" \
   "${BASE_URL}/collections/favorites/lookbooks"
-http_request "GET /collections/want-to-visit/events" 200 "" \
+http_request "GET /collections/want-to-visit/events (auth required)" 401 "AUTH_MISSING" \
+  "${BASE_URL}/collections/want-to-visit/events"
+http_request "GET /collections/want-to-visit/events (auth)" 200 "" \
+  "${AUTH_HEADER[@]}" \
   "${BASE_URL}/collections/want-to-visit/events"
 
 print_section "Cursor validation (public)"
@@ -51,7 +55,7 @@ http_request "POST /admin/showrooms/{id}/reject (draft)" 400 "SHOWROOM_NOT_EDITA
   -d '{"reason":"Invalid state"}' \
   "${BASE_URL}/admin/showrooms/${SHOWROOM_ID}/reject"
 
-NAME_MAIN="Admin Review ${SHORT_NOW}"
+NAME_MAIN="Admin Review ${SAFE_SUFFIX}"
 http_request "PATCH /showrooms/{id} (complete data)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
   -d "{\"name\":\"${NAME_MAIN}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"address\":\"Cherkasy, Main St 2\",\"city\":\"Cherkasy\",\"availability\":\"open\",\"contacts\":{\"phone\":\"+380501112244\",\"instagram\":\"https://instagram.com/review${SHORT_NOW}\"},\"location\":{\"lat\":49.4444,\"lng\":32.0598}}" \
@@ -111,7 +115,7 @@ if [[ "$PENDING_SNAPSHOT" != "null" && -n "$PENDING_SNAPSHOT" ]]; then
 fi
 
 print_section "Owner resubmit -> admin approve"
-UPDATED_NAME="Admin Review Updated ${SHORT_NOW}"
+UPDATED_NAME="Admin Review Updated ${SAFE_SUFFIX}"
 http_request "PATCH rejected (update name)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
   -d "{\"name\":\"${UPDATED_NAME}\"}" \
@@ -170,7 +174,7 @@ assert_non_empty "$ADMIN_DEL_ID" "admin delete showroom id"
 
 http_request "PATCH /showrooms/{id} (admin delete target)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d "{\"name\":\"Admin Delete ${NOW}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"address\":\"Zaporizhzhia, Main St 3\",\"city\":\"Zaporizhzhia\",\"availability\":\"open\",\"contacts\":{\"phone\":\"+380501112255\",\"instagram\":\"https://instagram.com/admindelete${NOW}\"},\"location\":{\"lat\":47.8388,\"lng\":35.1396}}" \
+  -d "{\"name\":\"Admin Delete ${SAFE_SUFFIX}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"address\":\"Zaporizhzhia, Main St 3\",\"city\":\"Zaporizhzhia\",\"availability\":\"open\",\"contacts\":{\"phone\":\"+380501112255\",\"instagram\":\"https://instagram.com/admindelete${NOW}\"},\"location\":{\"lat\":47.8388,\"lng\":35.1396}}" \
   "${BASE_URL}/showrooms/${ADMIN_DEL_ID}"
 
 http_request "POST /showrooms/{id}/submit (admin delete target)" 200 "" \

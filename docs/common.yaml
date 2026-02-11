@@ -33,7 +33,14 @@ components:
       type: string
       description: Common error codes (partial list).
       enum:
+        - AUTH_MISSING
+        - AUTH_INVALID
+        - FORBIDDEN
+        - COUNTRY_BLOCKED
         - QUERY_INVALID
+        - EVENT_SYNC_LIMIT_EXCEEDED
+        - EVENT_NOT_FOUND
+        - EVENTS_WRITE_MVP2_ONLY
         - CURSOR_INVALID
         - INDEX_NOT_READY
     HealthResponse:

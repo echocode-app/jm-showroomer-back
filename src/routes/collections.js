@@ -1,25 +1,47 @@
 import { Router } from "express";
+import { authMiddleware } from "../middlewares/auth.js";
+import { loadUser } from "../middlewares/loadUser.js";
 import { optionalAuth } from "../middlewares/optionalAuth.js";
 import { loadUserIfExists } from "../middlewares/loadUserIfExists.js";
-import { ok } from "../utils/apiResponse.js";
+import {
+    listFavoriteLookbooks,
+    listFavoriteShowrooms,
+    syncGuestEvents,
+    listWantToVisitEvents,
+} from "../controllers/collectionController.js";
 
 const router = Router();
 
-router.use(optionalAuth, loadUserIfExists);
-
 // ROUTE GET /favorites/showrooms
-router.get("/favorites/showrooms", (req, res) =>
-    ok(res, { items: [] })
+router.get(
+    "/favorites/showrooms",
+    optionalAuth,
+    loadUserIfExists,
+    listFavoriteShowrooms
 );
 
 // ROUTE GET /favorites/lookbooks
-router.get("/favorites/lookbooks", (req, res) =>
-    ok(res, { items: [] })
+router.get(
+    "/favorites/lookbooks",
+    optionalAuth,
+    loadUserIfExists,
+    listFavoriteLookbooks
 );
 
 // ROUTE GET /want-to-visit/events
-router.get("/want-to-visit/events", (req, res) =>
-    ok(res, { items: [] })
+router.get(
+    "/want-to-visit/events",
+    authMiddleware,
+    loadUser,
+    listWantToVisitEvents
+);
+
+// ROUTE POST /want-to-visit/events/sync
+router.post(
+    "/want-to-visit/events/sync",
+    authMiddleware,
+    loadUser,
+    syncGuestEvents
 );
 
 export default router;

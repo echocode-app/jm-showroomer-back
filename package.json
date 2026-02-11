@@ -9,6 +9,8 @@
     "test:smoke": "NODE_ENV=test ./src/test/test_smoke.sh",
     "test:showrooms": "NODE_ENV=test ./src/test/test_showrooms.sh",
     "test:admin": "NODE_ENV=test ./src/test/test_admin_and_collections.sh",
+    "test:events": "NODE_ENV=test ./src/test/test_events_mvp1.sh",
+    "test:events-guest-sync": "NODE_ENV=test ./src/test/test_events_guest_sync.sh",
     "test:suggestions": "NODE_ENV=test ./src/test/test_suggestions_and_counters.sh",
     "test:user-delete": "NODE_ENV=test ./src/test/test_user_delete.sh",
     "dev": "NODE_ENV=dev nodemon src/core/server.js",

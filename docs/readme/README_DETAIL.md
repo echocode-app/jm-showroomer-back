@@ -143,6 +143,48 @@ Rules:
 - `counters`: `geohashPrefix(es) + q` is rejected as `QUERY_INVALID`.
 - `suggestions/counters`: `categoryGroup`, `subcategories`, `categories` are mutually exclusive (2+ → `QUERY_INVALID`).
 
+## Events (MVP1)
+
+- Events are standalone entities (no showroom linkage).
+- Content is seeded; create/update/delete endpoints are not available in MVP1.
+- Public list: `GET /events`
+  - includes only `published=true` and upcoming (`startsAt >= now`)
+  - past events are excluded from list
+  - blocked countries are silently excluded
+  - cursor shape: base64 JSON `{ v: 1, startsAt: string, id: string }`
+  - `city` query is normalized server-side before matching
+- Public details: `GET /events/{id}`
+  - published events can be opened by direct link (including past)
+  - event payload fields for MVP1 UI: `name`, `startsAt`, `endsAt`, `city`, `country`, `address`, `type`, `coverPath`, `externalUrl`
+- Auth actions:
+  - `POST /events/{id}/want-to-visit` (idempotent)
+  - `DELETE /events/{id}/want-to-visit` (idempotent)
+  - `POST /events/{id}/dismiss` (idempotent)
+  - `DELETE /events/{id}/dismiss` (idempotent)
+- User collections:
+  - `GET /collections/want-to-visit/events` (auth required)
+  - returns upcoming events only (`startsAt >= now`)
+  - `POST /collections/want-to-visit/events/sync` (auth required)
+    - accepts guest-local state payload: `{ wantToVisitIds: [], dismissedIds: [] }`
+    - max `100` ids per list (`EVENT_SYNC_LIMIT_EXCEEDED` on overflow)
+    - if same id appears in both lists, want-to-visit wins
+    - invalid/unpublished/blocked/past ids are skipped and returned in `skipped`
+- MVP2 only:
+  - `POST /events/{id}/rsvp` returns `501 EVENTS_WRITE_MVP2_ONLY`.
+
+### Guest Event Likes Flow (MVP1)
+
+Guests can like/dismiss events in local app storage only (no anonymous backend writes).
+After login, Flutter should sync that local state once:
+
+- `POST /collections/want-to-visit/events/sync`
+
+Server merges the payload idempotently into user collections and returns:
+
+- `applied.wantToVisit[]`
+- `applied.dismissed[]`
+- `skipped[]`
+
 ## Firestore Index Runbook
 
 If you see `INDEX_NOT_READY`, Firestore is missing a required composite index for the query. This is not a server crash; it means the index must be created before the query can run.
@@ -153,6 +195,12 @@ firebase deploy --only firestore:indexes --project "$FIREBASE_PROJECT_ID"
 ```
 
 Important: brand filtering uses `brandsMap.<brandKey>`. For **new brand keys**, Firestore may require a **new composite index** that includes that specific `brandsMap.<brandKey>` field. Until it exists, queries can return `INDEX_NOT_READY`.
+
+Events list index-required query shapes:
+- `published + startsAt + __name__`
+- `published + country + startsAt + __name__`
+- `published + cityNormalized + startsAt + __name__`
+- `published + country + cityNormalized + startsAt + __name__`
 
 ## Base URL
 
@@ -221,9 +269,16 @@ API Table (actual)
 | Lookbooks   | GET    | /lookbooks                    | Public. Seeded content (MVP1).                                                          |
 | Lookbooks   | POST   | /lookbooks/create             | OWNER/MANAGER. Stub (MVP2).                                                             |
 | Lookbooks   | POST   | /lookbooks/{id}/rsvp          | Authenticated users. Stub.                                                              |
-| Events      | POST   | /events/{id}/rsvp             | Authenticated users. Stub.                                                              |
+| Events      | GET    | /events                       | Public. Upcoming published events only (past excluded).                                 |
+| Events      | GET    | /events/{id}                  | Public. Published event by id (direct link supports past events).                       |
+| Events      | POST   | /events/{id}/want-to-visit    | Authenticated users. Idempotent.                                                        |
+| Events      | DELETE | /events/{id}/want-to-visit    | Authenticated users. Idempotent.                                                        |
+| Events      | POST   | /events/{id}/dismiss          | Authenticated users. Idempotent; hides event from authed list.                          |
+| Events      | DELETE | /events/{id}/dismiss          | Authenticated users. Idempotent.                                                        |
+| Events      | POST   | /events/{id}/rsvp             | Authenticated users. MVP2-only (`501 EVENTS_WRITE_MVP2_ONLY`).                          |
 | Collections | GET    | /collections/favorites/showrooms | Public/any role. Stub (empty list).                                                 |
 | Collections | GET    | /collections/favorites/lookbooks | Public/any role. Stub (empty list).                                                 |
-| Collections | GET    | /collections/want-to-visit/events | Public/any role. Stub (empty list).                                                |
+| Collections | GET    | /collections/want-to-visit/events | Authenticated users. Upcoming want-to-visit events.                                |
+| Collections | POST   | /collections/want-to-visit/events/sync | Authenticated users. Sync guest-local event state.                           |
 | Dev         | POST   | /users/dev/register-test       | Dev/Test only. Creates mock user (not in OpenAPI).                                     |
 | Dev         | POST   | /users/dev/make-owner          | Dev/Test only. Upgrades current user to owner (not in OpenAPI).                       |

@@ -81,7 +81,7 @@ http_request "GET /collections/favorites/showrooms" 200 "" \
   "${BASE_URL}/collections/favorites/showrooms"
 http_request "GET /collections/favorites/lookbooks" 200 "" \
   "${BASE_URL}/collections/favorites/lookbooks"
-http_request "GET /collections/want-to-visit/events" 200 "" \
+http_request "GET /collections/want-to-visit/events (auth required)" 401 "AUTH_MISSING" \
   "${BASE_URL}/collections/want-to-visit/events"
 
 print_section "Auth negative"
@@ -130,10 +130,15 @@ if [[ -n "${TEST_USER_TOKEN:-}" ]]; then
       "${BASE_URL}/lookbooks/create"
   fi
 
-  print_section "Events RSVP (stub)"
-  http_request "POST /events/{id}/rsvp" 200 "" \
+  print_section "Events RSVP (MVP2-only)"
+  http_request "POST /events/{id}/rsvp" 501 "EVENTS_WRITE_MVP2_ONLY" \
     -X POST "${AUTH_HEADER[@]}" \
     "${BASE_URL}/events/event-test-1/rsvp"
+
+  print_section "Collections want-to-visit (auth)"
+  http_request "GET /collections/want-to-visit/events" 200 "" \
+    "${AUTH_HEADER[@]}" \
+    "${BASE_URL}/collections/want-to-visit/events"
 
   print_section "Lookbooks RSVP (stub)"
   http_request "POST /lookbooks/{id}/rsvp" 200 "" \

@@ -2,6 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
+import { Timestamp } from "firebase-admin/firestore";
 import { getFirestoreInstance, getStorageInstance } from "../src/config/firebase.js";
 import { MEDIA_POLICY } from "../src/constants/mediaPolicy.js";
 
@@ -312,10 +313,21 @@ async function seedEvents() {
         const ref = db.collection("events").doc(id);
         const snap = await ref.get();
         const now = new Date().toISOString();
+        const startsAtTs = parseSeedTimestamp(meta.startsAt, 1);
+        const endsAtTs = parseSeedTimestamp(meta.endsAt, null);
+        const cityNormalized = meta.city ? String(meta.city).trim().toLowerCase().replace(/\s+/g, " ") : null;
 
         const data = {
             name: meta.name || id,
             description: meta.description || null,
+            type: meta.type || null,
+            country: meta.country || null,
+            city: meta.city || null,
+            address: meta.address || null,
+            cityNormalized,
+            externalUrl: meta.externalUrl || null,
+            startsAt: startsAtTs,
+            endsAt: endsAtTs,
             coverPath,
             assets,
             source: "seed",
@@ -341,6 +353,20 @@ async function main() {
     await seedLookbooks();
     await seedEvents();
     console.log("Done.");
+}
+
+function parseSeedTimestamp(value, fallbackDays) {
+    if (value) {
+        const ms = Date.parse(value);
+        if (Number.isFinite(ms)) {
+            return Timestamp.fromDate(new Date(ms));
+        }
+    }
+
+    if (fallbackDays === null) return null;
+    const now = Date.now();
+    const target = now + fallbackDays * 24 * 60 * 60 * 1000;
+    return Timestamp.fromDate(new Date(target));
 }
 
 main().catch(err => {

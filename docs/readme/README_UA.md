@@ -17,7 +17,7 @@ JM Showroomer Backend забезпечує:
 - **MVP2-резерв**: `role` зі значеннями `manager`/`stylist` та `roleRequest` зарезервовані для MVP2. Клієнти MVP1 мають їх ігнорувати, якщо вони присутні.
 - **Showroom draft flow**: чернетка → поетапні PATCH → submit.
 - **Geo model (MVP1)**: `geo` (місто + країна + координати + geohash), фільтр `GET /showrooms?city=...`.
-- **Lookbooks & Events**: самостійні сутності (MVP1: seeded lookbooks, events RSVP stub).
+- **Lookbooks & Events**: самостійні сутності (MVP1: seeded lookbooks, events list + want-to-visit/dismiss).
 - **Валідації**: назва шоуруму, телефон (E.164), Instagram URL.
 - **Блок країн**: russia / belarus (RU/BY).
 - **Анти‑дублі**: дубль імені для власника, глобальний дубль (name + address) у pending/approved.
@@ -181,10 +181,27 @@ JM Showroomer Backend забезпечує:
 - `POST /admin/showrooms/{id}/reject` — reject pending (body: `{ reason: string }`)
 - `DELETE /admin/showrooms/{id}` — soft delete any
 
-## Колекції (UI‑стаби)
+## Колекції
 - `GET /collections/favorites/showrooms` — публічно (guest/user/owner/admin), порожній список (stub)
 - `GET /collections/favorites/lookbooks` — публічно (guest/user/owner/admin), порожній список (stub)
-- `GET /collections/want-to-visit/events` — публічно (guest/user/owner/admin), порожній список (stub)
+- `GET /collections/want-to-visit/events` — тільки auth, повертає upcoming events із want-to-visit.
+- `POST /collections/want-to-visit/events/sync` — тільки auth, синхронізує guest-local стани подій після логіну.
+
+## Events (MVP1) — Flutter contract
+- List cursor: base64 JSON `{ v: 1, startsAt: string, id: string }`.
+- Параметр `city` нормалізується на бекенді перед матчингом.
+- Поля для UI: `name`, `startsAt`, `endsAt`, `city`, `country`, `address`, `type`, `coverPath`, `externalUrl`.
+
+## Guest Event Likes Flow (MVP1)
+- Гість може лайкати/дизлайкати events лише локально в застосунку (без анонімних записів у Firestore).
+- Після авторизації Flutter має викликати:
+  - `POST /collections/want-to-visit/events/sync`
+- Payload:
+  - `{ wantToVisitIds: string[], dismissedIds: string[] }`
+- Обмеження:
+  - максимум 100 id у кожному списку (`EVENT_SYNC_LIMIT_EXCEEDED` при перевищенні)
+  - якщо id є в обох списках, пріоритет має `wantToVisit`
+  - неіснуючі, unpublished, past або blocked-country events повертаються в `skipped`
 
 ## Аудит і зміни
 - Кожна дія (patch/submit/approve/reject/delete) додається в `editHistory` з diff.
@@ -198,6 +215,16 @@ JM Showroomer Backend забезпечує:
 ## Де дивитися повний контракт API
 - `docs/openapi.yaml`
 - Додаткові модулі в `docs/` (auth, users, showrooms, lookbooks тощо).
+
+## Firestore індекси для Events (MVP1)
+- Якщо `/events` повертає `503 INDEX_NOT_READY`, треба задеплоїти/дочекатись композитних індексів.
+- Команда деплою:
+  - `firebase deploy --only firestore:indexes --project <project-id>`
+- Обовʼязкові комбінації:
+  - `published + startsAt + __name__`
+  - `published + country + startsAt + __name__`
+  - `published + cityNormalized + startsAt + __name__`
+  - `published + country + cityNormalized + startsAt + __name__`
 
 ## Dev‑ендпоінти (лише для dev/test)
 Ці роути **не входять у OpenAPI** і мають використовуватись тільки локально:

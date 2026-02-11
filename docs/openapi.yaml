@@ -47,6 +47,8 @@ paths:
     $ref: './users.yaml#/paths/~1collections~1favorites~1lookbooks'
   /collections/want-to-visit/events:
     $ref: './users.yaml#/paths/~1collections~1want-to-visit~1events'
+  /collections/want-to-visit/events/sync:
+    $ref: './users.yaml#/paths/~1collections~1want-to-visit~1events~1sync'
 
   /admin/showrooms:
     $ref: './admin.yaml#/paths/~1admin~1showrooms'
@@ -63,6 +65,14 @@ paths:
     $ref: './lookbooks.yaml#/paths/~1lookbooks~1create'
   /lookbooks/{id}/rsvp:
     $ref: './lookbooks.yaml#/paths/~1lookbooks~1{id}~1rsvp'
+  /events:
+    $ref: './events.yaml#/paths/~1events'
+  /events/{id}:
+    $ref: './events.yaml#/paths/~1events~1{id}'
+  /events/{id}/want-to-visit:
+    $ref: './events.yaml#/paths/~1events~1{id}~1want-to-visit'
+  /events/{id}/dismiss:
+    $ref: './events.yaml#/paths/~1events~1{id}~1dismiss'
   /events/{id}/rsvp:
     $ref: './events.yaml#/paths/~1events~1{id}~1rsvp'
 
@@ -103,5 +113,7 @@ components:
       $ref: './showrooms.yaml#/components/schemas/CreateShowroomInput'
     UpdateShowroomInput:
       $ref: './showrooms.yaml#/components/schemas/UpdateShowroomInput'
+    Event:
+      $ref: './events.yaml#/components/schemas/Event'
     Lookbook:
       $ref: './lookbooks.yaml#/components/schemas/Lookbook'
