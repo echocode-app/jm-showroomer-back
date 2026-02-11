@@ -31,7 +31,7 @@ JM Showroomer Backend забезпечує:
 - `fields`: `marker` або `card`
 - `q`: prefix search по `nameNormalized` (ігнорується, якщо задано `city` або `qMode=city`)
 - `city`: exact match по `geo.cityNormalized`
-- `brand`: exact match по `brandsMap.<brandKey>`
+- `brand`: exact match по `brandsMap.<brandKey>` (фіча клієнта для MVP2; API вже доступний)
 - `categoryGroup`
 - `subcategories` (array-contains-any)
 - `geohashPrefix` або `geohashPrefixes[]`
@@ -57,6 +57,7 @@ JM Showroomer Backend забезпечує:
 - `GET /showrooms/counters`: лічильник за поточними фільтрами.
 - `suggestions`: `q` обовʼязковий; `q.length < 2` повертає `[]`.
 - `suggestions`: geo параметри не підтримуються.
+- `suggestions`: brand-підказки доступні в API, але клієнт MVP1 може їх ігнорувати.
 - `counters`: `q` опційний; `cursor/fields/limit` відхиляються.
 - `counters`: `geohashPrefix(es) + q` → `QUERY_INVALID`.
 - `suggestions/counters`: `categoryGroup`, `subcategories`, `categories` взаємовиключні (2+ → `QUERY_INVALID`).

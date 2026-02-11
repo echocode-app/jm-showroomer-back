@@ -96,7 +96,7 @@ Query params:
 - `q`: prefix search by `nameNormalized` (ignored when `city` is set or `qMode=city`)
 - `qMode`: `city` or `name` (forces how `q` is interpreted)
 - `city`: exact match on `geo.cityNormalized`
-- `brand`: exact match on `brandsMap.<brandKey>`
+- `brand`: exact match on `brandsMap.<brandKey>` (MVP2 client feature; API is already available)
 - `category` or `categories`
 - `categoryGroup`
 - `subcategories` (array-contains-any)
@@ -138,6 +138,7 @@ Endpoints:
 Rules:
 - `suggestions`: `q` is required; `q.length < 2` returns `[]`.
 - `suggestions`: geo params are not supported.
+- `suggestions`: brand suggestions are API-ready, but MVP1 client can ignore them.
 - `counters`: `q` is optional; `cursor/fields/limit` are rejected.
 - `counters`: `geohashPrefix(es) + q` is rejected as `QUERY_INVALID`.
 - `suggestions/counters`: `categoryGroup`, `subcategories`, `categories` are mutually exclusive (2+ → `QUERY_INVALID`).

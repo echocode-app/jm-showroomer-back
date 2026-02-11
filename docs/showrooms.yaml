@@ -415,6 +415,11 @@ paths:
         Map mode with multiple geohashPrefixes explicitly disables paging.
         Combining geohashPrefix(es) with q/name search is rejected.
         Showrooms from blocked countries are silently excluded.
+        For MVP1 client recipes and combination rules, see external docs.
+        MVP1 guide: [Open search guide](/docs/spec/readme/SHOWROOMS_MVP1_SEARCH.md)
+      externalDocs:
+        description: MVP1 search guide (recipes, combinations, client state rules)
+        url: /docs/spec/readme/SHOWROOMS_MVP1_SEARCH.md
       operationId: listShowrooms
       security: []
       parameters:
@@ -442,7 +447,7 @@ paths:
           in: query
           schema:
             type: string
-          description: Exact match via brandsMap.<brandKey> (map equality).
+          description: Exact match via brandsMap.<brandKey> (map equality). API-ready; intended for MVP2 client UX.
         - name: type
           in: query
           schema:
@@ -614,6 +619,27 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+        "400":
+          description: Invalid query or cursor
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+              examples:
+                geohash_with_q:
+                  summary: geohashPrefix(es) with q is not allowed
+                  value:
+                    success: false
+                    error:
+                      code: QUERY_INVALID
+                      message: Query parameters are invalid
+                cursor_invalid:
+                  summary: cursor does not match current mode/order
+                  value:
+                    success: false
+                    error:
+                      code: CURSOR_INVALID
+                      message: Cursor is invalid
 
   /showrooms/suggestions:
     get:
@@ -623,6 +649,12 @@ paths:
         Returns lightweight suggestions for showroom search.
         q is required; q length < 2 returns empty suggestions.
         Geo params are not supported for suggestions.
+        Brand suggestions are API-ready, but MVP1 clients may ignore suggestion.type=brand.
+        See external docs for MVP1 search recipes.
+        MVP1 guide: [Open search guide](/docs/spec/readme/SHOWROOMS_MVP1_SEARCH.md)
+      externalDocs:
+        description: MVP1 search guide (recipes and client behavior)
+        url: /docs/spec/readme/SHOWROOMS_MVP1_SEARCH.md
       operationId: listShowroomSuggestions
       security: []
       parameters:
@@ -652,6 +684,7 @@ paths:
           in: query
           schema:
             type: string
+          description: Brand filter by key; API-ready and primarily intended for MVP2 client UX.
         - name: country
           in: query
           schema:
@@ -709,6 +742,11 @@ paths:
         Returns count of showrooms by current filters.
         q is optional. geohashPrefix(es) with q is invalid.
         cursor/fields/limit are not supported.
+        See external docs for MVP1 search recipes.
+        MVP1 guide: [Open search guide](/docs/spec/readme/SHOWROOMS_MVP1_SEARCH.md)
+      externalDocs:
+        description: MVP1 search guide (recipes and client behavior)
+        url: /docs/spec/readme/SHOWROOMS_MVP1_SEARCH.md
       operationId: getShowroomCounters
       security: []
       parameters:
@@ -724,6 +762,7 @@ paths:
           in: query
           schema:
             type: string
+          description: Brand filter by key; API-ready and primarily intended for MVP2 client UX.
         - name: country
           in: query
           schema:
