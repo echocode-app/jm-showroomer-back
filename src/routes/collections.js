@@ -8,11 +8,11 @@ import {
     listFavoriteShowrooms,
     syncGuestEvents,
     listWantToVisitEvents,
+    syncGuestLookbooks,
 } from "../controllers/collectionController.js";
 
 const router = Router();
 
-// ROUTE GET /favorites/showrooms
 router.get(
     "/favorites/showrooms",
     optionalAuth,
@@ -20,15 +20,20 @@ router.get(
     listFavoriteShowrooms
 );
 
-// ROUTE GET /favorites/lookbooks
 router.get(
     "/favorites/lookbooks",
-    optionalAuth,
-    loadUserIfExists,
+    authMiddleware,
+    loadUser,
     listFavoriteLookbooks
 );
 
-// ROUTE GET /want-to-visit/events
+router.post(
+    "/favorites/lookbooks/sync",
+    authMiddleware,
+    loadUser,
+    syncGuestLookbooks
+);
+
 router.get(
     "/want-to-visit/events",
     authMiddleware,
@@ -36,7 +41,6 @@ router.get(
     listWantToVisitEvents
 );
 
-// ROUTE POST /want-to-visit/events/sync
 router.post(
     "/want-to-visit/events/sync",
     authMiddleware,

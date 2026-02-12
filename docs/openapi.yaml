@@ -45,6 +45,8 @@ paths:
     $ref: './users.yaml#/paths/~1collections~1favorites~1showrooms'
   /collections/favorites/lookbooks:
     $ref: './users.yaml#/paths/~1collections~1favorites~1lookbooks'
+  /collections/favorites/lookbooks/sync:
+    $ref: './users.yaml#/paths/~1collections~1favorites~1lookbooks~1sync'
   /collections/want-to-visit/events:
     $ref: './users.yaml#/paths/~1collections~1want-to-visit~1events'
   /collections/want-to-visit/events/sync:
@@ -61,8 +63,12 @@ paths:
 
   /lookbooks:
     $ref: './lookbooks.yaml#/paths/~1lookbooks'
+  /lookbooks/{id}:
+    $ref: './lookbooks.yaml#/paths/~1lookbooks~1{id}'
   /lookbooks/create:
     $ref: './lookbooks.yaml#/paths/~1lookbooks~1create'
+  /lookbooks/{id}/favorite:
+    $ref: './lookbooks.yaml#/paths/~1lookbooks~1{id}~1favorite'
   /lookbooks/{id}/rsvp:
     $ref: './lookbooks.yaml#/paths/~1lookbooks~1{id}~1rsvp'
   /events:

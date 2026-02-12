@@ -9,6 +9,7 @@ export const ERROR_STATUS = {
 
     USER_NOT_FOUND: 404,
     SHOWROOM_NOT_FOUND: 404,
+    LOOKBOOK_NOT_FOUND: 404,
     EVENT_NOT_FOUND: 404,
     NOT_FOUND: 404,
 
@@ -51,6 +52,7 @@ export const ERROR_MESSAGE = {
     FORBIDDEN: "Access denied",
     COUNTRY_BLOCKED: "Country is not supported",
     USER_NOT_FOUND: "User profile not found",
+    LOOKBOOK_NOT_FOUND: "Lookbook not found",
     EVENT_NOT_FOUND: "Event not found",
     NOT_FOUND: "Not found",
     VALIDATION_ERROR: "Validation error",

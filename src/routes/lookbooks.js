@@ -6,7 +6,14 @@ import { ROLES } from "../constants/roles.js";
 import { schemaValidate } from "../middlewares/schemaValidate.js";
 import { lookbookCreateSchema } from "../schemas/lookbook.create.schema.js";
 import { eventRsvpSchema } from "../schemas/event.rsvp.schema.js";
-import { createLookbook, listLookbooks, rsvpLookbook } from "../controllers/lookbookController.js";
+import {
+    createLookbook,
+    favoriteLookbook,
+    getLookbookById,
+    listLookbooks,
+    rsvpLookbook,
+    unfavoriteLookbook,
+} from "../controllers/lookbookController.js";
 
 const router = Router();
 
@@ -19,8 +26,29 @@ router.post(
     createLookbook
 );
 
-// ROUTE GET /
 router.get("/", listLookbooks);
+
+router.get(
+    "/:id",
+    schemaValidate({ params: eventRsvpSchema }),
+    getLookbookById
+);
+
+router.post(
+    "/:id/favorite",
+    authMiddleware,
+    loadUser,
+    schemaValidate({ params: eventRsvpSchema }),
+    favoriteLookbook
+);
+
+router.delete(
+    "/:id/favorite",
+    authMiddleware,
+    loadUser,
+    schemaValidate({ params: eventRsvpSchema }),
+    unfavoriteLookbook
+);
 
 router.post(
     "/:id/rsvp",

@@ -81,6 +81,10 @@ node --input-type=module <<EOF || fail "Failed to insert invalid lookbook"
   ];
   await db.collection('lookbooks').doc('order-zero').set({
     name: 'Order Zero',
+    country: 'Ukraine',
+    countryNormalized: 'ukraine',
+    seasonLabel: 'SS 2026',
+    seasonKey: 'ss-2026',
     published: true,
     coverPath: 'lookbooks/order-zero/cover/cover.webp',
     assets,
@@ -93,6 +97,10 @@ node --input-type=module <<EOF || fail "Failed to insert invalid lookbook"
   for (let i = 0; i < ids.length; i++) {
     await db.collection('lookbooks').doc(ids[i]).set({
       name: 'Invalid Media',
+      country: 'Ukraine',
+      countryNormalized: 'ukraine',
+      seasonLabel: 'SS 2026',
+      seasonKey: 'ss-2026',
       published: true,
       coverPath: paths[i],
       createdAt: now,
@@ -102,7 +110,7 @@ node --input-type=module <<EOF || fail "Failed to insert invalid lookbook"
   }
 EOF
 
-http_request "GET /lookbooks" 200 "" "${BASE_URL}/lookbooks?limit=200"
+http_request "GET /lookbooks" 200 "" "${BASE_URL}/lookbooks?country=Ukraine&seasonKey=ss-2026&limit=200"
 
 LOOKBOOK_COUNT=$(json_get "$LAST_BODY" '.data.lookbooks // [] | length')
 if [[ "$LOOKBOOK_COUNT" == "0" ]]; then

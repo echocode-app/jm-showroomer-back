@@ -1,60 +1,66 @@
 components:
   schemas:
+    LookbookImage:
+      type: object
+      properties:
+        storagePath:
+          type: string
+          description: Canonical Storage path.
+        order:
+          type: integer
+        url:
+          type: string
+          nullable: true
+          description: Signed read URL (detail endpoint only).
+
     Lookbook:
       type: object
       properties:
         id:
           type: string
-        ownerUid:
+        title:
           type: string
           nullable: true
-          description: Owner UID (MVP2). Seeded content uses null.
         name:
           type: string
           nullable: true
+          description: Backward-compatible alias for title.
         description:
           type: string
           nullable: true
-        pages:
-          type: array
+        country:
+          type: string
           nullable: true
-          description: Legacy pages array (paths). Deprecated in favor of assets[].
-          items:
-            type: string
-        galleryPaths:
-          type: array
+        countryNormalized:
+          type: string
           nullable: true
-          description: Legacy gallery array (paths). Deprecated in favor of assets[].
-          items:
-            type: string
+        city:
+          type: string
+          nullable: true
+        cityNormalized:
+          type: string
+          nullable: true
+        seasonLabel:
+          type: string
+          nullable: true
+        seasonKey:
+          type: string
+          nullable: true
+        sortRank:
+          type: integer
+          nullable: true
         coverPath:
           type: string
           nullable: true
-          description: Storage path (canonical). Use signed URL for access.
         coverUrl:
           type: string
           nullable: true
-          description: Signed read URL (short-lived, do not persist).
-        assets:
+          description: Signed read URL for cover image.
+        images:
           type: array
           nullable: true
           items:
-            type: object
-            properties:
-              kind:
-                type: string
-                description: cover | page | gallery
-              path:
-                type: string
-                description: Storage path (canonical).
-              type:
-                type: string
-                description: Media type (image).
-              order:
-                type: integer
-              meta:
-                type: object
-                nullable: true
+            $ref: '#/components/schemas/LookbookImage'
         source:
           type: string
           enum: [seed, owner, admin]
@@ -62,18 +68,18 @@ components:
         published:
           type: boolean
           nullable: true
-        createdBy:
+        publishedAt:
           type: string
-          nullable: true
-        seedKey:
-          type: string
+          format: date-time
           nullable: true
         createdAt:
           type: string
           format: date-time
+          nullable: true
         updatedAt:
           type: string
           format: date-time
+          nullable: true
 
 paths:
   /lookbooks:
@@ -81,12 +87,35 @@ paths:
       tags: [Lookbooks]
       summary: List lookbooks
       description: |
-        Seeded content in MVP1. Owner uploads planned for MVP2.
-        Supported formats: jpg/jpeg/png/webp. Signed URLs are short-lived; clients should not persist them.
-        PDF is reserved for MVP2.
-        Limits: cover max 10MB (1), pages max 15MB (60), gallery max 15MB (30).
+        Public list for MVP1.
+        Filters are required and applied together: country + seasonKey + published=true.
+        Signed URL is generated for coverPath only.
       operationId: listLookbooks
       security: []
+      parameters:
+        - name: country
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: seasonKey
+          in: query
+          required: true
+          schema:
+            type: string
+            example: ss-2026
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Base64 backend cursor. Do not construct client-side.
       responses:
         "200":
           description: Lookbooks list
@@ -103,24 +132,133 @@ paths:
                             type: array
                             items:
                               $ref: '#/components/schemas/Lookbook'
-              examples:
-                example:
-                  summary: Lookbooks list
-                  value:
-                    success: true
-                    data:
-                      lookbooks:
-                        - id: "lookbook-1"
-                          name: "Lookbook A"
-                          coverPath: "lookbooks/lookbook-1/cover/cover.webp"
-                          coverUrl: "https://storage.googleapis.com/...signed..."
-                          published: true
-                          source: "seed"
-                          createdAt: "2026-02-01T12:00:00.000Z"
-                          updatedAt: "2026-02-01T12:00:00.000Z"
-                    meta: {}
-        "429":
-          description: Rate limit exceeded
+                      meta:
+                        type: object
+                        properties:
+                          hasMore:
+                            type: boolean
+                          nextCursor:
+                            type: string
+                            nullable: true
+                          paging:
+                            type: string
+                            enum: [enabled, end]
+        "400":
+          description: Invalid query or cursor
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "503":
+          description: Missing required Firestore index (INDEX_NOT_READY)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
+  /lookbooks/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Lookbooks]
+      summary: Get lookbook by id
+      description: Returns published lookbook only. Cover and all images include signed URLs.
+      operationId: getLookbookById
+      security: []
+      responses:
+        "200":
+          description: Lookbook details
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          lookbook:
+                            $ref: '#/components/schemas/Lookbook'
+        "404":
+          description: Not found or unpublished
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
+  /lookbooks/{id}/favorite:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [Lookbooks]
+      summary: Add lookbook to favorites
+      description: Auth-only, idempotent.
+      operationId: favoriteLookbook
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Favorited
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          lookbookId:
+                            type: string
+                          status:
+                            type: string
+                            example: favorited
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "404":
+          description: Lookbook not found
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+    delete:
+      tags: [Lookbooks]
+      summary: Remove lookbook from favorites
+      description: Auth-only, idempotent.
+      operationId: unfavoriteLookbook
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Removed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          lookbookId:
+                            type: string
+                          status:
+                            type: string
+                            example: removed
+        "401":
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -211,7 +349,7 @@ paths:
                             type: string
                           status:
                             type: string
-                            example: "RSVPed"
+                            example: RSVPed
         "400":
           description: Validation error
           content:

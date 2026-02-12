@@ -25,7 +25,7 @@ http_request "GET /showrooms/counters?city=Kyiv" 200 "" \
 
 request_allow_status_or_index_not_ready "GET /events?limit=5" \
   "${BASE_URL}/events?limit=5"
-http_request "GET /lookbooks?limit=1" 200 "" "${BASE_URL}/lookbooks?limit=1"
+http_request "GET /lookbooks?country=Ukraine&seasonKey=ss-2026&limit=1" 200 "" "${BASE_URL}/lookbooks?country=Ukraine&seasonKey=ss-2026&limit=1"
 
 print_section "Auth Contract (optional)"
 if [[ -n "${PROD_ID_TOKEN:-}" ]]; then

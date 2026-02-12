@@ -186,6 +186,31 @@ Server merges the payload idempotently into user collections and returns:
 - `applied.dismissed[]`
 - `skipped[]`
 
+## Lookbooks (MVP1)
+
+- Lookbooks are standalone entities (no showroom linkage).
+- Content is seeded/admin-managed in MVP1 (public write CRUD is not available).
+- Public list: `GET /lookbooks`
+  - requires both query params: `country`, `seasonKey`
+  - applies filters together with `published=true`
+  - supports cursor pagination with `meta.hasMore`, `meta.nextCursor`, `meta.paging`
+  - signs only `coverPath` as `coverUrl`
+- Public detail: `GET /lookbooks/{id}`
+  - returns published lookbook only
+  - signs `coverPath` and every `images[].storagePath`
+- Favorites:
+  - `POST /lookbooks/{id}/favorite` (auth, idempotent)
+  - `DELETE /lookbooks/{id}/favorite` (auth, idempotent)
+  - stored in `users/{uid}/lookbooks_favorites/{lookbookId}`
+- Collections:
+  - `GET /collections/favorites/lookbooks` (auth required)
+  - returns only existing published lookbooks; stale/unpublished ids are filtered out at read time
+  - `POST /collections/favorites/lookbooks/sync` (auth required)
+    - payload: `{ favoriteIds: [] }`
+    - max `100` ids (`EVENT_SYNC_LIMIT_EXCEEDED` on overflow)
+    - unknown/unpublished ids returned in `skipped`
+    - idempotent
+
 ## Firestore Index Runbook
 
 If you see `INDEX_NOT_READY`, Firestore is missing a required composite index for the query. This is not a server crash; it means the index must be created before the query can run.
@@ -202,6 +227,10 @@ Events list index-required query shapes:
 - `published + country + startsAt + __name__`
 - `published + cityNormalized + startsAt + __name__`
 - `published + country + cityNormalized + startsAt + __name__`
+
+Lookbooks list index-required query shapes:
+- `published + countryNormalized + seasonKey + sortRank + __name__`
+- `published + countryNormalized + seasonKey + sortRank + publishedAt + __name__`
 
 ## Base URL
 
@@ -267,7 +296,10 @@ API Table (actual)
 | Admin       | POST   | /admin/showrooms/{id}/approve | ADMIN only. Pending → approved.                                                         |
 | Admin       | POST   | /admin/showrooms/{id}/reject  | ADMIN only. Pending → rejected (body: { reason }).                                      |
 | Admin       | DELETE | /admin/showrooms/{id}         | ADMIN only. Soft delete any status.                                                     |
-| Lookbooks   | GET    | /lookbooks                    | Public. Seeded content (MVP1).                                                          |
+| Lookbooks   | GET    | /lookbooks                    | Public. Requires `country` + `seasonKey`; cursor pagination; seeded/admin content.      |
+| Lookbooks   | GET    | /lookbooks/{id}               | Public. Published lookbook details with signed cover/images URLs.                       |
+| Lookbooks   | POST   | /lookbooks/{id}/favorite      | Authenticated users. Idempotent favorite add.                                           |
+| Lookbooks   | DELETE | /lookbooks/{id}/favorite      | Authenticated users. Idempotent favorite remove.                                        |
 | Lookbooks   | POST   | /lookbooks/create             | OWNER/MANAGER. Stub (MVP2).                                                             |
 | Lookbooks   | POST   | /lookbooks/{id}/rsvp          | Authenticated users. Stub.                                                              |
 | Events      | GET    | /events                       | Public. Upcoming published events only (past excluded).                                 |
@@ -278,7 +310,8 @@ API Table (actual)
 | Events      | DELETE | /events/{id}/dismiss          | Authenticated users. Idempotent.                                                        |
 | Events      | POST   | /events/{id}/rsvp             | Authenticated users. MVP2-only (`501 EVENTS_WRITE_MVP2_ONLY`).                          |
 | Collections | GET    | /collections/favorites/showrooms | Public/any role. Stub (empty list).                                                 |
-| Collections | GET    | /collections/favorites/lookbooks | Public/any role. Stub (empty list).                                                 |
+| Collections | GET    | /collections/favorites/lookbooks | Authenticated users. Favorite lookbooks list (published-only revalidation).         |
+| Collections | POST   | /collections/favorites/lookbooks/sync | Authenticated users. Sync guest-local lookbook favorites.                        |
 | Collections | GET    | /collections/want-to-visit/events | Authenticated users. Upcoming want-to-visit events.                                |
 | Collections | POST   | /collections/want-to-visit/events/sync | Authenticated users. Sync guest-local event state.                           |
 | Dev         | POST   | /users/dev/register-test       | Dev/Test only. Creates mock user (not in OpenAPI).                                     |

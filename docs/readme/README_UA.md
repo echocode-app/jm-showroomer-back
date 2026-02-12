@@ -17,7 +17,7 @@ JM Showroomer Backend забезпечує:
 - **MVP2-резерв**: `role` зі значеннями `manager`/`stylist` та `roleRequest` зарезервовані для MVP2. Клієнти MVP1 мають їх ігнорувати, якщо вони присутні.
 - **Showroom draft flow**: чернетка → поетапні PATCH → submit.
 - **Geo model (MVP1)**: `geo` (місто + країна + координати + geohash), фільтр `GET /showrooms?city=...`.
-- **Lookbooks & Events**: самостійні сутності (MVP1: seeded lookbooks, events list + want-to-visit/dismiss).
+- **Lookbooks & Events**: самостійні сутності (MVP1: lookbooks list/detail + favorites/sync, events list + want-to-visit/dismiss).
 - **Валідації**: назва шоуруму, телефон (E.164), Instagram URL.
 - **Блок країн**: russia / belarus (RU/BY).
 - **Анти‑дублі**: дубль імені для власника, глобальний дубль (name + address) у pending/approved.
@@ -184,9 +184,22 @@ JM Showroomer Backend забезпечує:
 
 ## Колекції
 - `GET /collections/favorites/showrooms` — публічно (guest/user/owner/admin), порожній список (stub)
-- `GET /collections/favorites/lookbooks` — публічно (guest/user/owner/admin), порожній список (stub)
+- `GET /collections/favorites/lookbooks` — тільки auth, повертає обрані lookbooks (лише published; stale ids відфільтровуються)
+- `POST /collections/favorites/lookbooks/sync` — тільки auth, sync guest-local favoriteIds після логіну
 - `GET /collections/want-to-visit/events` — тільки auth, повертає upcoming events із want-to-visit.
 - `POST /collections/want-to-visit/events/sync` — тільки auth, синхронізує guest-local стани подій після логіну.
+
+## Lookbooks (MVP1)
+- `GET /lookbooks`:
+  - обовʼязкові фільтри `country` + `seasonKey`
+  - застосовуються разом з `published=true`
+  - cursor pagination (`meta.hasMore`, `meta.nextCursor`, `meta.paging`)
+  - підписується тільки `coverUrl`
+- `GET /lookbooks/{id}`:
+  - тільки published lookbook
+  - підписуються `coverUrl` і `images[].url`
+- `POST /lookbooks/{id}/favorite`, `DELETE /lookbooks/{id}/favorite`:
+  - тільки auth, idempotent
 
 ## Events (MVP1) — Flutter contract
 - List cursor: base64 JSON `{ v: 1, startsAt: string, id: string }`.

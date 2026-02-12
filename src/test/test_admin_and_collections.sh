@@ -24,7 +24,10 @@ SAFE_SUFFIX=$(printf '%s' "$SHORT_NOW" | tr '0-9' 'a-j')
 print_section "Collections stubs (public)"
 http_request "GET /collections/favorites/showrooms" 200 "" \
   "${BASE_URL}/collections/favorites/showrooms"
-http_request "GET /collections/favorites/lookbooks" 200 "" \
+http_request "GET /collections/favorites/lookbooks (auth required)" 401 "AUTH_MISSING" \
+  "${BASE_URL}/collections/favorites/lookbooks"
+http_request "GET /collections/favorites/lookbooks (auth)" 200 "" \
+  "${AUTH_HEADER[@]}" \
   "${BASE_URL}/collections/favorites/lookbooks"
 http_request "GET /collections/want-to-visit/events (auth required)" 401 "AUTH_MISSING" \
   "${BASE_URL}/collections/want-to-visit/events"

@@ -1,50 +1,60 @@
-import { ok, fail } from "../utils/apiResponse.js";
-import { listLookbooksService } from "../services/lookbooks/listLookbooks.js";
-import { getSignedReadUrl } from "../services/mediaService.js";
-import { filterValidAssets, normalizeLookbookAssets } from "../utils/mediaValidation.js";
+import { ok } from "../utils/apiResponse.js";
+import {
+    favoriteLookbookService,
+    getLookbookByIdService,
+    listLookbooksService,
+    unfavoriteLookbookService,
+} from "../services/lookbooksService.js";
+import { attachCoverUrl, attachSignedImages } from "../services/lookbooks/response.js";
 
-// createLookbook
 export async function createLookbook(req, res, next) {
     try {
-        // TODO
+        // TODO (MVP2): replace stub with persisted create flow.
         const { name, description } = req.body;
-        // TODO
         return ok(res, { lookbook: { name, description, ownerUid: req.user.uid } });
     } catch (err) {
         next(err);
     }
 }
 
-// listLookbooks
 export async function listLookbooks(req, res, next) {
     try {
-        const limit = req.query?.limit;
-        const lookbooks = await listLookbooksService({ limit });
-
-        const withUrls = await Promise.all(
-            lookbooks.map(async item => {
-                const resourceId = item.id;
-                const normalizedAssets = normalizeLookbookAssets(item);
-                const validAssets = filterValidAssets("lookbooks", resourceId, normalizedAssets);
-
-                const coverAsset = validAssets.find(a => a.kind === "cover");
-                const coverUrl = coverAsset ? await getSignedReadUrl(coverAsset.path) : null;
-
-                return {
-                    ...item,
-                    coverUrl,
-                    assets: item.assets && item.assets.length ? item.assets : normalizedAssets,
-                };
-            })
-        );
-
-        return ok(res, { lookbooks: withUrls });
+        const { lookbooks, meta } = await listLookbooksService(req.query ?? {});
+        const withCover = await Promise.all(lookbooks.map(attachCoverUrl));
+        return ok(res, { lookbooks: withCover }, meta);
     } catch (err) {
         next(err);
     }
 }
 
-// rsvpLookbook
+export async function getLookbookById(req, res, next) {
+    try {
+        const lookbook = await getLookbookByIdService(req.params.id);
+        const signed = await attachSignedImages(lookbook);
+        return ok(res, { lookbook: signed });
+    } catch (err) {
+        next(err);
+    }
+}
+
+export async function favoriteLookbook(req, res, next) {
+    try {
+        await favoriteLookbookService(req.params.id, req.auth.uid);
+        return ok(res, { lookbookId: req.params.id, status: "favorited" });
+    } catch (err) {
+        next(err);
+    }
+}
+
+export async function unfavoriteLookbook(req, res, next) {
+    try {
+        await unfavoriteLookbookService(req.params.id, req.auth.uid);
+        return ok(res, { lookbookId: req.params.id, status: "removed" });
+    } catch (err) {
+        next(err);
+    }
+}
+
 export async function rsvpLookbook(req, res, next) {
     try {
         const { id } = req.params;

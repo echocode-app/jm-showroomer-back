@@ -23,7 +23,7 @@ request_allow_status_or_index_not_ready "GET /showrooms?city=Cherkasy" \
   "${BASE_URL}/showrooms?city=Cherkasy"
 request_allow_status_or_index_not_ready "GET /showrooms?city=Zaporizhzhia" \
   "${BASE_URL}/showrooms?city=Zaporizhzhia"
-http_request "GET /lookbooks" 200 "" "${BASE_URL}/lookbooks"
+http_request "GET /lookbooks (filtered)" 200 "" "${BASE_URL}/lookbooks?country=Ukraine&seasonKey=ss-2026"
 
 print_section "Public list validation (query errors)"
 http_request "GET /showrooms?limit=0 (invalid)" 400 "QUERY_INVALID" \
@@ -60,6 +60,7 @@ assert_eq "$NO_PAGING" "end" "meta.paging for no-results"
 
 LOOKBOOK_COUNT=$(json_get "$LAST_BODY" '.data.lookbooks // [] | length')
 if [[ "$LOOKBOOK_COUNT" != "0" ]]; then
+  FIRST_LOOKBOOK_ID=$(json_get "$LAST_BODY" '.data.lookbooks[0].id // empty')
   HAS_UNPUBLISHED=$(json_get "$LAST_BODY" '.data.lookbooks // [] | map(select(.published == false)) | length')
   if [[ "$HAS_UNPUBLISHED" != "0" ]]; then
     fail "Unpublished lookbook leaked to public list"
@@ -69,17 +70,19 @@ if [[ "$LOOKBOOK_COUNT" != "0" ]]; then
   COVER_PATH=$(json_get "$LAST_BODY" '.data.lookbooks[0].coverPath // empty')
   assert_non_empty "$COVER_PATH" "coverPath"
   assert_non_empty "$COVER_URL" "coverUrl"
+  assert_non_empty "$FIRST_LOOKBOOK_ID" "first lookbook id"
   if [[ "$COVER_URL" != http* ]]; then
     fail "coverUrl is not a URL"
   fi
 else
   echo "⚠ No lookbooks returned (seed not run)"
+  FIRST_LOOKBOOK_ID=""
 fi
 
 print_section "Collections stubs (public)"
 http_request "GET /collections/favorites/showrooms" 200 "" \
   "${BASE_URL}/collections/favorites/showrooms"
-http_request "GET /collections/favorites/lookbooks" 200 "" \
+http_request "GET /collections/favorites/lookbooks (auth required)" 401 "AUTH_MISSING" \
   "${BASE_URL}/collections/favorites/lookbooks"
 http_request "GET /collections/want-to-visit/events (auth required)" 401 "AUTH_MISSING" \
   "${BASE_URL}/collections/want-to-visit/events"
@@ -145,6 +148,25 @@ if [[ -n "${TEST_USER_TOKEN:-}" ]]; then
     -X POST "${AUTH_HEADER[@]}" \
     "${BASE_URL}/lookbooks/event-test-1/rsvp"
 
+  if [[ -n "${FIRST_LOOKBOOK_ID:-}" ]]; then
+    print_section "Lookbooks favorites MVP1"
+    http_request "GET /lookbooks/{id}" 200 "" \
+      "${BASE_URL}/lookbooks/${FIRST_LOOKBOOK_ID}"
+    http_request "POST /lookbooks/{id}/favorite" 200 "" \
+      -X POST "${AUTH_HEADER[@]}" \
+      "${BASE_URL}/lookbooks/${FIRST_LOOKBOOK_ID}/favorite"
+    http_request "GET /collections/favorites/lookbooks" 200 "" \
+      "${AUTH_HEADER[@]}" \
+      "${BASE_URL}/collections/favorites/lookbooks?limit=20"
+    http_request "DELETE /lookbooks/{id}/favorite" 200 "" \
+      -X DELETE "${AUTH_HEADER[@]}" \
+      "${BASE_URL}/lookbooks/${FIRST_LOOKBOOK_ID}/favorite"
+    http_request "POST /collections/favorites/lookbooks/sync (empty)" 200 "" \
+      -X POST "${AUTH_HEADER[@]}" -H "$(json_header)" \
+      -d '{"favoriteIds":[]}' \
+      "${BASE_URL}/collections/favorites/lookbooks/sync"
+  fi
+
   print_section "Country restrictions"
   http_request "POST /users/complete-onboarding (UA)" 200 "" \
     -X POST "${AUTH_HEADER[@]}" -H "$(json_header)" \
@@ -164,7 +186,7 @@ if [[ -n "${TEST_USER_TOKEN:-}" ]]; then
     TARGET_COUNTRY="Ukraine"
   fi
 
-  LOOKBOOKS_RESPONSE=$(curl -s "${BASE_URL}/lookbooks?limit=1")
+  LOOKBOOKS_RESPONSE=$(curl -s "${BASE_URL}/lookbooks?country=Ukraine&seasonKey=ss-2026&limit=1")
   HAS_LOOKBOOKS=$(json_get "$LOOKBOOKS_RESPONSE" '.data.lookbooks // [] | length')
   if [[ "$HAS_LOOKBOOKS" == "0" ]]; then
     echo "⚠ No lookbooks returned (seed not run); skipping country change check"
