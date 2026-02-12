@@ -14,6 +14,9 @@ import {
 import { MAX_GEO_PREFIXES } from "./constants.js";
 import { parseList } from "./lists.js";
 
+/**
+ * Parses city/q search pair and resolves which normalized field should be used.
+ */
 export function parseCityAndQName(filters, qMode) {
     let cityNormalized = null;
     let qName = null;
@@ -41,6 +44,9 @@ export function parseCityAndQName(filters, qMode) {
     return { cityNormalized, qName };
 }
 
+/**
+ * Parses brand filter into normalized key/value pair.
+ */
 export function parseBrandFilter(filters) {
     let brandKey = null;
     let brandNormalized = null;
@@ -53,6 +59,9 @@ export function parseBrandFilter(filters) {
     return { brandKey, brandNormalized };
 }
 
+/**
+ * Parses category-group list and validates supported values.
+ */
 export function parseCategoryGroups(value) {
     const groups = parseList(value)
         .map(v => normalizeKey(v))
@@ -65,6 +74,9 @@ export function parseCategoryGroups(value) {
     return Array.from(new Set(groups));
 }
 
+/**
+ * Parses clothing subcategories list and validates supported values.
+ */
 export function parseSubcategories(value) {
     const subs = parseList(value)
         .map(v => normalizeKey(v))
@@ -77,6 +89,9 @@ export function parseSubcategories(value) {
     return Array.from(new Set(subs));
 }
 
+/**
+ * Parses one or multiple geohash prefixes with dedupe and constraints.
+ */
 export function parseGeohashPrefixes(filters) {
     const geohashPrefixes = Array.from(
         new Set([

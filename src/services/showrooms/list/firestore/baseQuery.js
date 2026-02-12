@@ -6,6 +6,7 @@ export function buildBaseQuery(query, parsed, user) {
     const filters = parsed.raw;
     const visibility = getVisibilityFilter(user, filters.status);
 
+    // Step 1: apply access visibility constraints before any business filters.
     if (visibility.type === "guest") {
         query = query.where("status", "==", "approved");
     } else if (visibility.type === "owner") {
@@ -20,8 +21,10 @@ export function buildBaseQuery(query, parsed, user) {
         query = query.where("status", "==", visibility.status);
     }
 
+    // Step 2: apply exact-match filters that are common for list/suggestions/counters flows.
     if (filters.country) query = query.where("country", "==", filters.country);
     if (parsed.cityNormalized) {
+        // City filter always targets normalized geo field, never raw text.
         query = query.where("geo.cityNormalized", "==", parsed.cityNormalized);
     }
     if (parsed.type) query = query.where("type", "==", parsed.type);
@@ -45,6 +48,7 @@ export function buildBaseQuery(query, parsed, user) {
         query = query.where("subcategories", "array-contains-any", slice);
     }
     if (parsed.brandKey) {
+        // Brand filter hits precomputed map field to keep query index-friendly.
         query = query.where(`brandsMap.${parsed.brandKey}`, "==", true);
     }
 

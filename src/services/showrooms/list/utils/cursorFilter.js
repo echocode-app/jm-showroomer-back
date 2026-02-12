@@ -8,8 +8,10 @@ export function applyCursorFilter(items, cursor, orderField, direction) {
         const value = getValueByPath(item, orderField);
         const cmp = compareValues(value, cursor.value, direction);
         if (cmp === 0) {
+            // Tie-breaker by id keeps paging deterministic for equal primary sort values.
             return item.id > cursor.id;
         }
+        // Keep only rows strictly after cursor in the active sort direction.
         return cmp > 0;
     });
 }

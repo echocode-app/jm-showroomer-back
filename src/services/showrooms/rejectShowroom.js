@@ -3,7 +3,9 @@ import { badRequest, forbidden, notFound } from "../../core/error.js";
 import { appendHistory, makeHistoryEntry } from "./_helpers.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 
-// rejectShowroomService
+/**
+ * Rejects a pending showroom and stores moderation reason + audit trace.
+ */
 export async function rejectShowroomService(id, reason, user) {
     if (user?.role !== "admin") {
         throw forbidden("ACCESS_DENIED");
@@ -59,7 +61,17 @@ export async function rejectShowroomService(id, reason, user) {
     const statusBefore = showroom.status;
     const updatedAt = new Date().toISOString();
 
-    const updates = {
+    const updates = buildRejectUpdates(showroom, reason, user, statusBefore, updatedAt);
+
+    await ref.update(updates);
+    return { id, ...showroom, ...updates };
+}
+
+/**
+ * Builds one atomic reject update payload for Firestore.
+ */
+function buildRejectUpdates(showroom, reason, user, statusBefore, updatedAt) {
+    return {
         status: "rejected",
         reviewedAt: updatedAt,
         reviewedBy: { uid: user.uid, role: user.role },
@@ -81,7 +93,4 @@ export async function rejectShowroomService(id, reason, user) {
             })
         ),
     };
-
-    await ref.update(updates);
-    return { id, ...showroom, ...updates };
 }

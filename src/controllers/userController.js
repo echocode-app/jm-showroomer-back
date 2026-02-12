@@ -16,12 +16,16 @@ import {
     softDeleteUserProfile,
 } from "../services/users/profileService.js";
 
-// getMyProfile
+/**
+ * Returns authenticated user profile from middleware context.
+ */
 export async function getMyProfile(req, res) {
     return ok(res, req.user);
 }
 
-// completeOnboarding
+/**
+ * Completes onboarding by persisting allowed country.
+ */
 export async function completeOnboarding(req, res) {
     const { country } = req.body;
 
@@ -42,7 +46,9 @@ export async function completeOnboarding(req, res) {
     return ok(res, { message: "Onboarding completed" });
 }
 
-// completeOwnerProfile
+/**
+ * Validates owner profile fields and upgrades user role to owner.
+ */
 export async function completeOwnerProfile(req, res) {
     const { name, position = null, country, instagram } = req.body || {};
 
@@ -82,7 +88,9 @@ export async function completeOwnerProfile(req, res) {
     }
 }
 
-// updateUserProfile
+/**
+ * Applies partial profile updates with owner-specific country restrictions.
+ */
 export async function updateUserProfile(req, res) {
     const {
         name,
@@ -185,7 +193,9 @@ export async function updateUserProfile(req, res) {
     return ok(res, { message: "Profile updated" });
 }
 
-// makeOwnerDev
+/**
+ * Dev-only endpoint to grant owner role for local/manual testing.
+ */
 export async function makeOwnerDev(req, res) {
     if (process.env.NODE_ENV === "prod") {
         return fail(res, "NOT_FOUND", "Not found", 404);
@@ -196,7 +206,9 @@ export async function makeOwnerDev(req, res) {
     return ok(res, { role: "owner" });
 }
 
-// deleteMyProfile
+/**
+ * Soft-deletes current account if there are no blocking owner assets.
+ */
 export async function deleteMyProfile(req, res) {
     const userId = req.auth?.uid;
     if (!userId) {

@@ -18,12 +18,18 @@ export function assertEditableShowroom(showroom, user) {
     }
 }
 
+/**
+ * Preserves existing contact fields when PATCH sends only a subset.
+ */
 export function mergeContacts(showroom, data) {
     if (data.contacts !== undefined) {
         data.contacts = { ...(showroom.contacts || {}), ...data.contacts };
     }
 }
 
+/**
+ * Applies categoryGroup/subcategories normalization rules in one place.
+ */
 export function applyCategoryPatch(data, showroom) {
     if (data.categoryGroup !== undefined || data.subcategories !== undefined) {
         const normalized = applyCategoryPayload(data, showroom);
@@ -36,6 +42,9 @@ export function applyCategoryPatch(data, showroom) {
     }
 }
 
+/**
+ * Produces standard edit history metadata for showroom patch operations.
+ */
 export function buildHistoryUpdate(showroom, changedFields, diff, user, updatedAt) {
     return {
         editCount: (showroom.editCount || 0) + 1,

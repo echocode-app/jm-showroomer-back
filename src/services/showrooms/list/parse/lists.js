@@ -5,6 +5,7 @@ import { normalizeKey } from "../../../../utils/showroomValidation.js";
 import { DEFAULT_LIMIT, MAX_LIMIT } from "./constants.js";
 
 export function parseLimit(value) {
+    // Limit is parsed once and reused by every list mode (default/name/geohash).
     if (value === undefined || value === null || value === "") {
         return DEFAULT_LIMIT;
     }
@@ -19,6 +20,7 @@ export function parseLimit(value) {
 }
 
 export function parseFields(value) {
+    // `marker` keeps payload small for map pins, `card` keeps full list card data.
     if (value === undefined || value === null || value === "") {
         return "card";
     }
@@ -37,6 +39,7 @@ export function parseQMode(value) {
 }
 
 export function parseList(value) {
+    // Supports both repeated query params and comma-separated strings.
     if (Array.isArray(value)) {
         return value.map(v => String(v).trim()).filter(Boolean);
     }

@@ -15,12 +15,15 @@ import { buildGeo } from "../../../utils/geoValidation.js";
 import { applyCategoryPayload } from "../_categoryHelpers.js";
 
 export function normalizeCreatePayload(data, options = {}) {
+    // Step 1: validate and normalize name once; this key powers prefix search.
     validateShowroomName(data.name);
     const nameNormalized = normalizeShowroomName(data.name);
 
+    // Step 2: canonicalize address and store comparison key for duplicate detection.
     const address = data.address ? normalizeAddress(data.address) : null;
     const addressNormalized = address ? normalizeAddressForCompare(address) : null;
 
+    // Step 3: normalize geo payload and compute map/search derivatives (cityNormalized/geohash).
     const geo = data.geo ? buildGeo(data.geo) : null;
     const brandsNormalized = normalizeBrands(data.brands ?? []);
     const brandsMap = buildBrandsMap(data.brands ?? []);
@@ -31,6 +34,7 @@ export function normalizeCreatePayload(data, options = {}) {
         instagram: null,
     };
 
+    // Contacts are normalized here so downstream flows can rely on stable stored format.
     if (data.contacts?.instagram) {
         const normalizedInstagram = normalizeInstagramUrl(data.contacts.instagram);
         validateInstagramUrl(normalizedInstagram);
@@ -40,6 +44,7 @@ export function normalizeCreatePayload(data, options = {}) {
     }
 
     if (data.contacts?.phone) {
+        // Phone is persisted in E.164 to keep validation/search deterministic.
         const { e164 } = validatePhone(
             data.contacts.phone,
             options.userCountry ?? data.country ?? null

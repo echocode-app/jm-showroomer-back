@@ -35,13 +35,16 @@ export {
 };
 
 export function parseFilters(filters = {}) {
+    // Step 1: parse generic pagination/output params first because they affect all modes.
     const limit = parseLimit(filters.limit);
     const fields = parseFields(filters.fields);
     const cursor = filters.cursor ? decodeCursor(filters.cursor) : null;
 
+    // Step 2: resolve search intent (`q` as city or name) and normalize the chosen field.
     const qMode = parseQMode(filters.qMode);
     const { cityNormalized, qName } = parseCityAndQName(filters, qMode);
 
+    // Step 3: parse all filter families that can influence Firestore index shape.
     const { brandKey, brandNormalized } = parseBrandFilter(filters);
     const type = parseType(filters.type);
     const categoryGroups = parseCategoryGroups(filters.categoryGroup);
@@ -57,14 +60,17 @@ export function parseFilters(filters = {}) {
     const hasGeohash = geohashPrefixes.length > 0;
     const hasMultiPrefix = geohashPrefixes.length > 1;
 
+    // Geohash map mode and name prefix mode are intentionally not composable.
     if (hasGeohash && qName) {
         throw badRequest("QUERY_INVALID");
     }
 
+    // Multi-prefix mode merges multiple queries, so stable cursor paging is disabled by design.
     const cursorDisabled = hasMultiPrefix;
     if (cursor && cursorDisabled) {
         throw badRequest("QUERY_INVALID");
     }
+    // Server cursor must match the active ordering mode to prevent paging drift.
     if (cursor) {
         assertCursorMatchesMode(cursor, geohashPrefixes, qName);
     }

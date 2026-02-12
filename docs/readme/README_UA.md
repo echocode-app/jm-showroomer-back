@@ -50,11 +50,12 @@ JM Showroomer Backend забезпечує:
 
 Реалізація пошуку:
 - `src/services/showrooms/listShowrooms.js` (entry)
-- `src/services/showrooms/list/` (parse/utils/ordering/dev/firestore)
+- `src/services/showrooms/list/` (parse/utils/ordering/dev/firestore + shared `devFilters.js`)
 
 ## Suggestions & Counters
 - `GET /showrooms/suggestions`: легкі підказки для пошуку.
 - `GET /showrooms/counters`: лічильник за поточними фільтрами.
+- внутрішня реалізація suggestions винесена в `src/services/showrooms/suggest/` (`dev`, `firestore`, `builders`, `constants`).
 - `suggestions`: `q` обовʼязковий; `q.length < 2` повертає `[]`.
 - `suggestions`: geo параметри не підтримуються.
 - `suggestions`: brand-підказки доступні в API, але клієнт MVP1 може їх ігнорувати.

@@ -127,7 +127,7 @@ Validation errors:
 
 Search implementation:
 - `src/services/showrooms/listShowrooms.js` (entry)
-- `src/services/showrooms/list/` (parse/utils/ordering/dev/firestore)
+- `src/services/showrooms/list/` (parse/utils/ordering/dev/firestore + shared `devFilters.js`)
 
 ## Suggestions & Counters
 
@@ -139,6 +139,7 @@ Rules:
 - `suggestions`: `q` is required; `q.length < 2` returns `[]`.
 - `suggestions`: geo params are not supported.
 - `suggestions`: brand suggestions are API-ready, but MVP1 client can ignore them.
+- `suggestions` internals are split into `src/services/showrooms/suggest/` (`dev`, `firestore`, `builders`, `constants`).
 - `counters`: `q` is optional; `cursor/fields/limit` are rejected.
 - `counters`: `geohashPrefix(es) + q` is rejected as `QUERY_INVALID`.
 - `suggestions/counters`: `categoryGroup`, `subcategories`, `categories` are mutually exclusive (2+ → `QUERY_INVALID`).

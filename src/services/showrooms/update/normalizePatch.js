@@ -14,6 +14,7 @@ import {
 import { buildGeo } from "../../../utils/geoValidation.js";
 
 export function normalizePatchData(data, user) {
+    // Step 1: keep normalized name in sync whenever name is patched.
     if (data.name !== undefined) {
         validateShowroomName(data.name);
         data.nameNormalized = normalizeShowroomName(data.name);
@@ -21,6 +22,7 @@ export function normalizePatchData(data, user) {
         delete data.nameNormalized;
     }
 
+    // Step 2: keep `address` and `addressNormalized` pair consistent for duplicate checks.
     if (data.address !== undefined) {
         if (data.address) {
             data.address = normalizeAddress(data.address);
@@ -33,6 +35,7 @@ export function normalizePatchData(data, user) {
         delete data.addressNormalized;
     }
 
+    // Step 3: rebuild brand derivatives used by filter queries.
     if (data.brands !== undefined) {
         data.brandsNormalized = normalizeBrands(data.brands);
         data.brandsMap = buildBrandsMap(data.brands);
@@ -40,6 +43,7 @@ export function normalizePatchData(data, user) {
         delete data.brandsNormalized;
     }
 
+    // Step 4: normalize mutable contact fields into persisted canonical format.
     if (data.contacts !== undefined) {
         const contacts = { ...(data.contacts ?? {}) };
         if (contacts.instagram !== undefined) {
@@ -64,6 +68,7 @@ export function normalizePatchData(data, user) {
         data.contacts = contacts;
     }
 
+    // Step 5: rebuild geo derived fields from raw map payload.
     if (data.geo !== undefined) {
         if (data.geo) {
             data.geo = buildGeo(data.geo);

@@ -14,6 +14,9 @@ import {
 import { MAX_GEO_PREFIXES } from "./constants.js";
 import { parseList, parseType } from "./lists.js";
 
+/**
+ * Parses and normalizes explicit city filter.
+ */
 function parseCityFilter(filters) {
     if (filters.city === undefined) return null;
     if (String(filters.city).trim() === "") {
@@ -22,6 +25,9 @@ function parseCityFilter(filters) {
     return normalizeCity(filters.city);
 }
 
+/**
+ * Parses brand filter into normalized key/value pair.
+ */
 function parseBrandFilter(filters) {
     if (filters.brand === undefined) return { brandKey: null, brandNormalized: null };
     const key = normalizeKey(filters.brand);
@@ -29,6 +35,9 @@ function parseBrandFilter(filters) {
     return { brandKey: key, brandNormalized: normalizeBrand(filters.brand) };
 }
 
+/**
+ * Parses geo prefix filter with hard limits.
+ */
 function parseGeohashPrefixes(filters) {
     const hasPrefix = filters.geohashPrefix !== undefined;
     const hasPrefixes = filters.geohashPrefixes !== undefined;
@@ -47,6 +56,9 @@ function parseGeohashPrefixes(filters) {
     return geohashPrefixes;
 }
 
+/**
+ * Prevents invalid multi-prefix sets where one prefix already covers another.
+ */
 function hasOverlappingPrefixes(prefixes) {
     if (prefixes.length < 2) return false;
     const sorted = [...prefixes].sort((a, b) => a.length - b.length);
@@ -59,6 +71,9 @@ function hasOverlappingPrefixes(prefixes) {
     return false;
 }
 
+/**
+ * Parses and validates full query for counters endpoint.
+ */
 export function parseCountersFilters(filters = {}) {
     if (filters.cursor !== undefined || filters.fields !== undefined || filters.limit !== undefined) {
         throw badRequest("QUERY_INVALID");

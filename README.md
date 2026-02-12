@@ -48,11 +48,12 @@ Validation errors:
 
 Search implementation:
 - `src/services/showrooms/listShowrooms.js` (entry)
-- `src/services/showrooms/list/` (parse/utils/ordering/dev/firestore)
+- `src/services/showrooms/list/` (parse/utils/ordering/dev/firestore + shared `devFilters.js`)
 
 ## Suggestions & Counters
 - `GET /showrooms/suggestions`: lightweight search hints.
 - `GET /showrooms/counters`: total count by current filters.
+- suggestions internals are split into `src/services/showrooms/suggest/` (`dev`, `firestore`, `builders`, `constants`).
 - `suggestions`: `q` is required; `q.length < 2` returns `[]`.
 - `suggestions`: geo params are not supported.
 - `counters`: `q` is optional; `cursor/fields/limit` are rejected.
