@@ -168,6 +168,14 @@ http_request "POST /collections/favorites/lookbooks/sync idempotent #2" 200 "" \
 SECOND_APPLIED=$(echo "$LAST_BODY" | jq -c '.data.applied')
 assert_eq "$SECOND_APPLIED" "$FIRST_APPLIED" "idempotent applied payload"
 
+print_section "6.1) Guest sync limit > 100 is rejected"
+TOO_MANY_IDS=$(jq -nc '[range(0;101) | "bulk_\(.)"]')
+PAYLOAD_TOO_MANY=$(jq -nc --argjson ids "$TOO_MANY_IDS" '{favoriteIds: $ids}')
+http_request "POST /collections/favorites/lookbooks/sync (>100)" 400 "LOOKBOOK_SYNC_LIMIT_EXCEEDED" \
+  -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+  -d "$PAYLOAD_TOO_MANY" \
+  "${BASE_URL}/collections/favorites/lookbooks/sync"
+
 print_section "7) Favorites list revalidates published"
 http_request "GET /users/me" 200 "" "${AUTH_HEADER[@]}" "${BASE_URL}/users/me"
 USER_UID=$(echo "$LAST_BODY" | jq -r '.data.uid // empty')

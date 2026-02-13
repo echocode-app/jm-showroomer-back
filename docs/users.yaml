@@ -540,7 +540,7 @@ paths:
                       data:
                         $ref: '#/components/schemas/SyncGuestLookbookFavoritesResult'
         "400":
-          description: Invalid payload (`QUERY_INVALID`) or size limit exceeded (`EVENT_SYNC_LIMIT_EXCEEDED`)
+          description: Invalid payload (`QUERY_INVALID`) or size limit exceeded (`LOOKBOOK_SYNC_LIMIT_EXCEEDED`)
           content:
             application/json:
               schema:

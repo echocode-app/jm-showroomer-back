@@ -465,6 +465,62 @@
       ]
     },
     {
+      "collectionGroup": "lookbooks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "published",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "countryNormalized",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "seasonKey",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "sortRank",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "lookbooks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "published",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "countryNormalized",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "seasonKey",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "sortRank",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "publishedAt",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "events",
       "queryScope": "COLLECTION",
       "fields": [

@@ -29,6 +29,7 @@ scripts/seed_owner_showrooms_prod.js
 DEV.md
 README_BACKEND_MAP_UA.md
 DEV_POSTMAN_TESTS.md
+docs/readme/PRIVATE_TASK_CHECKLIST.md
 
 # Test archive (legacy)
 src/test/archive/

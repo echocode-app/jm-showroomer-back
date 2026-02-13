@@ -75,7 +75,7 @@ function parseIdsList(value) {
         throw badRequest("QUERY_INVALID");
     }
     if (value.length > SYNC_MAX_IDS) {
-        throw badRequest("EVENT_SYNC_LIMIT_EXCEEDED");
+        throw badRequest("LOOKBOOK_SYNC_LIMIT_EXCEEDED");
     }
 
     const normalized = [];

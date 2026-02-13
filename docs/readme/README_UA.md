@@ -200,6 +200,10 @@ JM Showroomer Backend забезпечує:
   - підписуються `coverUrl` і `images[].url`
 - `POST /lookbooks/{id}/favorite`, `DELETE /lookbooks/{id}/favorite`:
   - тільки auth, idempotent
+- `POST /collections/favorites/lookbooks/sync`:
+  - payload: `{ favoriteIds: string[] }`
+  - максимум 100 id (`LOOKBOOK_SYNC_LIMIT_EXCEEDED` при перевищенні)
+  - invalid/unpublished ids повертаються у `skipped`
 
 ## Events (MVP1) — Flutter contract
 - List cursor: base64 JSON `{ v: 1, startsAt: string, id: string }`.
@@ -238,6 +242,17 @@ JM Showroomer Backend забезпечує:
   - `published + startsAt + __name__`
   - `published + country + startsAt + __name__`
   - `published + cityNormalized + startsAt + __name__`
+
+## Міграція Firebase-проєкту (стандартизовано)
+При переході з корпоративного Firebase на проєкт власниці використовуйте helper-скрипт:
+
+- dry-run перевірка:
+  - `npm run firebase:migration -- --project <new-project-id> --env-file .env.prod`
+- застосування:
+  - `npm run firebase:migration -- --project <new-project-id> --write-firebaserc --deploy-indexes`
+
+Скрипт: `scripts/firebase_project_migration.sh`  
+Він перевіряє критичні env-ключі Firebase, звіряє project id, опційно оновлює `.firebaserc`, деплоїть індекси і друкує pre-prod checklist.
   - `published + country + cityNormalized + startsAt + __name__`
 
 ## Dev‑ендпоінти (лише для dev/test)

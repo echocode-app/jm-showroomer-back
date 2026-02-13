@@ -207,7 +207,7 @@ Server merges the payload idempotently into user collections and returns:
   - returns only existing published lookbooks; stale/unpublished ids are filtered out at read time
   - `POST /collections/favorites/lookbooks/sync` (auth required)
     - payload: `{ favoriteIds: [] }`
-    - max `100` ids (`EVENT_SYNC_LIMIT_EXCEEDED` on overflow)
+    - max `100` ids (`LOOKBOOK_SYNC_LIMIT_EXCEEDED` on overflow)
     - unknown/unpublished ids returned in `skipped`
     - idempotent
 
@@ -221,6 +221,17 @@ firebase deploy --only firestore:indexes --project "$FIREBASE_PROJECT_ID"
 ```
 
 Important: brand filtering uses `brandsMap.<brandKey>`. For **new brand keys**, Firestore may require a **new composite index** that includes that specific `brandsMap.<brandKey>` field. Until it exists, queries can return `INDEX_NOT_READY`.
+
+### Firebase Project Migration (Standardized)
+When switching from corporate Firebase to owner Firebase, use the migration helper to avoid missing steps:
+
+```bash
+npm run firebase:migration -- --project <new-project-id> --env-file .env.prod
+npm run firebase:migration -- --project <new-project-id> --write-firebaserc --deploy-indexes
+```
+
+Script path: `scripts/firebase_project_migration.sh`  
+It validates required Firebase env keys, aligns project id, optionally updates `.firebaserc`, deploys indexes, and prints pre-prod checklist commands.
 
 Events list index-required query shapes:
 - `published + startsAt + __name__`

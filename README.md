@@ -69,6 +69,8 @@ Deploy note: run `firebase deploy --only firestore:indexes` for test/stage/prod 
 - `USER_COUNTRY_CHANGE_BLOCKED` (409)
 - `SHOWROOM_LOCKED_PENDING` (409)
 - `USER_DELETE_BLOCKED` (409)
+- `EVENT_SYNC_LIMIT_EXCEEDED` (400)
+- `LOOKBOOK_SYNC_LIMIT_EXCEEDED` (400)
 
 ## Tech Stack
 - Node.js (ESM), Express
@@ -115,3 +117,22 @@ ALLOW_PROD_WRITE=1
 - Required secrets: `FIREBASE_SERVICE_ACCOUNT_JSON`, `FIREBASE_PROJECT_ID`.
 - Command: `firebase deploy --only firestore:indexes --project "$FIREBASE_PROJECT_ID"`.
 - Current Firebase is corporate; later will be switched to client project.
+
+## Firebase Project Switch (Corporate -> Owner)
+To avoid missing steps during project migration, use the standardized helper:
+
+```bash
+npm run firebase:migration -- --project <new-project-id> --env-file .env.prod
+# or explicitly
+bash scripts/firebase_project_migration.sh --project <new-project-id> --env-file .env.prod
+```
+
+Apply mode (updates `.firebaserc` and deploys Firestore indexes):
+
+```bash
+npm run firebase:migration -- --project <new-project-id> --write-firebaserc --deploy-indexes
+# or explicitly
+bash scripts/firebase_project_migration.sh --project <new-project-id> --write-firebaserc --deploy-indexes
+```
+
+The script validates required Firebase env keys and prints a deterministic pre-prod checklist (OpenAPI + regressions + cleanup).
