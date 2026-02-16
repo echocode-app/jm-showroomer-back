@@ -19,6 +19,9 @@ export async function createLookbookService(payload, actor) {
         imageUrl: payload.imageUrl,
         showroomId: payload.showroomId,
         description: payload.description ?? null,
+        // Optional UI card metadata (MVP1-compatible): author block + tagged items.
+        author: normalizeAuthor(payload.author),
+        items: normalizeItems(payload.items),
         authorId: actor.isAnonymous ? null : actor.userId,
         anonymousId: actor.isAnonymous ? actor.anonymousId : null,
         likesCount: 0,
@@ -39,6 +42,7 @@ export async function listLookbooksCrudService(filters = {}, actor = null) {
     const db = getFirestoreInstance();
     let query = getLookbooksCollection()
         .where("published", "==", true)
+        // Stable ordering for cursor pagination in default mode.
         .orderBy("createdAt", "desc")
         .orderBy("__name__", "desc")
         .limit(limit + 1);
@@ -122,6 +126,8 @@ export async function updateLookbookService(id, payload, actor) {
         if (payload.imageUrl !== undefined) patch.imageUrl = payload.imageUrl;
         if (payload.showroomId !== undefined) patch.showroomId = payload.showroomId;
         if (payload.description !== undefined) patch.description = payload.description;
+        if (payload.author !== undefined) patch.author = normalizeAuthor(payload.author);
+        if (payload.items !== undefined) patch.items = normalizeItems(payload.items);
 
         tx.set(ref, patch, { merge: true });
     });
@@ -344,4 +350,39 @@ function userFavoritesCollection(uid) {
         .collection("users")
         .doc(uid)
         .collection("lookbooks_favorites");
+}
+
+function normalizeAuthor(value) {
+    if (!value || typeof value !== "object") {
+        return null;
+    }
+
+    const name = parseOptionalString(value.name);
+    if (!name) {
+        return null;
+    }
+
+    return {
+        name,
+        position: parseOptionalString(value.position),
+        instagram: parseOptionalString(value.instagram),
+    };
+}
+
+function normalizeItems(value) {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+
+    return value
+        .map(item => {
+            if (!item || typeof item !== "object") return null;
+
+            const name = parseOptionalString(item.name);
+            const link = parseOptionalString(item.link);
+            if (!name || !link) return null;
+
+            return { name, link };
+        })
+        .filter(Boolean);
 }

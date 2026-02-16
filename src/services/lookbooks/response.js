@@ -13,6 +13,8 @@ export function normalizeLookbook(doc = {}) {
 
     const coverPath = firstNonEmpty(doc.coverPath, findLegacyCoverPath(doc));
     const images = normalizeImages(doc);
+    const author = normalizeAuthor(doc);
+    const items = normalizeItems(doc);
 
     return {
         ...doc,
@@ -26,6 +28,8 @@ export function normalizeLookbook(doc = {}) {
         cityNormalized: firstNonEmpty(doc.cityNormalized),
         seasonLabel: firstNonEmpty(doc.seasonLabel),
         seasonKey,
+        author,
+        items,
         coverPath,
         images,
         sortRank: Number.isFinite(doc.sortRank) ? Number(doc.sortRank) : null,
@@ -133,4 +137,40 @@ function firstNonEmpty(...values) {
         if (str) return value;
     }
     return null;
+}
+
+function normalizeAuthor(doc) {
+    const fromObject = doc?.author && typeof doc.author === "object"
+        ? {
+            name: firstNonEmpty(doc.author.name),
+            position: firstNonEmpty(doc.author.position),
+            instagram: firstNonEmpty(doc.author.instagram),
+        }
+        : null;
+
+    const fallback = {
+        name: firstNonEmpty(doc.authorName, doc.creatorName),
+        position: firstNonEmpty(doc.authorPosition, doc.creatorPosition),
+        instagram: firstNonEmpty(doc.authorInstagram, doc.creatorInstagram),
+    };
+
+    const candidate = fromObject?.name ? fromObject : fallback;
+    if (!candidate.name) return null;
+
+    return {
+        name: candidate.name,
+        position: candidate.position ?? null,
+        instagram: candidate.instagram ?? null,
+    };
+}
+
+function normalizeItems(doc) {
+    if (!Array.isArray(doc?.items)) return [];
+
+    return doc.items
+        .map(item => ({
+            name: firstNonEmpty(item?.name),
+            link: firstNonEmpty(item?.link, item?.url),
+        }))
+        .filter(item => Boolean(item.name && item.link));
 }

@@ -36,6 +36,19 @@ NODE_ENV=test ./src/test/test_events_guest_sync.sh
 NODE_ENV=test ./src/test/test_lookbooks.sh
 # npm run test:lookbooks
 ```
+
+Повний:
+```bash
+npm run test:all
+# npm run test:all:extended
+# npm run test:all:full
+```
+
+Після прогону (очищення тестових даних):
+```bash
+npm run test:cleanup
+```
+
 ---
 
 За потреби медіа-тесту:
@@ -58,6 +71,7 @@ NODE_ENV=test ./src/test/test_media.sh
 ## 2) Production read-only check
 ```bash
 NODE_ENV=prod ./src/test/test_prod_readonly.sh
+# npm run test:prod-smoke
 ```
 
 ---

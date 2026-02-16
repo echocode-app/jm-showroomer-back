@@ -189,9 +189,12 @@ Server merges the payload idempotently into user collections and returns:
 
 ## Lookbooks (MVP1)
 
-- Lookbooks support production CRUD and likes.
+- Lookbooks expose full API surface, but MVP1 mobile flow is read-focused (seed/admin content + favorites/sync).
 - Actor can be authenticated (`uid`) or guest (`x-anonymous-id`).
 - Ownership for update/delete: `authorId === uid` OR `anonymousId === x-anonymous-id`.
+- Card metadata fields (optional):
+  - `author`: `{ name, position?, instagram? }`
+  - `items[]`: `{ name, link }` (what is on the photo)
 - Public list: `GET /lookbooks`
   - default mode: `published=true`, ordered by `createdAt desc`, optional `showroomId`
   - legacy mode still supported with `country + seasonKey`

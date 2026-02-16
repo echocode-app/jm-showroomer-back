@@ -26,6 +26,9 @@ ensure_owner_role() {
   me_response=$(curl -s "${AUTH_HEADER[@]}" "${BASE_URL}/users/me")
   local user_role
   user_role=$(json_get "$me_response" '.data.role // empty')
+  if [[ "$user_role" == "admin" ]]; then
+    fail "TEST_USER_TOKEN must be user/owner for this suite (admin token detected)"
+  fi
   if [[ "$user_role" == "owner" ]]; then
     return
   fi

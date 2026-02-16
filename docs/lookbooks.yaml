@@ -13,6 +13,28 @@ components:
           nullable: true
           description: Signed read URL (detail endpoint only).
 
+    LookbookAuthor:
+      type: object
+      properties:
+        name:
+          type: string
+        position:
+          type: string
+          nullable: true
+        instagram:
+          type: string
+          nullable: true
+          format: uri
+
+    LookbookItem:
+      type: object
+      properties:
+        name:
+          type: string
+        link:
+          type: string
+          format: uri
+
     Lookbook:
       type: object
       properties:
@@ -43,6 +65,15 @@ components:
         description:
           type: string
           nullable: true
+        author:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/LookbookAuthor'
+          nullable: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LookbookItem'
         country:
           type: string
           nullable: true
@@ -208,6 +239,13 @@ paths:
                 description:
                   type: string
                   maxLength: 1000
+                author:
+                  $ref: '#/components/schemas/LookbookAuthor'
+                items:
+                  type: array
+                  maxItems: 30
+                  items:
+                    $ref: '#/components/schemas/LookbookItem'
       responses:
         "201":
           description: Lookbook created
@@ -292,6 +330,17 @@ paths:
                   type: string
                   nullable: true
                   maxLength: 1000
+                author:
+                  type: object
+                  allOf:
+                    - $ref: '#/components/schemas/LookbookAuthor'
+                  nullable: true
+                items:
+                  type: array
+                  nullable: true
+                  maxItems: 30
+                  items:
+                    $ref: '#/components/schemas/LookbookItem'
       responses:
         "200":
           description: Updated
@@ -469,6 +518,14 @@ paths:
                   type: string
                 description:
                   type: string
+                  maxLength: 1000
+                author:
+                  $ref: '#/components/schemas/LookbookAuthor'
+                items:
+                  type: array
+                  maxItems: 30
+                  items:
+                    $ref: '#/components/schemas/LookbookItem'
       responses:
         "201":
           description: Lookbook created

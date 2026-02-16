@@ -31,6 +31,10 @@ if [[ -z "$USER_COUNTRY" || "$USER_COUNTRY" == "null" ]]; then
   USER_COUNTRY="Ukraine"
 fi
 
+if [[ "$USER_ROLE" == "admin" ]]; then
+  fail "TEST_USER_TOKEN must be user/owner for this suite (admin token detected)"
+fi
+
 if [[ "$USER_ROLE" != "owner" ]]; then
   http_request "POST /users/complete-owner-profile (upgrade)" 200 "" \
     -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
