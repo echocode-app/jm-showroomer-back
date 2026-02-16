@@ -6,6 +6,7 @@ const CONTROL_CHARS = /[\x00-\x1F\x7F]/;
 
 export function isSafeStoragePath(storagePath) {
     if (!storagePath || typeof storagePath !== "string") return false;
+    // Storage path must be internal-only, never a URL.
     if (storagePath.includes("://")) return false;
     if (storagePath.includes("\\")) return false;
     if (storagePath.includes("..")) return false;
@@ -23,6 +24,7 @@ export function assertAllowedPathForResource(resourceType, resourceId, storagePa
     if (!isSafeStoragePath(storagePath)) return false;
     if (!hasAllowedExtension(storagePath)) return false;
 
+    // Enforce strict tenancy boundary for signed URL generation.
     const prefix = `${resourceType}/${resourceId}/`;
     if (!storagePath.startsWith(prefix)) return false;
 

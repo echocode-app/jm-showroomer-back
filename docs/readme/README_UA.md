@@ -183,7 +183,9 @@ JM Showroomer Backend забезпечує:
 - `DELETE /admin/showrooms/{id}` — soft delete any
 
 ## Колекції
-- `GET /collections/favorites/showrooms` — публічно (guest/user/owner/admin), порожній список (stub)
+- `GET /collections/favorites/showrooms` — публічно (guest/user/owner/admin):
+  - guest: повертає порожній список
+  - auth: повертає favorites showrooms поточного юзера (лише `approved`, revalidation на read)
 - `GET /collections/favorites/lookbooks` — тільки auth, повертає обрані lookbooks (лише published; stale ids відфільтровуються)
 - `POST /collections/favorites/lookbooks/sync` — тільки auth, sync guest-local favoriteIds після логіну
 - `GET /collections/want-to-visit/events` — тільки auth, повертає upcoming events із want-to-visit.
@@ -200,6 +202,10 @@ JM Showroomer Backend забезпечує:
   - підписуються `coverUrl` і `images[].url`
 - `POST /lookbooks/{id}/favorite`, `DELETE /lookbooks/{id}/favorite`:
   - тільки auth, idempotent
+- `POST /showrooms/{id}/favorite`, `DELETE /showrooms/{id}/favorite`:
+  - тільки auth, idempotent
+  - favorite дозволений лише для `approved` showroom
+  - для `draft/pending/rejected/deleted/missing` -> `404 SHOWROOM_NOT_FOUND` (anti-leak)
 - `POST /collections/favorites/lookbooks/sync`:
   - payload: `{ favoriteIds: string[] }`
   - максимум 100 id (`LOOKBOOK_SYNC_LIMIT_EXCEEDED` при перевищенні)

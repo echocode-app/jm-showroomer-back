@@ -42,6 +42,7 @@ async function getLookbooksByIds(ids) {
     const refs = ids.map(id => getLookbooksCollection().doc(id));
     const result = new Map();
 
+    // Fetch in chunks to stay within Firestore getAll limits.
     for (let i = 0; i < refs.length; i += IDS_CHUNK) {
         const chunk = refs.slice(i, i + IDS_CHUNK);
         const snaps = await db.getAll(...chunk);
@@ -63,6 +64,7 @@ async function applyFavoritesBatch(uid, favoriteIds) {
     const batch = db.batch();
     const createdAt = Timestamp.fromDate(new Date());
 
+    // Upsert keeps sync idempotent across repeated client retries.
     for (const lookbookId of favoriteIds) {
         const ref = userFavoritesCollection(uid).doc(lookbookId);
         batch.set(ref, { createdAt }, { merge: true });

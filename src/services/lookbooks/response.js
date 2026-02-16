@@ -68,6 +68,7 @@ export async function attachSignedImages(lookbook) {
 }
 
 function normalizeImages(doc) {
+    // Priority: modern images[] schema, then legacy assets/pages fallback.
     const primary = Array.isArray(doc.images)
         ? doc.images
             .map((image, index) => ({
@@ -103,6 +104,7 @@ function normalizeImages(doc) {
         return a.order - b.order;
     });
 
+    // Keep a single image per order slot for deterministic UI rendering.
     const seenOrders = new Set();
     return merged.filter(image => {
         if (seenOrders.has(image.order)) return false;

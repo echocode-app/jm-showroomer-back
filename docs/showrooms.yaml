@@ -1145,7 +1145,8 @@ paths:
         description: Showroom ID
     post:
       tags: [Showrooms]
-      summary: Add showroom to favorites (stub)
+      summary: Add showroom to favorites
+      description: Auth-only, idempotent. Only approved showrooms can be favorited.
       operationId: favoriteShowroom
       security:
         - bearerAuth: []
@@ -1161,8 +1162,47 @@ paths:
                       data:
                         type: object
                         properties:
-                          message:
+                          showroomId:
                             type: string
+                          status:
+                            type: string
+                            example: favorited
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "404":
+          description: Showroom not found or not approved
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+    delete:
+      tags: [Showrooms]
+      summary: Remove showroom from favorites
+      description: Auth-only, idempotent.
+      operationId: unfavoriteShowroom
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Removed from favorites
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          showroomId:
+                            type: string
+                          status:
+                            type: string
+                            example: removed
         "401":
           description: Unauthorized
           content:

@@ -8,9 +8,28 @@ import {
     syncGuestLookbookFavoritesService,
 } from "../services/lookbooksService.js";
 import { attachCoverUrl } from "../services/lookbooks/response.js";
+import { listFavoriteShowroomsService } from "../services/showroomService.js";
 
-export async function listFavoriteShowrooms(req, res) {
-    return ok(res, { items: [] });
+export async function listFavoriteShowrooms(req, res, next) {
+    try {
+        // Backward-compatible public contract: guest access stays available and returns empty list.
+        if (!req.auth?.uid) {
+            return ok(
+                res,
+                { items: [] },
+                { hasMore: false, nextCursor: null }
+            );
+        }
+
+        const { items, meta } = await listFavoriteShowroomsService(
+            req.auth.uid,
+            req.query ?? {}
+        );
+
+        return ok(res, { items }, meta);
+    } catch (err) {
+        next(err);
+    }
 }
 
 export async function listFavoriteLookbooks(req, res, next) {

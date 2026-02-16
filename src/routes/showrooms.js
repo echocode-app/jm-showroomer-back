@@ -17,6 +17,7 @@ import {
     createDraftShowroomController,
     getShowroomById,
     favoriteShowroom,
+    unfavoriteShowroom,
     updateShowroom,
     deleteShowroom,
     submitShowroomForReviewController,
@@ -92,12 +93,19 @@ router.post(
     submitShowroomForReviewController
 );
 
-// FAVORITE (stub)
+// FAVORITE
 router.post(
     "/:id/favorite",
     authMiddleware,
     loadUser,
     favoriteShowroom
+);
+
+router.delete(
+    "/:id/favorite",
+    authMiddleware,
+    loadUser,
+    unfavoriteShowroom
 );
 
 export default router;

@@ -1,4 +1,5 @@
 import { getFirestoreInstance } from "../../config/firebase.js";
+import { badRequest } from "../../core/error.js";
 import { createDraftShowroom } from "./createDraftShowroom.js";
 import { normalizeCreatePayload } from "./create/normalizePayload.js";
 import { assertCreateAccess, assertCreatePayload } from "./create/validateAccess.js";
@@ -43,6 +44,7 @@ export async function createShowroom(data, ownerUid, options = {}) {
         .where("name", "==", data.name)
         .get();
 
+    // Keep owner-level uniqueness among non-deleted showrooms.
     const existing = existingSnapshot.docs.filter(
         d => d.data().status !== "deleted"
     );

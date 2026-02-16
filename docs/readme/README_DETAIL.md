@@ -301,7 +301,8 @@ API Table (actual)
 | Showrooms   | PATCH  | /showrooms/{id}               | OWNER only (own). Draft/rejected/approved; blocked while pending.                       |
 | Showrooms   | DELETE | /showrooms/{id}               | OWNER only (own). Soft delete; blocked while pending.                                   |
 | Showrooms   | POST   | /showrooms/{id}/submit        | OWNER only (own). Draft/rejected/approved → pending.                                    |
-| Showrooms   | POST   | /showrooms/{id}/favorite      | Authenticated users. Stub.                                                              |
+| Showrooms   | POST   | /showrooms/{id}/favorite      | Authenticated users. Idempotent favorite add; only approved showrooms.                 |
+| Showrooms   | DELETE | /showrooms/{id}/favorite      | Authenticated users. Idempotent favorite remove.                                        |
 | Admin       | GET    | /admin/showrooms              | ADMIN only. List all (incl pending/deleted).                                            |
 | Admin       | GET    | /admin/showrooms/{id}         | ADMIN only. Get any showroom (incl deleted).                                            |
 | Admin       | POST   | /admin/showrooms/{id}/approve | ADMIN only. Pending → approved.                                                         |
@@ -320,7 +321,7 @@ API Table (actual)
 | Events      | POST   | /events/{id}/dismiss          | Authenticated users. Idempotent; hides event from authed list.                          |
 | Events      | DELETE | /events/{id}/dismiss          | Authenticated users. Idempotent.                                                        |
 | Events      | POST   | /events/{id}/rsvp             | Authenticated users. MVP2-only (`501 EVENTS_WRITE_MVP2_ONLY`).                          |
-| Collections | GET    | /collections/favorites/showrooms | Public/any role. Stub (empty list).                                                 |
+| Collections | GET    | /collections/favorites/showrooms | Public/any role. Guest gets empty; auth gets own favorite approved showrooms.      |
 | Collections | GET    | /collections/favorites/lookbooks | Authenticated users. Favorite lookbooks list (published-only revalidation).         |
 | Collections | POST   | /collections/favorites/lookbooks/sync | Authenticated users. Sync guest-local lookbook favorites.                        |
 | Collections | GET    | /collections/want-to-visit/events | Authenticated users. Upcoming want-to-visit events.                                |

@@ -6,6 +6,8 @@ import {
     suggestShowroomsService,
     countShowroomsService,
     getShowroomByIdService,
+    favoriteShowroomService,
+    unfavoriteShowroomService,
     updateShowroomService,
     deleteShowroomService,
 } from "../services/showroomService.js";
@@ -88,10 +90,20 @@ export async function getShowroomById(req, res, next) {
     }
 }
 
-// FAVORITE (stub)
+// FAVORITE
 export async function favoriteShowroom(req, res, next) {
     try {
-        return ok(res, { message: "Added to favorites (stub)" });
+        const result = await favoriteShowroomService(req.auth.uid, req.params.id);
+        return ok(res, { showroomId: req.params.id, ...result });
+    } catch (err) {
+        next(err);
+    }
+}
+
+export async function unfavoriteShowroom(req, res, next) {
+    try {
+        const result = await unfavoriteShowroomService(req.auth.uid, req.params.id);
+        return ok(res, { showroomId: req.params.id, ...result });
     } catch (err) {
         next(err);
     }

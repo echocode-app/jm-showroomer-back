@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 usage() {
-  echo "Usage: $0 smoke|showrooms|admin|events|events-guest-sync|lookbooks|geo|suggestions|media|user-delete|prod-smoke|all|all-with-user-delete|all-full"
+  echo "Usage: $0 smoke|showrooms|showrooms-favorites|admin|events|events-guest-sync|lookbooks|geo|suggestions|media|user-delete|prod-smoke|all|all-with-user-delete|all-full"
 }
 
 TARGET=${1:-}
@@ -19,6 +19,9 @@ case "$TARGET" in
     ;;
   showrooms)
     "$SCRIPT_DIR/test_showrooms.sh"
+    ;;
+  showrooms-favorites)
+    "$SCRIPT_DIR/test_showrooms_favorites.sh"
     ;;
   admin)
     "$SCRIPT_DIR/test_admin_and_collections.sh"
@@ -50,6 +53,7 @@ case "$TARGET" in
   all)
     "$SCRIPT_DIR/test_smoke.sh"
     "$SCRIPT_DIR/test_showrooms.sh"
+    "$SCRIPT_DIR/test_showrooms_favorites.sh"
     "$SCRIPT_DIR/test_admin_and_collections.sh"
     "$SCRIPT_DIR/test_geo_paging_checks.sh"
     "$SCRIPT_DIR/test_suggestions_and_counters.sh"
@@ -60,6 +64,7 @@ case "$TARGET" in
   all-with-user-delete)
     "$SCRIPT_DIR/test_smoke.sh"
     "$SCRIPT_DIR/test_showrooms.sh"
+    "$SCRIPT_DIR/test_showrooms_favorites.sh"
     "$SCRIPT_DIR/test_admin_and_collections.sh"
     "$SCRIPT_DIR/test_geo_paging_checks.sh"
     "$SCRIPT_DIR/test_suggestions_and_counters.sh"
@@ -71,6 +76,7 @@ case "$TARGET" in
   all-full)
     "$SCRIPT_DIR/test_smoke.sh"
     "$SCRIPT_DIR/test_showrooms.sh"
+    "$SCRIPT_DIR/test_showrooms_favorites.sh"
     "$SCRIPT_DIR/test_admin_and_collections.sh"
     "$SCRIPT_DIR/test_geo_paging_checks.sh"
     "$SCRIPT_DIR/test_suggestions_and_counters.sh"

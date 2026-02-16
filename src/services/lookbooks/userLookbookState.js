@@ -22,6 +22,7 @@ export async function unfavoriteLookbook(lookbookId, uid) {
 export async function listFavoriteLookbooks(uid, filters = {}) {
     const { limit } = parseCollectionLimit(filters);
 
+    // Read IDs first to preserve favorite ordering by createdAt.
     const ids = await getOrderedFavoriteIds(uid);
     if (ids.length === 0) {
         return {
@@ -73,6 +74,7 @@ async function getLookbooksByIds(ids) {
     const refs = ids.map(id => getLookbooksCollection().doc(id));
     const lookbooks = [];
 
+    // Firestore getAll supports up to 100 refs per call.
     for (let i = 0; i < refs.length; i += IDS_CHUNK) {
         const chunk = refs.slice(i, i + IDS_CHUNK);
         const snaps = await db.getAll(...chunk);

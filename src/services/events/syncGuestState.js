@@ -114,6 +114,7 @@ async function getEventsByIds(ids) {
     const refs = ids.map(id => getEventsCollection().doc(id));
     const eventsById = new Map();
 
+    // Chunked getAll prevents oversized RPC payloads for large sync lists.
     for (let i = 0; i < refs.length; i += IDS_CHUNK) {
         const chunk = refs.slice(i, i + IDS_CHUNK);
         const snaps = await db.getAll(...chunk);

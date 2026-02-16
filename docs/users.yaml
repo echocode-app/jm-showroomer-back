@@ -433,12 +433,29 @@ paths:
   /collections/favorites/showrooms:
     get:
       tags: [Collections]
-      summary: Favorite showrooms (stub)
+      summary: Favorite showrooms
+      description: |
+        Guest mode returns an empty list.
+        Auth mode returns current user favorite showrooms, revalidated as approved-only.
+        Supports cursor pagination.
       operationId: listFavoriteShowrooms
       security: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Server-issued base64 cursor
       responses:
         "200":
-          description: Empty list
+          description: Favorites list
           content:
             application/json:
               schema:
@@ -450,7 +467,22 @@ paths:
                         properties:
                           items:
                             type: array
-                            items: {}
+                            items:
+                              $ref: './showrooms.yaml#/components/schemas/Showroom'
+                      meta:
+                        type: object
+                        properties:
+                          hasMore:
+                            type: boolean
+                          nextCursor:
+                            type: string
+                            nullable: true
+        "400":
+          description: Invalid query (`QUERY_INVALID`)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
         "429":
           description: Rate limit exceeded
           content:

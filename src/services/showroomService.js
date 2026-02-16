@@ -11,3 +11,9 @@ export { approveShowroomService } from "./showrooms/approveShowroom.js";
 export { rejectShowroomService } from "./showrooms/rejectShowroom.js";
 export { suggestShowroomsService } from "./showrooms/suggestShowrooms.js";
 export { countShowroomsService } from "./showrooms/countShowrooms.js";
+export {
+    favoriteShowroom as favoriteShowroomService,
+    unfavoriteShowroom as unfavoriteShowroomService,
+    listFavoriteShowrooms as listFavoriteShowroomsService,
+    assertShowroomFavoriteable as assertShowroomFavoriteableService,
+} from "./showrooms/userShowroomState.js";

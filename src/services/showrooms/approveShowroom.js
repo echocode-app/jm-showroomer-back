@@ -20,6 +20,7 @@ export async function approveShowroomService(id, user) {
         if (!showroom.pendingSnapshot) {
             throw badRequest("SHOWROOM_PENDING_SNAPSHOT_MISSING");
         }
+        // Apply immutable pending snapshot to prevent post-submit drift.
         const snapshot = showroom.pendingSnapshot;
         const applied = { ...showroom, ...snapshot };
         const { diff, changedFields } = buildDiff(showroom, applied, EDITABLE_FIELDS);
@@ -64,6 +65,7 @@ export async function approveShowroomService(id, user) {
     if (!showroom.pendingSnapshot) {
         throw badRequest("SHOWROOM_PENDING_SNAPSHOT_MISSING");
     }
+    // Apply immutable pending snapshot to prevent post-submit drift.
     const snapshot = showroom.pendingSnapshot;
     const applied = { ...showroom, ...snapshot };
     const { diff, changedFields } = buildDiff(showroom, applied, EDITABLE_FIELDS);

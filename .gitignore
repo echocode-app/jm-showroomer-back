@@ -26,7 +26,6 @@ scripts/seed_assets/**
 scripts/seed_owner_showrooms_prod.js
 
 # Personal/local docs
-DEV.md
 README_BACKEND_MAP_UA.md
 DEV_POSTMAN_TESTS.md
 docs/readme/PRIVATE_TASK_CHECKLIST.md
