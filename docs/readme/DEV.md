@@ -5,6 +5,10 @@
 ## 1) Test environment (`NODE_ENV=test`)
 
 ```bash
+chmod +x src/test/*.sh
+```
+
+```bash
 NODE_ENV=test ./src/test/test_smoke.sh
 # npm run test:smoke
 
@@ -71,7 +75,7 @@ npx @redocly/cli lint docs/openapi.yaml
 ```bash
 npm run dev
 ```
-Відкрити:
+
 - http://localhost:3005/docs
 
 ---

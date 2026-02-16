@@ -8,12 +8,12 @@ run_admin_and_collections_suite() {
   print_section "Collections stubs (public)"
   http_request "GET /collections/favorites/showrooms" 200 "" \
     "${BASE_URL}/collections/favorites/showrooms"
-  http_request "GET /collections/favorites/lookbooks (auth required)" 401 "AUTH_MISSING" \
+  http_request "GET /collections/favorites/lookbooks (guest empty)" 200 "" \
     "${BASE_URL}/collections/favorites/lookbooks"
   http_request "GET /collections/favorites/lookbooks (auth)" 200 "" \
     "${AUTH_HEADER[@]}" \
     "${BASE_URL}/collections/favorites/lookbooks"
-  http_request "GET /collections/want-to-visit/events (auth required)" 401 "AUTH_MISSING" \
+  http_request "GET /collections/want-to-visit/events (guest empty)" 200 "" \
     "${BASE_URL}/collections/want-to-visit/events"
   http_request "GET /collections/want-to-visit/events (auth)" 200 "" \
     "${AUTH_HEADER[@]}" \

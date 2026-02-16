@@ -6,6 +6,7 @@ import { loadUserIfExists } from "../middlewares/loadUserIfExists.js";
 import {
     listFavoriteLookbooks,
     listFavoriteShowrooms,
+    syncGuestShowrooms,
     syncGuestEvents,
     listWantToVisitEvents,
     syncGuestLookbooks,
@@ -20,10 +21,17 @@ router.get(
     listFavoriteShowrooms
 );
 
-router.get(
-    "/favorites/lookbooks",
+router.post(
+    "/favorites/showrooms/sync",
     authMiddleware,
     loadUser,
+    syncGuestShowrooms
+);
+
+router.get(
+    "/favorites/lookbooks",
+    optionalAuth,
+    loadUserIfExists,
     listFavoriteLookbooks
 );
 
@@ -36,8 +44,8 @@ router.post(
 
 router.get(
     "/want-to-visit/events",
-    authMiddleware,
-    loadUser,
+    optionalAuth,
+    loadUserIfExists,
     listWantToVisitEvents
 );
 

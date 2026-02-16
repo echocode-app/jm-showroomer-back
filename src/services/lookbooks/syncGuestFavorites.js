@@ -1,4 +1,4 @@
-import { Timestamp } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getFirestoreInstance } from "../../config/firebase.js";
 import { getLookbooksCollection } from "./firestoreQuery.js";
 import { parseSyncPayload } from "./parse.js";
@@ -63,6 +63,42 @@ async function applyFavoritesBatch(uid, favoriteIds) {
     const db = getFirestoreInstance();
     const batch = db.batch();
     const createdAt = Timestamp.fromDate(new Date());
+    const actorKeys = [`u:${uid}`, uid];
+
+    // Keep canonical likes and mirror favorites consistent.
+    for (const lookbookId of favoriteIds) {
+        const lookbookRef = getLookbooksCollection().doc(lookbookId);
+        const canonicalLikeRef = lookbookRef.collection("likes").doc(actorKeys[0]);
+        const legacyLikeRef = lookbookRef.collection("likes").doc(actorKeys[1]);
+
+        await db.runTransaction(async tx => {
+            const lookbookSnap = await tx.get(lookbookRef);
+            if (!lookbookSnap.exists) return;
+
+            const canonicalSnap = await tx.get(canonicalLikeRef);
+            const legacySnap = await tx.get(legacyLikeRef);
+            const hasLike = canonicalSnap.exists || legacySnap.exists;
+
+            if (!hasLike) {
+                tx.set(canonicalLikeRef, {
+                    createdAt,
+                    actorType: "user",
+                    actorId: uid,
+                });
+                tx.set(lookbookRef, {
+                    likesCount: FieldValue.increment(1),
+                    updatedAt: createdAt,
+                }, { merge: true });
+            } else if (!canonicalSnap.exists && legacySnap.exists) {
+                // Migrate legacy auth like key shape without touching counters.
+                tx.set(canonicalLikeRef, {
+                    createdAt,
+                    actorType: "user",
+                    actorId: uid,
+                }, { merge: true });
+            }
+        });
+    }
 
     // Upsert keeps sync idempotent across repeated client retries.
     for (const lookbookId of favoriteIds) {

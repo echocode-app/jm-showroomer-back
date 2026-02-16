@@ -1,9 +1,10 @@
-// Joi schema: lookbook.update.
 import Joi from "joi";
 
-// Minimal update payload; at least one field required.
 export const lookbookUpdateSchema = Joi.object({
-    name: Joi.string().allow("", null),
-    description: Joi.string().allow("", null),
-    published: Joi.boolean().optional(),
+    imageUrl: Joi.string().trim().uri({ scheme: ["http", "https"] }),
+    showroomId: Joi.string().trim(),
+    description: Joi.alternatives().try(
+        Joi.string().trim().max(1000),
+        Joi.valid(null)
+    ),
 }).min(1).unknown(false);

@@ -1,51 +1,72 @@
 import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth.js";
 import { loadUser } from "../middlewares/loadUser.js";
-import { requireRole } from "../middlewares/role.js";
-import { ROLES } from "../constants/roles.js";
+import { optionalAuth } from "../middlewares/optionalAuth.js";
 import { schemaValidate } from "../middlewares/schemaValidate.js";
 import { lookbookCreateSchema } from "../schemas/lookbook.create.schema.js";
+import { lookbookUpdateSchema } from "../schemas/lookbook.update.schema.js";
 import { eventRsvpSchema } from "../schemas/event.rsvp.schema.js";
 import {
     createLookbook,
+    deleteLookbook,
     favoriteLookbook,
     getLookbookById,
     listLookbooks,
     rsvpLookbook,
     unfavoriteLookbook,
+    updateLookbook,
 } from "../controllers/lookbookController.js";
 
 const router = Router();
 
 router.post(
-    "/create",
-    authMiddleware,
-    loadUser,
-    requireRole([ROLES.OWNER, ROLES.MANAGER]),
+    "/",
+    optionalAuth,
     schemaValidate({ body: lookbookCreateSchema }),
     createLookbook
 );
 
-router.get("/", listLookbooks);
+// Backward-compatible alias for legacy clients/tests.
+router.post(
+    "/create",
+    optionalAuth,
+    schemaValidate({ body: lookbookCreateSchema }),
+    createLookbook
+);
+
+router.get("/", optionalAuth, listLookbooks);
 
 router.get(
     "/:id",
+    optionalAuth,
     schemaValidate({ params: eventRsvpSchema }),
     getLookbookById
 );
 
+router.patch(
+    "/:id",
+    optionalAuth,
+    schemaValidate({ params: eventRsvpSchema, body: lookbookUpdateSchema }),
+    updateLookbook
+);
+
+router.delete(
+    "/:id",
+    optionalAuth,
+    schemaValidate({ params: eventRsvpSchema }),
+    deleteLookbook
+);
+
 router.post(
     "/:id/favorite",
-    authMiddleware,
-    loadUser,
+    optionalAuth,
     schemaValidate({ params: eventRsvpSchema }),
     favoriteLookbook
 );
 
 router.delete(
     "/:id/favorite",
-    authMiddleware,
-    loadUser,
+    optionalAuth,
     schemaValidate({ params: eventRsvpSchema }),
     unfavoriteLookbook
 );

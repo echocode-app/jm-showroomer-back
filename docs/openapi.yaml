@@ -43,6 +43,8 @@ paths:
 
   /collections/favorites/showrooms:
     $ref: './users.yaml#/paths/~1collections~1favorites~1showrooms'
+  /collections/favorites/showrooms/sync:
+    $ref: './users.yaml#/paths/~1collections~1favorites~1showrooms~1sync'
   /collections/favorites/lookbooks:
     $ref: './users.yaml#/paths/~1collections~1favorites~1lookbooks'
   /collections/favorites/lookbooks/sync:

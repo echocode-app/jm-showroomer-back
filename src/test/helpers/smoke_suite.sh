@@ -4,6 +4,7 @@ run_public_smoke_suite() {
   print_section "Smoke (public)"
   http_request "GET /health" 200 "" "${BASE_URL}/health"
   http_request "GET /showrooms" 200 "" "${BASE_URL}/showrooms"
+  FIRST_SHOWROOM_ID=$(json_get "$LAST_BODY" '.data.showrooms[0].id // empty')
   request_allow_status_or_index_not_ready "GET /showrooms?city=Kyiv" \
     "${BASE_URL}/showrooms?city=Kyiv"
   request_allow_status_or_index_not_ready "GET /showrooms?city=Cherkasy" \
@@ -69,9 +70,9 @@ run_public_smoke_suite() {
   print_section "Collections stubs (public)"
   http_request "GET /collections/favorites/showrooms" 200 "" \
     "${BASE_URL}/collections/favorites/showrooms"
-  http_request "GET /collections/favorites/lookbooks (auth required)" 401 "AUTH_MISSING" \
+  http_request "GET /collections/favorites/lookbooks (guest empty)" 200 "" \
     "${BASE_URL}/collections/favorites/lookbooks"
-  http_request "GET /collections/want-to-visit/events (auth required)" 401 "AUTH_MISSING" \
+  http_request "GET /collections/want-to-visit/events (guest empty)" 200 "" \
     "${BASE_URL}/collections/want-to-visit/events"
 
   print_section "Auth negative"
@@ -109,16 +110,15 @@ run_authenticated_smoke_suite() {
   assert_non_empty "$ONBOARDING_STATE" "onboardingState"
   echo "✔ role=$USER_ROLE onboardingState=$ONBOARDING_STATE"
 
-  print_section "RBAC (lookbooks create)"
-  if [[ "$USER_ROLE" == "user" ]]; then
-    http_request "USER → POST /lookbooks/create" 403 "FORBIDDEN" \
-      -X POST "${auth_header[@]}" -H "$(json_header)" \
-      -d '{"name":"Test"}' \
-      "${BASE_URL}/lookbooks/create"
+  print_section "Lookbooks create (auth or anonymous-compatible)"
+  if [[ -z "${FIRST_SHOWROOM_ID:-}" ]]; then
+    echo "⚠ No showroom id available; skipping lookbook create smoke check"
   else
-    http_request "OWNER → POST /lookbooks/create" 200 "" \
+    CREATE_PAYLOAD=$(jq -nc --arg showroomId "$FIRST_SHOWROOM_ID" \
+      '{imageUrl:"https://example.com/lookbook-smoke.jpg", showroomId:$showroomId, description:"Smoke lookbook"}')
+    http_request "POST /lookbooks/create" 201 "" \
       -X POST "${auth_header[@]}" -H "$(json_header)" \
-      -d '{"name":"Test"}' \
+      -d "$CREATE_PAYLOAD" \
       "${BASE_URL}/lookbooks/create"
   fi
 

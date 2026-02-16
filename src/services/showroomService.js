@@ -15,5 +15,6 @@ export {
     favoriteShowroom as favoriteShowroomService,
     unfavoriteShowroom as unfavoriteShowroomService,
     listFavoriteShowrooms as listFavoriteShowroomsService,
+    syncGuestShowroomFavorites as syncGuestShowroomFavoritesService,
     assertShowroomFavoriteable as assertShowroomFavoriteableService,
 } from "./showrooms/userShowroomState.js";

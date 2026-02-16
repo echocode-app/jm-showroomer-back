@@ -1,4 +1,5 @@
 # JM Showroomer API v1
+> Audience: Flutter/mobile integrators. This file is integration-oriented and API-contract focused.
 
 ## Quick Start (Flutter)
 
@@ -163,7 +164,7 @@ Rules:
   - `POST /events/{id}/dismiss` (idempotent)
   - `DELETE /events/{id}/dismiss` (idempotent)
 - User collections:
-  - `GET /collections/want-to-visit/events` (auth required)
+  - `GET /collections/want-to-visit/events` (public-compatible: guest empty, auth list)
   - returns upcoming events only (`startsAt >= now`)
   - `POST /collections/want-to-visit/events/sync` (auth required)
     - accepts guest-local state payload: `{ wantToVisitIds: [], dismissedIds: [] }`
@@ -188,28 +189,36 @@ Server merges the payload idempotently into user collections and returns:
 
 ## Lookbooks (MVP1)
 
-- Lookbooks are standalone entities (no showroom linkage).
-- Content is seeded/admin-managed in MVP1 (public write CRUD is not available).
+- Lookbooks support production CRUD and likes.
+- Actor can be authenticated (`uid`) or guest (`x-anonymous-id`).
+- Ownership for update/delete: `authorId === uid` OR `anonymousId === x-anonymous-id`.
 - Public list: `GET /lookbooks`
-  - requires both query params: `country`, `seasonKey`
-  - applies filters together with `published=true`
+  - default mode: `published=true`, ordered by `createdAt desc`, optional `showroomId`
+  - legacy mode still supported with `country + seasonKey`
   - supports cursor pagination with `meta.hasMore`, `meta.nextCursor`, `meta.paging`
   - signs only `coverPath` as `coverUrl`
 - Public detail: `GET /lookbooks/{id}`
-  - returns published lookbook only
+  - returns published lookbook for public callers
+  - owner (auth/guest) can read own unpublished draft
   - signs `coverPath` and every `images[].storagePath`
 - Favorites:
-  - `POST /lookbooks/{id}/favorite` (auth, idempotent)
-  - `DELETE /lookbooks/{id}/favorite` (auth, idempotent)
-  - stored in `users/{uid}/lookbooks_favorites/{lookbookId}`
+  - `POST /lookbooks/{id}/favorite`, `DELETE /lookbooks/{id}/favorite` are public-compatible (auth + guest)
+  - guest actor key uses `x-anonymous-id` (generated/returned by backend if absent)
+  - canonical likes storage: `lookbooks/{id}/likes/{actorKey}`
+  - `likesCount` maintained atomically
+  - authenticated calls are mirrored into `users/{uid}/lookbooks_favorites/{lookbookId}` for collections/sync compatibility
 - Collections:
-  - `GET /collections/favorites/lookbooks` (auth required)
+  - `GET /collections/favorites/lookbooks` (public-compatible: guest empty, auth list)
   - returns only existing published lookbooks; stale/unpublished ids are filtered out at read time
   - `POST /collections/favorites/lookbooks/sync` (auth required)
     - payload: `{ favoriteIds: [] }`
     - max `100` ids (`LOOKBOOK_SYNC_LIMIT_EXCEEDED` on overflow)
     - unknown/unpublished ids returned in `skipped`
     - idempotent
+    - sync reconciles canonical likes (`lookbooks/{id}/likes/{u:uid}`) and updates `likesCount`
+  - `x-anonymous-id` validation:
+    - allowed pattern `[A-Za-z0-9_-]`, bounded length
+    - invalid value -> `400 ANON_ID_INVALID`
 
 ## Firestore Index Runbook
 
@@ -308,11 +317,14 @@ API Table (actual)
 | Admin       | POST   | /admin/showrooms/{id}/approve | ADMIN only. Pending → approved.                                                         |
 | Admin       | POST   | /admin/showrooms/{id}/reject  | ADMIN only. Pending → rejected (body: { reason }).                                      |
 | Admin       | DELETE | /admin/showrooms/{id}         | ADMIN only. Soft delete any status.                                                     |
-| Lookbooks   | GET    | /lookbooks                    | Public. Requires `country` + `seasonKey`; cursor pagination; seeded/admin content.      |
+| Lookbooks   | GET    | /lookbooks                    | Public. Default `createdAt desc` with `cursor` and optional `showroomId`; legacy country+season mode supported. |
 | Lookbooks   | GET    | /lookbooks/{id}               | Public. Published lookbook details with signed cover/images URLs.                       |
-| Lookbooks   | POST   | /lookbooks/{id}/favorite      | Authenticated users. Idempotent favorite add.                                           |
-| Lookbooks   | DELETE | /lookbooks/{id}/favorite      | Authenticated users. Idempotent favorite remove.                                        |
-| Lookbooks   | POST   | /lookbooks/create             | OWNER/MANAGER. Stub (MVP2).                                                             |
+| Lookbooks   | POST   | /lookbooks                    | Public-compatible create. Auth or guest (`x-anonymous-id`).                             |
+| Lookbooks   | POST   | /lookbooks/create             | Legacy alias for `POST /lookbooks`.                                                     |
+| Lookbooks   | PATCH  | /lookbooks/{id}               | Public-compatible update. Owner only (auth/guest ownership).                            |
+| Lookbooks   | DELETE | /lookbooks/{id}               | Public-compatible delete. Owner only (auth/guest ownership).                            |
+| Lookbooks   | POST   | /lookbooks/{id}/favorite      | Public-compatible, idempotent like.                                                     |
+| Lookbooks   | DELETE | /lookbooks/{id}/favorite      | Public-compatible, idempotent unlike.                                                   |
 | Lookbooks   | POST   | /lookbooks/{id}/rsvp          | Authenticated users. Stub.                                                              |
 | Events      | GET    | /events                       | Public. Upcoming published events only (past excluded).                                 |
 | Events      | GET    | /events/{id}                  | Public. Published event by id (direct link supports past events).                       |
@@ -322,9 +334,10 @@ API Table (actual)
 | Events      | DELETE | /events/{id}/dismiss          | Authenticated users. Idempotent.                                                        |
 | Events      | POST   | /events/{id}/rsvp             | Authenticated users. MVP2-only (`501 EVENTS_WRITE_MVP2_ONLY`).                          |
 | Collections | GET    | /collections/favorites/showrooms | Public/any role. Guest gets empty; auth gets own favorite approved showrooms.      |
-| Collections | GET    | /collections/favorites/lookbooks | Authenticated users. Favorite lookbooks list (published-only revalidation).         |
+| Collections | POST   | /collections/favorites/showrooms/sync | Authenticated users. Sync guest-local showroom favorites.                        |
+| Collections | GET    | /collections/favorites/lookbooks | Public route: guest gets empty, auth gets favorite lookbooks (published-only revalidation). |
 | Collections | POST   | /collections/favorites/lookbooks/sync | Authenticated users. Sync guest-local lookbook favorites.                        |
-| Collections | GET    | /collections/want-to-visit/events | Authenticated users. Upcoming want-to-visit events.                                |
+| Collections | GET    | /collections/want-to-visit/events | Public route: guest gets empty, auth gets upcoming want-to-visit events.           |
 | Collections | POST   | /collections/want-to-visit/events/sync | Authenticated users. Sync guest-local event state.                           |
 | Dev         | POST   | /users/dev/register-test       | Dev/Test only. Creates mock user (not in OpenAPI).                                     |
 | Dev         | POST   | /users/dev/make-owner          | Dev/Test only. Upgrades current user to owner (not in OpenAPI).                       |

@@ -67,7 +67,7 @@ http_request "GET /events/{missing}" 404 "EVENT_NOT_FOUND" \
   "${BASE_URL}/events/${PREFIX}_missing"
 
 print_section "Want-to-visit auth and idempotency"
-http_request "GET /collections/want-to-visit/events without auth" 401 "AUTH_MISSING" \
+http_request "GET /collections/want-to-visit/events without auth (guest empty)" 200 "" \
   "${BASE_URL}/collections/want-to-visit/events"
 
 http_request "POST /events/{id}/want-to-visit" 200 "" \

@@ -168,6 +168,39 @@ http_request "POST /showrooms/{missing}/favorite" 404 "SHOWROOM_NOT_FOUND" \
   -X POST "${AUTH_HEADER[@]}" \
   "${BASE_URL}/showrooms/showroom_missing_${NOW}/favorite"
 
+print_section "Guest sync -> user favorites (showrooms)"
+SYNC_MISSING_ID="showroom_missing_sync_${NOW}"
+SYNC_PAYLOAD=$(jq -nc --arg approved "$APPROVED_ID" --arg draft "$DRAFT_ID" --arg missing "$SYNC_MISSING_ID" \
+  '{favoriteIds: [$approved, $draft, $missing]}')
+http_request "POST /collections/favorites/showrooms/sync" 200 "" \
+  -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+  -d "$SYNC_PAYLOAD" \
+  "${BASE_URL}/collections/favorites/showrooms/sync"
+
+SYNC_APPLIED=$(echo "$LAST_BODY" | jq -r --arg id "$APPROVED_ID" '.data.applied.favorites[]? | select(. == $id)')
+SYNC_SKIPPED_DRAFT=$(echo "$LAST_BODY" | jq -r --arg id "$DRAFT_ID" '.data.skipped[]? | select(. == $id)')
+SYNC_SKIPPED_MISSING=$(echo "$LAST_BODY" | jq -r --arg id "$SYNC_MISSING_ID" '.data.skipped[]? | select(. == $id)')
+assert_non_empty "$SYNC_APPLIED" "sync applied approved showroom"
+assert_non_empty "$SYNC_SKIPPED_DRAFT" "sync skipped draft showroom"
+assert_non_empty "$SYNC_SKIPPED_MISSING" "sync skipped missing showroom"
+
+http_request "GET /collections/favorites/showrooms after sync" 200 "" \
+  "${AUTH_HEADER[@]}" \
+  "${BASE_URL}/collections/favorites/showrooms?limit=20"
+SYNC_LIST_HAS_APPROVED=$(echo "$LAST_BODY" | jq -r --arg id "$APPROVED_ID" '.data.items[]?.id | select(. == $id)')
+assert_non_empty "$SYNC_LIST_HAS_APPROVED" "approved showroom after sync"
+
+http_request "DELETE /showrooms/{id}/favorite after sync" 200 "" \
+  -X DELETE "${AUTH_HEADER[@]}" \
+  "${BASE_URL}/showrooms/${APPROVED_ID}/favorite"
+
+TOO_MANY_IDS=$(jq -nc '[range(0;101) | "showroom_bulk_\(.)"]')
+TOO_MANY_PAYLOAD=$(jq -nc --argjson ids "$TOO_MANY_IDS" '{favoriteIds: $ids}')
+http_request "POST /collections/favorites/showrooms/sync (>100)" 400 "SHOWROOM_SYNC_LIMIT_EXCEEDED" \
+  -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+  -d "$TOO_MANY_PAYLOAD" \
+  "${BASE_URL}/collections/favorites/showrooms/sync"
+
 print_section "Guest collections compatibility"
 http_request "GET /collections/favorites/showrooms (guest)" 200 "" \
   "${BASE_URL}/collections/favorites/showrooms?limit=20"

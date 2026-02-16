@@ -37,7 +37,7 @@ else
   echo "⚠ PROD_ID_TOKEN is not set; skipping authenticated read-only checks"
 fi
 
-http_request "GET /collections/want-to-visit/events (unauth)" 401 "AUTH_MISSING" \
+http_request "GET /collections/want-to-visit/events (unauth guest empty)" 200 "" \
   "${BASE_URL}/collections/want-to-visit/events"
 
 print_section "RESULT"

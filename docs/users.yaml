@@ -193,6 +193,33 @@ components:
           items:
             type: string
 
+    SyncGuestShowroomFavoritesInput:
+      type: object
+      additionalProperties: false
+      properties:
+        favoriteIds:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+      description: Guest-local showroom favorites sync payload.
+
+    SyncGuestShowroomFavoritesResult:
+      type: object
+      properties:
+        applied:
+          type: object
+          properties:
+            favorites:
+              type: array
+              items:
+                type: string
+        skipped:
+          type: array
+          description: Showroom ids skipped due to not found or non-approved state.
+          items:
+            type: string
+
 paths:
   /users/me:
     get:
@@ -490,13 +517,59 @@ paths:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
 
+  /collections/favorites/showrooms/sync:
+    post:
+      tags: [Collections]
+      summary: Sync guest showroom favorites after login
+      description: |
+        Auth-only batch sync for guest-local showroom favorites.
+        Server applies only approved showrooms.
+        Max 100 ids.
+        Unknown/non-approved ids are returned in `skipped`.
+        Endpoint is idempotent.
+      operationId: syncGuestShowrooms
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncGuestShowroomFavoritesInput'
+      responses:
+        "200":
+          description: Sync result
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/SyncGuestShowroomFavoritesResult'
+        "400":
+          description: Invalid payload (`QUERY_INVALID`) or size limit exceeded (`SHOWROOM_SYNC_LIMIT_EXCEEDED`)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
   /collections/favorites/lookbooks:
     get:
       tags: [Collections]
       summary: Favorite lookbooks
+      description: |
+        Public-compatible endpoint.
+        Guest mode returns an empty list.
+        Auth mode returns current user favorite lookbooks (published-only revalidation).
       operationId: listFavoriteLookbooks
-      security:
-        - bearerAuth: []
+      security: []
       parameters:
         - name: limit
           in: query
@@ -528,12 +601,6 @@ paths:
                             type: integer
                           returned:
                             type: integer
-        "401":
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: './common.yaml#/components/schemas/ApiError'
         "429":
           description: Rate limit exceeded
           content:
@@ -548,6 +615,8 @@ paths:
       description: |
         Auth-only batch sync for guest-local lookbook favorites.
         Server validates ids and applies only published lookbooks.
+        Sync also reconciles canonical likes state (`lookbooks/{id}/likes/{u:uid}`) and updates `likesCount` idempotently.
+        Mirror favorites in `users/{uid}/lookbooks_favorites` remain as a projection for collections reads.
         Max 100 ids.
         Unknown/unpublished ids are returned in `skipped`.
         Endpoint is idempotent.
@@ -588,10 +657,12 @@ paths:
     get:
       tags: [Collections]
       summary: Events marked as want-to-visit
-      description: Auth-only. Returns upcoming published events from user want-to-visit collection (past excluded).
+      description: |
+        Public-compatible endpoint.
+        Guest mode returns an empty list.
+        Auth mode returns upcoming published events from user want-to-visit collection (past excluded).
       operationId: listWantToVisitEvents
-      security:
-        - bearerAuth: []
+      security: []
       parameters:
         - name: limit
           in: query
@@ -625,12 +696,6 @@ paths:
                           returned:
                             type: integer
                             description: Number of items returned in this response.
-        "401":
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: './common.yaml#/components/schemas/ApiError'
         "429":
           description: Rate limit exceeded
           content:

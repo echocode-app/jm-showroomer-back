@@ -1,9 +1,7 @@
-// Joi schema: lookbook.create.
 import Joi from "joi";
 
-// Minimal create payload for MVP2 readiness.
 export const lookbookCreateSchema = Joi.object({
-    name: Joi.string().allow("", null),
-    description: Joi.string().allow("", null),
-    published: Joi.boolean().optional(),
+    imageUrl: Joi.string().trim().uri({ scheme: ["http", "https"] }).required(),
+    showroomId: Joi.string().trim().required(),
+    description: Joi.string().trim().max(1000).optional(),
 }).unknown(false);

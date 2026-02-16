@@ -8,7 +8,10 @@ import {
     syncGuestLookbookFavoritesService,
 } from "../services/lookbooksService.js";
 import { attachCoverUrl } from "../services/lookbooks/response.js";
-import { listFavoriteShowroomsService } from "../services/showroomService.js";
+import {
+    listFavoriteShowroomsService,
+    syncGuestShowroomFavoritesService,
+} from "../services/showroomService.js";
 
 export async function listFavoriteShowrooms(req, res, next) {
     try {
@@ -34,9 +37,23 @@ export async function listFavoriteShowrooms(req, res, next) {
 
 export async function listFavoriteLookbooks(req, res, next) {
     try {
+        // Public compatibility: guest users get empty collection with stable shape.
+        if (!req.auth?.uid) {
+            return ok(res, { items: [] }, { total: 0, returned: 0 });
+        }
+
         const { lookbooks, meta } = await listFavoriteLookbooksService(req.auth.uid, req.query ?? {});
         const withCover = await Promise.all(lookbooks.map(attachCoverUrl));
         return ok(res, { items: withCover }, meta);
+    } catch (err) {
+        next(err);
+    }
+}
+
+export async function syncGuestShowrooms(req, res, next) {
+    try {
+        const result = await syncGuestShowroomFavoritesService(req.auth.uid, req.body ?? {});
+        return ok(res, result);
     } catch (err) {
         next(err);
     }
@@ -53,6 +70,11 @@ export async function syncGuestLookbooks(req, res, next) {
 
 export async function listWantToVisitEvents(req, res, next) {
     try {
+        // Public compatibility: guest users get empty collection with stable shape.
+        if (!req.auth?.uid) {
+            return ok(res, { items: [] }, { total: 0, returned: 0 });
+        }
+
         const { events, meta } = await listWantToVisitEventsService(
             req.auth.uid,
             req.query ?? {}

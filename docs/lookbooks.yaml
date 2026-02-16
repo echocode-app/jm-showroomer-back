@@ -18,6 +18,21 @@ components:
       properties:
         id:
           type: string
+        imageUrl:
+          type: string
+          nullable: true
+        showroomId:
+          type: string
+          nullable: true
+        authorId:
+          type: string
+          nullable: true
+        likesCount:
+          type: integer
+          nullable: true
+        likedByMe:
+          type: boolean
+          description: True when current auth/anonymous actor liked this lookbook.
         title:
           type: string
           nullable: true
@@ -87,23 +102,30 @@ paths:
       tags: [Lookbooks]
       summary: List lookbooks
       description: |
-        Public list for MVP1.
-        Filters are required and applied together: country + seasonKey + published=true.
+        Public list endpoint.
+        By default returns published lookbooks ordered by createdAt desc.
+        Optional filter by showroomId is supported.
+        Legacy MVP1 filter mode (country + seasonKey) remains supported for compatibility.
         Signed URL is generated for coverPath only.
       operationId: listLookbooks
       security: []
       parameters:
         - name: country
           in: query
-          required: true
+          required: false
           schema:
             type: string
         - name: seasonKey
           in: query
-          required: true
+          required: false
           schema:
             type: string
             example: ss-2026
+        - name: showroomId
+          in: query
+          required: false
+          schema:
+            type: string
         - name: limit
           in: query
           schema:
@@ -115,7 +137,7 @@ paths:
           in: query
           schema:
             type: string
-          description: Base64 backend cursor. Do not construct client-side.
+          description: Cursor as last document id from previous page.
       responses:
         "200":
           description: Lookbooks list
@@ -155,6 +177,57 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+    post:
+      tags: [Lookbooks]
+      summary: Create lookbook
+      description: |
+        Public-compatible create.
+        Auth users are stored as owner (`authorId=uid`); guests use `x-anonymous-id`.
+        If guest id header is missing, backend generates and returns it in `x-anonymous-id` response header.
+      operationId: createLookbook
+      security: []
+      parameters:
+        - name: x-anonymous-id
+          in: header
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [imageUrl, showroomId]
+              properties:
+                imageUrl:
+                  type: string
+                  format: uri
+                showroomId:
+                  type: string
+                description:
+                  type: string
+                  maxLength: 1000
+      responses:
+        "201":
+          description: Lookbook created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          lookbook:
+                            $ref: '#/components/schemas/Lookbook'
+        "400":
+          description: Validation error (`VALIDATION_ERROR`) or invalid anonymous id (`ANON_ID_INVALID`)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
 
   /lookbooks/{id}:
     parameters:
@@ -166,7 +239,7 @@ paths:
     get:
       tags: [Lookbooks]
       summary: Get lookbook by id
-      description: Returns published lookbook only. Cover and all images include signed URLs.
+      description: Returns published lookbook for public callers. Owners can access their own unpublished docs.
       operationId: getLookbookById
       security: []
       responses:
@@ -189,6 +262,98 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+    patch:
+      tags: [Lookbooks]
+      summary: Update lookbook
+      description: |
+        Public-compatible update with ownership validation.
+        Allowed when current actor matches `authorId` (auth) or `x-anonymous-id` (guest).
+      operationId: updateLookbook
+      security: []
+      parameters:
+        - name: x-anonymous-id
+          in: header
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                imageUrl:
+                  type: string
+                  format: uri
+                showroomId:
+                  type: string
+                description:
+                  type: string
+                  nullable: true
+                  maxLength: 1000
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiSuccess'
+        "403":
+          description: Not owner
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "400":
+          description: Validation error (`VALIDATION_ERROR`) or invalid anonymous id (`ANON_ID_INVALID`)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+    delete:
+      tags: [Lookbooks]
+      summary: Delete lookbook
+      description: Public-compatible delete with ownership validation.
+      operationId: deleteLookbook
+      security: []
+      parameters:
+        - name: x-anonymous-id
+          in: header
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiSuccess'
+        "403":
+          description: Not owner
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "400":
+          description: Invalid anonymous id (`ANON_ID_INVALID`)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
 
   /lookbooks/{id}/favorite:
     parameters:
@@ -200,10 +365,17 @@ paths:
     post:
       tags: [Lookbooks]
       summary: Add lookbook to favorites
-      description: Auth-only, idempotent.
+      description: |
+        Public-compatible like (idempotent).
+        Auth uses uid; guest uses `x-anonymous-id`.
       operationId: favoriteLookbook
-      security:
-        - bearerAuth: []
+      security: []
+      parameters:
+        - name: x-anonymous-id
+          in: header
+          required: false
+          schema:
+            type: string
       responses:
         "200":
           description: Favorited
@@ -221,14 +393,14 @@ paths:
                           status:
                             type: string
                             example: favorited
-        "401":
-          description: Unauthorized
+        "404":
+          description: Lookbook not found
           content:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
-        "404":
-          description: Lookbook not found
+        "400":
+          description: Invalid anonymous id (`ANON_ID_INVALID`)
           content:
             application/json:
               schema:
@@ -236,10 +408,15 @@ paths:
     delete:
       tags: [Lookbooks]
       summary: Remove lookbook from favorites
-      description: Auth-only, idempotent.
+      description: Public-compatible unlike (idempotent).
       operationId: unfavoriteLookbook
-      security:
-        - bearerAuth: []
+      security: []
+      parameters:
+        - name: x-anonymous-id
+          in: header
+          required: false
+          schema:
+            type: string
       responses:
         "200":
           description: Removed
@@ -257,8 +434,14 @@ paths:
                           status:
                             type: string
                             example: removed
-        "401":
-          description: Unauthorized
+        "404":
+          description: Lookbook not found
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "400":
+          description: Invalid anonymous id (`ANON_ID_INVALID`)
           content:
             application/json:
               schema:
@@ -267,25 +450,27 @@ paths:
   /lookbooks/create:
     post:
       tags: [Lookbooks]
-      summary: Create lookbook (stub)
-      description: MVP2. Stub in MVP1.
-      operationId: createLookbook
-      security:
-        - bearerAuth: []
-      x-roles: [owner, manager]
+      summary: Create lookbook (legacy alias)
+      description: Backward-compatible alias for `POST /lookbooks`.
+      operationId: createLookbookLegacyAlias
+      security: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required: [imageUrl, showroomId]
               properties:
-                name:
+                imageUrl:
+                  type: string
+                  format: uri
+                showroomId:
                   type: string
                 description:
                   type: string
       responses:
-        "200":
+        "201":
           description: Lookbook created
           content:
             application/json:
@@ -300,18 +485,6 @@ paths:
                             type: object
         "400":
           description: Validation error
-          content:
-            application/json:
-              schema:
-                $ref: './common.yaml#/components/schemas/ApiError'
-        "401":
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: './common.yaml#/components/schemas/ApiError'
-        "403":
-          description: Forbidden
           content:
             application/json:
               schema:

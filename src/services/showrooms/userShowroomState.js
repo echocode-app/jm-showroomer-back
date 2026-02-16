@@ -6,6 +6,8 @@ import { DEV_STORE, useDevMock } from "./_store.js";
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
 const CURSOR_VERSION = 1;
+const SYNC_MAX_IDS = 100;
+const IDS_CHUNK = 100;
 
 export async function assertShowroomFavoriteable(showroomId) {
     if (useDevMock) {
@@ -43,6 +45,38 @@ export async function favoriteShowroom(uid, showroomId) {
 export async function unfavoriteShowroom(uid, showroomId) {
     await userFavoritesCollection(uid).doc(showroomId).delete();
     return { status: "removed" };
+}
+
+export async function syncGuestShowroomFavorites(uid, payload = {}) {
+    const { favoriteIds } = parseSyncPayload(payload);
+
+    if (favoriteIds.length === 0) {
+        return {
+            applied: { favorites: [] },
+            skipped: [],
+        };
+    }
+
+    const showroomsById = await getShowroomsByIds(favoriteIds);
+    const allowed = [];
+    const skipped = [];
+
+    // Keep anti-leak behavior: all non-favoritable states are treated as skipped ids.
+    for (const id of favoriteIds) {
+        const showroom = showroomsById.get(id);
+        if (!showroom || showroom.status !== "approved" || showroom.status === "deleted") {
+            skipped.push(id);
+            continue;
+        }
+        allowed.push(id);
+    }
+
+    await applyFavoritesBatch(uid, allowed);
+
+    return {
+        applied: { favorites: allowed },
+        skipped,
+    };
 }
 
 export async function listFavoriteShowrooms(uid, filters = {}) {
@@ -113,6 +147,49 @@ async function getApprovedShowroomsByIds(ids) {
         .filter(Boolean);
 }
 
+async function getShowroomsByIds(ids) {
+    if (useDevMock) {
+        const byId = new Map();
+        DEV_STORE.showrooms.forEach(showroom => {
+            if (!showroom) return;
+            byId.set(showroom.id, { ...showroom });
+        });
+        return byId;
+    }
+
+    const db = getFirestoreInstance();
+    const refs = ids.map(id => db.collection("showrooms").doc(id));
+    const byId = new Map();
+
+    for (let i = 0; i < refs.length; i += IDS_CHUNK) {
+        const chunk = refs.slice(i, i + IDS_CHUNK);
+        const snaps = await db.getAll(...chunk);
+        snaps.forEach(snap => {
+            if (snap.exists) {
+                byId.set(snap.id, { id: snap.id, ...snap.data() });
+            }
+        });
+    }
+
+    return byId;
+}
+
+async function applyFavoritesBatch(uid, favoriteIds) {
+    if (favoriteIds.length === 0) return;
+
+    const db = getFirestoreInstance();
+    const batch = db.batch();
+    const createdAt = Timestamp.fromDate(new Date());
+
+    // Upsert keeps guest-sync idempotent across repeated client retries.
+    for (const showroomId of favoriteIds) {
+        const ref = userFavoritesCollection(uid).doc(showroomId);
+        batch.set(ref, { createdAt }, { merge: true });
+    }
+
+    await batch.commit();
+}
+
 function userFavoritesCollection(uid) {
     return getFirestoreInstance()
         .collection("users")
@@ -127,6 +204,22 @@ function parseCollectionFilters(filters = {}) {
     };
 }
 
+function parseSyncPayload(payload = {}) {
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+        throw badRequest("QUERY_INVALID");
+    }
+
+    const allowedKeys = new Set(["favoriteIds"]);
+    const unknownKeys = Object.keys(payload).filter(key => !allowedKeys.has(key));
+    if (unknownKeys.length > 0) {
+        throw badRequest("QUERY_INVALID");
+    }
+
+    return {
+        favoriteIds: parseIdsList(payload.favoriteIds),
+    };
+}
+
 function parseLimit(value) {
     if (value === undefined || value === null || value === "") {
         return DEFAULT_LIMIT;
@@ -138,6 +231,35 @@ function parseLimit(value) {
     }
 
     return parsed;
+}
+
+function parseIdsList(value) {
+    if (value === undefined || value === null) return [];
+    if (!Array.isArray(value)) {
+        throw badRequest("QUERY_INVALID");
+    }
+    if (value.length > SYNC_MAX_IDS) {
+        throw badRequest("SHOWROOM_SYNC_LIMIT_EXCEEDED");
+    }
+
+    const normalized = [];
+    const seen = new Set();
+
+    for (const raw of value) {
+        if (typeof raw !== "string") {
+            throw badRequest("QUERY_INVALID");
+        }
+        const id = raw.trim();
+        if (!id) {
+            throw badRequest("QUERY_INVALID");
+        }
+        if (!seen.has(id)) {
+            normalized.push(id);
+            seen.add(id);
+        }
+    }
+
+    return normalized;
 }
 
 function decodeCursor(encoded) {
