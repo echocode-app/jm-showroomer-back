@@ -3,6 +3,7 @@ import { badRequest } from "../../core/error.js";
 
 export const CURSOR_VERSION = 1;
 
+// Encode two-mode cursor (ranked/published) into opaque base64 token.
 export function encodeListCursor(cursor) {
     if (!cursor) return null;
     if (cursor.mode === "rank") {
@@ -26,6 +27,7 @@ export function encodeListCursor(cursor) {
     ).toString("base64");
 }
 
+// Decode and strictly validate cursor payload before Firestore query usage.
 export function decodeListCursor(encoded) {
     try {
         const parsed = JSON.parse(Buffer.from(encoded, "base64").toString("utf8"));

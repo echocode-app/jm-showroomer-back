@@ -3,6 +3,7 @@ import { normalizeCountry } from "../../constants/countries.js";
 import { getSignedReadUrl } from "../mediaService.js";
 import { toIsoString } from "./firestoreQuery.js";
 
+// Normalizes raw Firestore lookbook document into stable API DTO.
 export function normalizeLookbook(doc = {}) {
     const title = firstNonEmpty(doc.title, doc.name);
     const description = firstNonEmpty(doc.description);
@@ -42,6 +43,7 @@ export function normalizeLookbook(doc = {}) {
     };
 }
 
+// Signs cover URL only (list endpoint policy).
 export async function attachCoverUrl(lookbook) {
     const safeCoverPath = getSafePath(lookbook.id, lookbook.coverPath);
     const coverUrl = safeCoverPath ? await getSignedReadUrl(safeCoverPath) : null;
@@ -52,6 +54,7 @@ export async function attachCoverUrl(lookbook) {
     };
 }
 
+// Signs both cover and images URLs (detail endpoint policy).
 export async function attachSignedImages(lookbook) {
     const withCover = await attachCoverUrl(lookbook);
 
@@ -123,6 +126,7 @@ function findLegacyCoverPath(doc) {
     return cover?.path ?? null;
 }
 
+// Prevents unsafe storage paths from being exposed as signed URLs.
 function getSafePath(lookbookId, storagePath) {
     if (!storagePath) return null;
     return assertAllowedPathForResource("lookbooks", lookbookId, storagePath)
@@ -164,6 +168,7 @@ function normalizeAuthor(doc) {
     };
 }
 
+// Keeps only complete item rows used by the outfit card UI.
 function normalizeItems(doc) {
     if (!Array.isArray(doc?.items)) return [];
 

@@ -1,3 +1,4 @@
+// Keep backward-compatible service exports from a single public barrel.
 export { listLookbooksService } from "./lookbooks/listLookbooks.js";
 export { getLookbookByIdService } from "./lookbooks/getLookbookById.js";
 export {

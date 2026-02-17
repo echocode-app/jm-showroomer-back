@@ -1,5 +1,6 @@
 import Joi from "joi";
 
+// Author block is optional at payload level, but must be complete when provided.
 const lookbookAuthorSchema = Joi.object({
     name: Joi.string().trim().min(1).max(120).required(),
     position: Joi.string().trim().min(1).max(120).optional(),
@@ -26,4 +27,5 @@ export const lookbookUpdateSchema = Joi.object({
         Joi.array().items(lookbookItemSchema).max(30),
         Joi.valid(null)
     ),
+    // Enforce explicit intent for update operations.
 }).min(1).unknown(false);

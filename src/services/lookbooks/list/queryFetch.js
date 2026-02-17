@@ -6,6 +6,7 @@ import {
 } from "../firestoreQuery.js";
 import { normalizeLookbook } from "../response.js";
 
+// Fetch ranked segment (`sortRank != null`) with deterministic cursor progression.
 export async function fetchRanked(parsed, limit) {
     if (limit <= 0) return [];
     if (parsed.cursor?.mode === "published") return [];
@@ -40,6 +41,7 @@ export async function fetchRanked(parsed, limit) {
     }
 }
 
+// Fetch unranked segment (`sortRank == null`) ordered by publication time.
 export async function fetchUnranked(parsed, limit) {
     if (limit <= 0) return [];
 

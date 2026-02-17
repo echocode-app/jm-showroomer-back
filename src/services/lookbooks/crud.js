@@ -1,14 +1,28 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getFirestoreInstance } from "../../config/firebase.js";
-import { badRequest, forbidden, notFound } from "../../core/error.js";
+import { badRequest, notFound } from "../../core/error.js";
 import { parseLimit } from "./parse.js";
 import { getLookbooksCollection } from "./firestoreQuery.js";
 import { normalizeLookbook } from "./response.js";
+import {
+    assertCanManageLookbook,
+    canReadLookbook,
+    deleteLikesSubcollection,
+    getLikedIdsForActor,
+    isLikedByActor,
+    likeDocRef,
+    normalizeAuthor,
+    normalizeItems,
+    parseCursor,
+    parseOptionalString,
+    toTimestamp,
+    userFavoritesCollection,
+} from "./crudHelpers.js";
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
-const LIKE_DELETE_BATCH_LIMIT = 500;
 
+// Creates a lookbook owned either by authenticated user or guest actor.
 export async function createLookbookService(payload, actor) {
     await assertShowroomExists(payload.showroomId);
 
@@ -34,6 +48,7 @@ export async function createLookbookService(payload, actor) {
     return normalizeLookbook({ id: ref.id, ...doc });
 }
 
+// Public-compatible list endpoint with actor-aware `likedByMe` projection.
 export async function listLookbooksCrudService(filters = {}, actor = null) {
     const limit = parseLimit(filters.limit, DEFAULT_LIMIT, MAX_LIMIT);
     const cursor = parseCursor(filters.cursor);
@@ -85,6 +100,7 @@ export async function listLookbooksCrudService(filters = {}, actor = null) {
     };
 }
 
+// Detail endpoint with ownership visibility guard for unpublished records.
 export async function getLookbookByIdCrudService(id, actor = null) {
     const snap = await getLookbooksCollection().doc(id).get();
     if (!snap.exists) {
@@ -105,6 +121,7 @@ export async function getLookbookByIdCrudService(id, actor = null) {
     };
 }
 
+// Owner-only update with transaction for permission and integrity checks.
 export async function updateLookbookService(id, payload, actor) {
     const db = getFirestoreInstance();
     const ref = getLookbooksCollection().doc(id);
@@ -135,6 +152,7 @@ export async function updateLookbookService(id, payload, actor) {
     return getLookbookByIdCrudService(id, actor);
 }
 
+// Owner-only delete with cascading likes cleanup.
 export async function deleteLookbookService(id, actor) {
     const db = getFirestoreInstance();
     const ref = getLookbooksCollection().doc(id);
@@ -152,6 +170,7 @@ export async function deleteLookbookService(id, actor) {
     return { id, status: "deleted" };
 }
 
+// Idempotent favorite add with canonical like doc and atomic counter update.
 export async function likeLookbookService(id, actor) {
     const db = getFirestoreInstance();
     const ref = getLookbooksCollection().doc(id);
@@ -203,6 +222,7 @@ export async function likeLookbookService(id, actor) {
     return { status: "favorited" };
 }
 
+// Idempotent favorite remove with canonical cleanup and guarded counter decrement.
 export async function unlikeLookbookService(id, actor) {
     const db = getFirestoreInstance();
     const ref = getLookbooksCollection().doc(id);
@@ -243,6 +263,7 @@ export async function unlikeLookbookService(id, actor) {
     return { status: "removed" };
 }
 
+// Ensures lookbook always references an existing non-deleted showroom.
 async function assertShowroomExists(showroomId) {
     const id = parseOptionalString(showroomId);
     if (!id) throw badRequest("SHOWROOM_ID_INVALID");
@@ -252,137 +273,4 @@ async function assertShowroomExists(showroomId) {
     if (!showroom || showroom.status === "deleted") {
         throw badRequest("SHOWROOM_ID_INVALID");
     }
-}
-
-function assertCanManageLookbook(lookbook, actor) {
-    const byUserId = actor.userId && lookbook.authorId && lookbook.authorId === actor.userId;
-    const byAnonymousId = actor.anonymousId && lookbook.anonymousId && lookbook.anonymousId === actor.anonymousId;
-
-    if (!byUserId && !byAnonymousId) {
-        throw forbidden("LOOKBOOK_FORBIDDEN");
-    }
-}
-
-function canReadLookbook(lookbook, actor) {
-    if (lookbook.published === true) return true;
-
-    const byUserId = actor?.userId && lookbook.authorId && lookbook.authorId === actor.userId;
-    const byAnonymousId = actor?.anonymousId && lookbook.anonymousId && lookbook.anonymousId === actor.anonymousId;
-
-    return Boolean(byUserId || byAnonymousId);
-}
-
-function parseCursor(value) {
-    if (value === undefined || value === null || value === "") return null;
-    if (typeof value !== "string") {
-        throw badRequest("CURSOR_INVALID");
-    }
-    const trimmed = value.trim();
-    if (!trimmed) {
-        throw badRequest("CURSOR_INVALID");
-    }
-    return trimmed;
-}
-
-function parseOptionalString(value) {
-    if (value === undefined || value === null) return null;
-    const text = String(value).trim();
-    return text || null;
-}
-
-function toTimestamp(value) {
-    if (!value) return null;
-    if (typeof value.toDate === "function") return value;
-
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return null;
-    return Timestamp.fromDate(date);
-}
-
-function likeDocRef(lookbookId, actor, db) {
-    return db
-        .collection("lookbooks")
-        .doc(lookbookId)
-        .collection("likes")
-        .doc(actor.likeWriteKey ?? actor.actorKey);
-}
-
-async function isLikedByActor(lookbookId, actor, db) {
-    if (!actor) return false;
-    const refs = (actor.likeReadKeys ?? [actor.likeWriteKey ?? actor.actorKey])
-        .map(key => db.collection("lookbooks").doc(lookbookId).collection("likes").doc(key));
-    const snaps = await db.getAll(...refs);
-    return snaps.some(snap => snap.exists);
-}
-
-async function getLikedIdsForActor(ids, actor, db) {
-    if (!actor || ids.length === 0) return new Set();
-    const keys = actor.likeReadKeys ?? [actor.likeWriteKey ?? actor.actorKey];
-    const refs = [];
-    const refToId = [];
-    ids.forEach(id => {
-        keys.forEach(key => {
-            refs.push(db.collection("lookbooks").doc(id).collection("likes").doc(key));
-            refToId.push(id);
-        });
-    });
-    const snaps = await db.getAll(...refs);
-    const liked = new Set();
-    snaps.forEach((snap, idx) => {
-        if (snap.exists) liked.add(refToId[idx]);
-    });
-    return liked;
-}
-
-async function deleteLikesSubcollection(lookbookRef, db) {
-    while (true) {
-        const likesSnap = await lookbookRef.collection("likes").limit(LIKE_DELETE_BATCH_LIMIT).get();
-        if (likesSnap.empty) break;
-
-        const batch = db.batch();
-        likesSnap.docs.forEach(doc => batch.delete(doc.ref));
-        await batch.commit();
-    }
-}
-
-function userFavoritesCollection(uid) {
-    return getFirestoreInstance()
-        .collection("users")
-        .doc(uid)
-        .collection("lookbooks_favorites");
-}
-
-function normalizeAuthor(value) {
-    if (!value || typeof value !== "object") {
-        return null;
-    }
-
-    const name = parseOptionalString(value.name);
-    if (!name) {
-        return null;
-    }
-
-    return {
-        name,
-        position: parseOptionalString(value.position),
-        instagram: parseOptionalString(value.instagram),
-    };
-}
-
-function normalizeItems(value) {
-    if (!Array.isArray(value)) {
-        return [];
-    }
-
-    return value
-        .map(item => {
-            if (!item || typeof item !== "object") return null;
-
-            const name = parseOptionalString(item.name);
-            const link = parseOptionalString(item.link);
-            if (!name || !link) return null;
-
-            return { name, link };
-        })
-        .filter(Boolean);
 }

@@ -3,74 +3,17 @@
 [![CI](https://github.com/echocode-app/jm-showroomer-back/actions/workflows/ci.yml/badge.svg)](https://github.com/echocode-app/jm-showroomer-back/actions/workflows/ci.yml)
 [![Smoke Tests (Manual)](https://github.com/echocode-app/jm-showroomer-back/actions/workflows/smoke.yml/badge.svg)](https://github.com/echocode-app/jm-showroomer-back/actions/workflows/smoke.yml)
 
-Backend API for JM Showroomer clients. Focus: authentication, showroom lifecycle, moderation, and geo search.
+Backend API for JM Showroomer mobile clients.
 
-## Overview
-- Base path: `/api/v1`
-- Auth: Firebase ID tokens (Bearer)
-- Data: Firestore + Storage
-- Docs: OpenAPI (`/docs`, `docs/openapi.yaml`)
+## What This Service Does
+- Firebase-based authentication and role-aware access (`guest`, `user`, `owner`, `admin`)
+- Showroom lifecycle: draft -> moderation -> approved/rejected -> soft delete
+- Public catalogs: showrooms, lookbooks, events
+- Favorites/collections flows (including guest-to-auth sync where supported)
+- Validation, moderation rules, and Firestore-backed search/pagination
 
-## Core Features
-- **Auth + RBAC**: guest / user / owner / admin
-- **Showrooms**: draft → pending → approved / rejected → deleted
-- **Geo model (MVP1)**: `geo` (city + country + coords + geohash), filter by `?city=`
-- **Lookbooks & Events**: standalone entities (MVP1: seeded lookbooks, events RSVP stub)
-- **Moderation**: submit + admin approve/reject
-- **Pending lock**: no edits while `pending`
-- **Country rules**: RU/BY blocked, showroom country must match owner
-- **Anti‑duplicate**: owner + global checks
-- **Audit**: edit history with diffs
-- **Soft delete**: hidden from public/owner lists
-- **User delete (MVP1)**: soft-delete profile, PII nulling; owner blocked if they have any showrooms/assets
-
-## Search & Pagination (Showrooms)
-- `limit`: 1..100, default 20
-- `fields`: `marker` or `card`
-- `q`: prefix search by `nameNormalized` (ignored when `city` is set or `qMode=city`)
-- `city`: exact match on `geo.cityNormalized`
-- `brand`: exact match on `brandsMap.<brandKey>`
-- `categoryGroup`
-- `subcategories` (array-contains-any)
-- `geohashPrefix` or `geohashPrefixes[]`
-- `cursor`: base64 JSON (v2) with fields `{v,f,d,value,id}`
-
-Pagination contract (backend-owned):
-- Client must only follow `meta.nextCursor`; no client-side merging/deduping.
-- `meta.paging` values: `enabled` (more pages), `end` (no more results), `disabled` (paging unsupported).
-- Cursor works only with a single `geohashPrefix`.
-- Cursor is not supported for `geohashPrefixes[]` (returns `paging=disabled`).
-- `geohashPrefix(es) + q` is rejected as `QUERY_INVALID`.
-
-Validation errors:
-- `QUERY_INVALID`
-- `CURSOR_INVALID`
-
-Search implementation:
-- `src/services/showrooms/listShowrooms.js` (entry)
-- `src/services/showrooms/list/` (parse/utils/ordering/dev/firestore + shared `devFilters.js`)
-
-## Suggestions & Counters
-- `GET /showrooms/suggestions`: lightweight search hints.
-- `GET /showrooms/counters`: total count by current filters.
-- suggestions internals are split into `src/services/showrooms/suggest/` (`dev`, `firestore`, `builders`, `constants`).
-- `suggestions`: `q` is required; `q.length < 2` returns `[]`.
-- `suggestions`: geo params are not supported.
-- `counters`: `q` is optional; `cursor/fields/limit` are rejected.
-- `counters`: `geohashPrefix(es) + q` is rejected as `QUERY_INVALID`.
-- `suggestions/counters`: `categoryGroup`, `subcategories`, `categories` are mutually exclusive (any combination of 2+ → `QUERY_INVALID`).
-
-Index note:
-- `INDEX_NOT_READY` means Firestore is missing a required composite index; deploy indexes before release.
-
-Deploy note: run `firebase deploy --only firestore:indexes` for test/stage/prod before integration tests or releases.
-
-## UI‑Relevant Errors
-- `USER_COUNTRY_CHANGE_BLOCKED` (409)
-- `SHOWROOM_LOCKED_PENDING` (409)
-- `USER_DELETE_BLOCKED` (409)
-- `EVENT_SYNC_LIMIT_EXCEEDED` (400)
-- `LOOKBOOK_SYNC_LIMIT_EXCEEDED` (400)
+Base API path: `/api/v1`  
+API docs: `/docs` and `docs/openapi.yaml`
 
 ## Tech Stack
 - Node.js (ESM), Express
@@ -79,60 +22,58 @@ Deploy note: run `firebase deploy --only firestore:indexes` for test/stage/prod 
 - OpenAPI 3.0 (modular YAML)
 - Bash tests (curl + jq)
 
-## Repository Map
+## Minimal Project Map
 ```
 src/
-  core/        app bootstrap + error handling
-  routes/      API routing + RBAC
-  controllers/ thin HTTP layer
-  services/    business logic + Firestore
-  middlewares/ auth, validation, country guards
-  utils/       normalization + helpers
-  schemas/     Joi schemas
-  constants/   enums + country block list
-  test/        bash tests
-docs/          OpenAPI specs (modular)
+  core/         app bootstrap + global error handling
+  routes/       endpoints
+  middlewares/  auth/roles/validation
+  controllers/  HTTP layer
+  services/     business logic + Firestore access
+  schemas/      request validation
+  test/         integration bash suites
+docs/           OpenAPI specs
+docs/readme/    integration and dev runbooks
 ```
 
-## Common Commands
+## Run Locally
 ```bash
 npm i
 npm run dev
 ```
 
-## CI Overview
-- `ci.yml` runs unit tests (Jest), OpenAPI lint, and shellcheck. No secrets required.
-- `smoke.yml` is manual (workflow_dispatch) for integration tests after deploy. Provide `BASE_URL` and set repo secrets (`TEST_USER_TOKEN`, `TEST_ADMIN_TOKEN`) if you want to run showrooms/admin tests. Missing secrets will skip those steps gracefully.
+## Environment Variables
+Use `.env.dev`, `.env.test`, `.env.prod` (see `.env.example`).
 
-Deploy note: run `firebase deploy --only firestore:indexes` for test/stage/prod before integration tests or releases.
+Required base keys:
+- `NODE_ENV`
+- `BASE_URL`
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_CLIENT_EMAIL`
+- `FIREBASE_PRIVATE_KEY`
+- `FIREBASE_STORAGE_BUCKET`
 
-## Prod Write Guard (Tests)
-Write tests will refuse to run against production URLs unless you set:
+For integration tests:
+- `TEST_USER_TOKEN`
+- `TEST_ADMIN_TOKEN`
+- `TEST_OWNER_TOKEN_2`
+
+## Useful Commands
 ```bash
-ALLOW_PROD_WRITE=1
+# unit
+npm run test:unit -- --watchman=false
+
+# core integration suites
+npm run test:smoke
+npm run test:showrooms
+npm run test:lookbooks
+npm run test:all
 ```
 
-## Firestore Indexes (Manual Deploy)
-- Workflow: `.github/workflows/firestore-indexes.yml` (manual only).
-- Required secrets: `FIREBASE_SERVICE_ACCOUNT_JSON`, `FIREBASE_PROJECT_ID`.
-- Command: `firebase deploy --only firestore:indexes --project "$FIREBASE_PROJECT_ID"`.
-- Current Firebase is corporate; later will be switched to client project.
-
-## Firebase Project Switch (Corporate -> Owner)
-To avoid missing steps during project migration, use the standardized helper:
-
-```bash
-npm run firebase:migration -- --project <new-project-id> --env-file .env.prod
-# or explicitly
-bash scripts/firebase_project_migration.sh --project <new-project-id> --env-file .env.prod
-```
-
-Apply mode (updates `.firebaserc` and deploys Firestore indexes):
-
-```bash
-npm run firebase:migration -- --project <new-project-id> --write-firebaserc --deploy-indexes
-# or explicitly
-bash scripts/firebase_project_migration.sh --project <new-project-id> --write-firebaserc --deploy-indexes
-```
-
-The script validates required Firebase env keys and prints a deterministic pre-prod checklist (OpenAPI + regressions + cleanup).
+## Documentation Index
+- `docs/readme/README_UA.md` — simple business-level overview (UA)
+- `docs/readme/README_DETAIL.md` — Flutter integration contract
+- `docs/readme/SHOWROOMS_MVP1_SEARCH.md` — showroom search integration
+- `docs/readme/DEV.md` — developer runbook (tests/release)
+- `docs/readme/DEV_POSTMAN_TESTS.md` — manual API checks in Postman
+- `docs/readme/README_BACKEND_MAP_UA.md` — technical backend map (UA)

@@ -134,29 +134,24 @@ paths:
       summary: List lookbooks
       description: |
         Public list endpoint.
-        By default returns published lookbooks ordered by createdAt desc.
-        Optional filter by showroomId is supported.
-        Legacy MVP1 filter mode (country + seasonKey) remains supported for compatibility.
+        Requires `country` and `seasonKey` query params.
+        Returns published lookbooks only.
+        Ordering is deterministic: ranked (`sortRank asc`) first, then unranked (`publishedAt desc`) with id tie-breaker.
         Signed URL is generated for coverPath only.
       operationId: listLookbooks
       security: []
       parameters:
         - name: country
           in: query
-          required: false
+          required: true
           schema:
             type: string
         - name: seasonKey
           in: query
-          required: false
+          required: true
           schema:
             type: string
             example: ss-2026
-        - name: showroomId
-          in: query
-          required: false
-          schema:
-            type: string
         - name: limit
           in: query
           schema:
@@ -168,7 +163,7 @@ paths:
           in: query
           schema:
             type: string
-          description: Cursor as last document id from previous page.
+          description: Base64 cursor from previous response (`meta.nextCursor`).
       responses:
         "200":
           description: Lookbooks list

@@ -196,8 +196,9 @@ Server merges the payload idempotently into user collections and returns:
   - `author`: `{ name, position?, instagram? }`
   - `items[]`: `{ name, link }` (what is on the photo)
 - Public list: `GET /lookbooks`
-  - default mode: `published=true`, ordered by `createdAt desc`, optional `showroomId`
-  - legacy mode still supported with `country + seasonKey`
+  - requires `country` + `seasonKey` query params
+  - returns `published=true` only
+  - ordering is deterministic: ranked first (`sortRank asc`), then unranked (`publishedAt desc`), with id tie-breaker
   - supports cursor pagination with `meta.hasMore`, `meta.nextCursor`, `meta.paging`
   - signs only `coverPath` as `coverUrl`
 - Public detail: `GET /lookbooks/{id}`
@@ -320,7 +321,7 @@ API Table (actual)
 | Admin       | POST   | /admin/showrooms/{id}/approve | ADMIN only. Pending → approved.                                                         |
 | Admin       | POST   | /admin/showrooms/{id}/reject  | ADMIN only. Pending → rejected (body: { reason }).                                      |
 | Admin       | DELETE | /admin/showrooms/{id}         | ADMIN only. Soft delete any status.                                                     |
-| Lookbooks   | GET    | /lookbooks                    | Public. Default `createdAt desc` with `cursor` and optional `showroomId`; legacy country+season mode supported. |
+| Lookbooks   | GET    | /lookbooks                    | Public. Requires `country` + `seasonKey`; cursor pagination over ranked/published ordering. |
 | Lookbooks   | GET    | /lookbooks/{id}               | Public. Published lookbook details with signed cover/images URLs.                       |
 | Lookbooks   | POST   | /lookbooks                    | Public-compatible create. Auth or guest (`x-anonymous-id`).                             |
 | Lookbooks   | POST   | /lookbooks/create             | Legacy alias for `POST /lookbooks`.                                                     |

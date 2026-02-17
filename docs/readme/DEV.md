@@ -72,13 +72,15 @@ NODE_ENV=test ./src/test/test_media.sh
 ```bash
 NODE_ENV=prod ./src/test/test_prod_readonly.sh
 # npm run test:prod-smoke
+
+PROD_ID_TOKEN="<fresh_firebase_id_token>" NODE_ENV=prod ./src/test/test_prod_readonly.sh
 ```
 
 ---
 
 ## 3) Before commit (mandatory)
 ```bash
-bash -lc 'shopt -s nullglob; shellcheck src/test/*.sh scripts/*.sh && echo "shellcheck OK"'
+bash -lc 'shopt -s nullglob; shellcheck src/test/*.sh src/test/helpers/*.sh scripts/*.sh && echo "shellcheck OK"'
 npm run test:unit -- --watchman=false
 npx @redocly/cli lint docs/openapi.yaml
 ```

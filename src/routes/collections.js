@@ -14,6 +14,8 @@ import {
 
 const router = Router();
 
+// Public-compatible endpoint: guest receives an empty list,
+// authenticated user receives actual persisted favorites.
 router.get(
     "/favorites/showrooms",
     optionalAuth,
@@ -21,6 +23,7 @@ router.get(
     listFavoriteShowrooms
 );
 
+// Sync promotes guest-local showroom favorites into user profile after login.
 router.post(
     "/favorites/showrooms/sync",
     authMiddleware,
@@ -28,6 +31,7 @@ router.post(
     syncGuestShowrooms
 );
 
+// Public-compatible endpoint for lookbook favorites collection.
 router.get(
     "/favorites/lookbooks",
     optionalAuth,
@@ -35,6 +39,7 @@ router.get(
     listFavoriteLookbooks
 );
 
+// Sync promotes guest-local lookbook favorites after authentication.
 router.post(
     "/favorites/lookbooks/sync",
     authMiddleware,
@@ -42,6 +47,7 @@ router.post(
     syncGuestLookbooks
 );
 
+// Public-compatible endpoint for "want to visit" events collection.
 router.get(
     "/want-to-visit/events",
     optionalAuth,
@@ -49,6 +55,7 @@ router.get(
     listWantToVisitEvents
 );
 
+// Sync merges guest-local event state with persisted user state.
 router.post(
     "/want-to-visit/events/sync",
     authMiddleware,
