@@ -91,6 +91,10 @@ run_lookbooks_suite() {
     "${BASE_URL}/lookbooks/${HIDDEN_ID}"
 
   print_section "5) Favorite add/remove"
+  http_request "POST /lookbooks/{id}/favorite without auth" 401 "AUTH_MISSING" \
+    -X POST \
+    "${BASE_URL}/lookbooks/${RANKED1_ID}/favorite"
+
   http_request "POST /lookbooks/{id}/favorite" 200 "" \
     -X POST "${AUTH_HEADER[@]}" \
     "${BASE_URL}/lookbooks/${RANKED1_ID}/favorite"

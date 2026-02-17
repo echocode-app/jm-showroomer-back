@@ -415,16 +415,11 @@ paths:
       tags: [Lookbooks]
       summary: Add lookbook to favorites
       description: |
-        Public-compatible like (idempotent).
-        Auth uses uid; guest uses `x-anonymous-id`.
+        Auth-only favorite action (idempotent).
+        Guest flow must use local state and `POST /collections/favorites/lookbooks/sync` after login.
       operationId: favoriteLookbook
-      security: []
-      parameters:
-        - name: x-anonymous-id
-          in: header
-          required: false
-          schema:
-            type: string
+      security:
+        - bearerAuth: []
       responses:
         "200":
           description: Favorited
@@ -449,7 +444,13 @@ paths:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "400":
-          description: Invalid anonymous id (`ANON_ID_INVALID`)
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -457,15 +458,12 @@ paths:
     delete:
       tags: [Lookbooks]
       summary: Remove lookbook from favorites
-      description: Public-compatible unlike (idempotent).
+      description: |
+        Auth-only favorite removal (idempotent).
+        Guest flow must use local state and `POST /collections/favorites/lookbooks/sync` after login.
       operationId: unfavoriteLookbook
-      security: []
-      parameters:
-        - name: x-anonymous-id
-          in: header
-          required: false
-          schema:
-            type: string
+      security:
+        - bearerAuth: []
       responses:
         "200":
           description: Removed
@@ -490,7 +488,13 @@ paths:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "400":
-          description: Invalid anonymous id (`ANON_ID_INVALID`)
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Unauthorized
           content:
             application/json:
               schema:

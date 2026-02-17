@@ -205,11 +205,11 @@ Server merges the payload idempotently into user collections and returns:
   - owner (auth/guest) can read own unpublished draft
   - signs `coverPath` and every `images[].storagePath`
 - Favorites:
-  - `POST /lookbooks/{id}/favorite`, `DELETE /lookbooks/{id}/favorite` are public-compatible (auth + guest)
-  - guest actor key uses `x-anonymous-id` (generated/returned by backend if absent)
+  - `POST /lookbooks/{id}/favorite`, `DELETE /lookbooks/{id}/favorite` are auth-only and idempotent
   - canonical likes storage: `lookbooks/{id}/likes/{actorKey}`
   - `likesCount` maintained atomically
   - authenticated calls are mirrored into `users/{uid}/lookbooks_favorites/{lookbookId}` for collections/sync compatibility
+  - guest flow: keep local state in app and send it via `POST /collections/favorites/lookbooks/sync` after login
 - Collections:
   - `GET /collections/favorites/lookbooks` (public-compatible: guest empty, auth list)
   - returns only existing published lookbooks; stale/unpublished ids are filtered out at read time
@@ -326,8 +326,8 @@ API Table (actual)
 | Lookbooks   | POST   | /lookbooks/create             | Legacy alias for `POST /lookbooks`.                                                     |
 | Lookbooks   | PATCH  | /lookbooks/{id}               | Public-compatible update. Owner only (auth/guest ownership).                            |
 | Lookbooks   | DELETE | /lookbooks/{id}               | Public-compatible delete. Owner only (auth/guest ownership).                            |
-| Lookbooks   | POST   | /lookbooks/{id}/favorite      | Public-compatible, idempotent like.                                                     |
-| Lookbooks   | DELETE | /lookbooks/{id}/favorite      | Public-compatible, idempotent unlike.                                                   |
+| Lookbooks   | POST   | /lookbooks/{id}/favorite      | Authenticated users. Idempotent favorite add.                                           |
+| Lookbooks   | DELETE | /lookbooks/{id}/favorite      | Authenticated users. Idempotent favorite remove.                                        |
 | Lookbooks   | POST   | /lookbooks/{id}/rsvp          | Authenticated users. Stub.                                                              |
 | Events      | GET    | /events                       | Public. Upcoming published events only (past excluded).                                 |
 | Events      | GET    | /events/{id}                  | Public. Published event by id (direct link supports past events).                       |

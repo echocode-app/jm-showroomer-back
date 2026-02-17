@@ -59,14 +59,16 @@ router.delete(
 
 router.post(
     "/:id/favorite",
-    optionalAuth,
+    authMiddleware,
+    loadUser,
     schemaValidate({ params: eventRsvpSchema }),
     favoriteLookbook
 );
 
 router.delete(
     "/:id/favorite",
-    optionalAuth,
+    authMiddleware,
+    loadUser,
     schemaValidate({ params: eventRsvpSchema }),
     unfavoriteLookbook
 );
