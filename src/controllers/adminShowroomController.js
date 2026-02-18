@@ -30,7 +30,8 @@ export async function getShowroomAdmin(req, res, next) {
 // approveShowroom
 export async function approveShowroom(req, res, next) {
     try {
-        const showroom = await approveShowroomService(req.params.id, req.user);
+        await approveShowroomService(req.params.id, req.user);
+        const showroom = await getShowroomByIdService(req.params.id, req.user);
         return ok(res, { showroom });
     } catch (err) {
         next(err);
@@ -40,11 +41,12 @@ export async function approveShowroom(req, res, next) {
 // rejectShowroom
 export async function rejectShowroom(req, res, next) {
     try {
-        const showroom = await rejectShowroomService(
+        await rejectShowroomService(
             req.params.id,
             req.body?.reason,
             req.user
         );
+        const showroom = await getShowroomByIdService(req.params.id, req.user);
         return ok(res, { showroom });
     } catch (err) {
         next(err);

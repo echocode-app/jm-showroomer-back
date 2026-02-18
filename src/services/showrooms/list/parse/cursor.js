@@ -1,6 +1,7 @@
 // Cursor encode/decode + mode safety for list pagination.
 
 import { badRequest } from "../../../../core/error.js";
+import { Timestamp } from "firebase-admin/firestore";
 import { CURSOR_VERSION } from "./constants.js";
 
 export function decodeCursor(cursor) {
@@ -24,14 +25,14 @@ export function decodeCursor(cursor) {
             ) {
                 throw badRequest("CURSOR_INVALID");
             }
-            return parsed;
+            return normalizeDecodedCursor(parsed);
         }
         if (parsed.v === 1) {
             // v1 is legacy and accepted only in default ordering mode.
             if (parsed.value === undefined || !parsed.id) {
                 throw badRequest("CURSOR_INVALID");
             }
-            return parsed;
+            return normalizeDecodedCursor(parsed);
         }
         throw badRequest("CURSOR_INVALID");
     } catch {
@@ -48,7 +49,7 @@ export function encodeCursor(value, orderField, direction) {
             v: CURSOR_VERSION,
             f: orderField,
             d: direction,
-            value: value.value,
+            value: serializeCursorValue(value.value, orderField),
             id: value.id,
         })
     ).toString("base64");
@@ -87,4 +88,71 @@ export function assertCursorMatchesMode(cursor, geohashPrefixes, qName) {
         return;
     }
     throw badRequest("CURSOR_INVALID");
+}
+
+function normalizeDecodedCursor(cursor) {
+    return {
+        ...cursor,
+        value: deserializeCursorValue(cursor.value, cursor.f),
+    };
+}
+
+function serializeCursorValue(value, orderField) {
+    if (orderField !== "updatedAt") {
+        return value;
+    }
+    if (isTimestampLike(value)) {
+        const iso = toIsoIfDateLike(value);
+        if (!iso) return value;
+        return { kind: "ts", iso };
+    }
+    if (typeof value === "string") {
+        const iso = toIsoIfDateLike(value);
+        return { kind: "str", iso: iso ?? value };
+    }
+    return value;
+}
+
+function deserializeCursorValue(value, orderField) {
+    if (orderField !== "updatedAt") {
+        return value;
+    }
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+        if (value.kind === "ts" && typeof value.iso === "string") {
+            const ms = Date.parse(value.iso);
+            if (Number.isFinite(ms)) {
+                return Timestamp.fromDate(new Date(ms));
+            }
+            return value.iso;
+        }
+        if (value.kind === "str" && typeof value.iso === "string") {
+            return value.iso;
+        }
+    }
+    return value;
+}
+
+function isTimestampLike(value) {
+    if (!value) return false;
+    if (value instanceof Date) return true;
+    if (value instanceof Timestamp) return true;
+    if (typeof value?.toDate === "function") {
+        const date = value.toDate();
+        return date instanceof Date;
+    }
+    return false;
+}
+
+function toIsoIfDateLike(value) {
+    if (!value) return null;
+    if (value instanceof Date) return value.toISOString();
+    if (value instanceof Timestamp) return value.toDate().toISOString();
+    if (typeof value?.toDate === "function") return value.toDate().toISOString();
+    if (typeof value === "string") {
+        const ms = Date.parse(value);
+        if (Number.isFinite(ms)) {
+            return new Date(ms).toISOString();
+        }
+    }
+    return null;
 }

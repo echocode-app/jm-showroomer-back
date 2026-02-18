@@ -1,6 +1,7 @@
 import { getFirestoreInstance } from "../../config/firebase.js";
 import { forbidden, notFound } from "../../core/error.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
+import { normalizeShowroomForResponse } from "./response.js";
 
 // getShowroomByIdService
 export async function getShowroomByIdService(id, user = null) {
@@ -22,7 +23,7 @@ export async function getShowroomByIdService(id, user = null) {
             throw forbidden("ACCESS_DENIED");
         }
 
-        return showroom;
+        return normalizeShowroomForResponse(showroom);
     }
 
     const db = getFirestoreInstance();
@@ -45,5 +46,5 @@ export async function getShowroomByIdService(id, user = null) {
         throw forbidden("ACCESS_DENIED");
     }
 
-    return { id: doc.id, ...showroom };
+    return normalizeShowroomForResponse({ id: doc.id, ...showroom });
 }

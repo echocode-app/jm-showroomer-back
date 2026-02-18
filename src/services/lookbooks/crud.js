@@ -4,6 +4,7 @@ import { badRequest, notFound } from "../../core/error.js";
 import { parseLimit } from "./parse.js";
 import { getLookbooksCollection } from "./firestoreQuery.js";
 import { normalizeLookbook } from "./response.js";
+import { DEV_STORE, useDevMock } from "../showrooms/_store.js";
 import {
     assertCanManageLookbook,
     canReadLookbook,
@@ -267,6 +268,14 @@ export async function unlikeLookbookService(id, actor) {
 async function assertShowroomExists(showroomId) {
     const id = parseOptionalString(showroomId);
     if (!id) throw badRequest("SHOWROOM_ID_INVALID");
+
+    if (useDevMock) {
+        const showroom = DEV_STORE.showrooms.find(item => item.id === id);
+        if (!showroom || showroom.status === "deleted") {
+            throw badRequest("SHOWROOM_ID_INVALID");
+        }
+        return;
+    }
 
     const snap = await getFirestoreInstance().collection("showrooms").doc(id).get();
     const showroom = snap.exists ? snap.data() : null;

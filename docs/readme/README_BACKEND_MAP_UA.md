@@ -268,7 +268,28 @@
 
 ---
 
-### E) Помилки, які Flutter має обробляти обовʼязково
+### E) State Transition Contract
+
+**Мета:** всі mutating write-path операції мають детермінований результат переходу стану.
+
+- Showroom favorite (`userShowroomState.favoriteShowroom`) повертає `{ applied: true|false }`:
+  - `true` — favorite створений вперше.
+  - `false` — favorite вже існував (idempotent no-op).
+- Showroom unfavorite (`userShowroomState.unfavoriteShowroom`) повертає `{ removed: true|false }`:
+  - `true` — favorite видалений.
+  - `false` — favorite не існував.
+- Events want-to-visit (`userEventState.markEventWantToVisit`) повертає `{ applied: true|false }` за таким самим правилом.
+- Events remove want-to-visit (`userEventState.removeEventWantToVisit`) повертає `{ removed: true|false }`.
+- Showroom moderation:
+  - `approveShowroomService` повертає `{ statusChanged: true }`.
+  - `rejectShowroomService` повертає `{ statusChanged: true }`.
+  - Обидва переходи виконуються атомарно в Firestore transaction з повторною перевіркою статусу всередині транзакції.
+
+**API compatibility:** контролери зберігають поточний HTTP контракт (`status: favorited/removed`, `showroom` payload для approve/reject).
+
+---
+
+### F) Помилки, які Flutter має обробляти обовʼязково
 
 - `QUERY_INVALID` — некоректні query/body параметри
 - `CURSOR_INVALID` — cursor пошкоджений або не відповідає mode
@@ -281,7 +302,7 @@
 
 ---
 
-### F) Короткий FAQ для Flutter (готові відповіді)
+### G) Короткий FAQ для Flutter (готові відповіді)
 
 **Q: Як правильно пагінувати список?**  
 A: Брати `meta.nextCursor` і передавати як `cursor` у наступний запит. Не генерувати cursor на клієнті.
@@ -612,7 +633,7 @@ ALLOW_PROD_WRITE=1
 1. **Draft створення:** або повертає існуючий draft, або створює мінімальний документ.
 2. **PATCH:** дозволено для `draft/rejected/approved`. При `pending` — заборонено.
 3. **Submit:** перевіряє completeness, дублікати, country‑guards, переводить в `pending` і створює `pendingSnapshot`.
-4. **Approve/Reject (admin):** `pending` → `approved` (apply snapshot) або `rejected` (clear snapshot).
+4. **Approve/Reject (admin):** `pending` → `approved` (apply snapshot) або `rejected` (clear snapshot). Операції виконуються атомарно у Firestore transaction.
 5. **Delete:** soft delete (status=`deleted`).
 6. **Audit:** кожна дія пишеться в `editHistory` з diff.
 

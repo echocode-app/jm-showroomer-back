@@ -1,7 +1,5 @@
 # DEV Test & Release Runbook
 
----
-
 ## 1) Test environment (`NODE_ENV=test`)
 
 ```bash

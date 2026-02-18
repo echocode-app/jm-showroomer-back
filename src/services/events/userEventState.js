@@ -1,4 +1,4 @@
-import { Timestamp } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getFirestoreInstance } from "../../config/firebase.js";
 import { isCountryBlocked } from "../../constants/countries.js";
 import { notFound } from "../../core/error.js";
@@ -9,22 +9,47 @@ import { parseCollectionFilters } from "./parse.js";
 const IDS_CHUNK = 100;
 
 export async function markEventWantToVisit(eventId, uid) {
-    await assertEventExistsAndPublished(eventId);
-    const now = new Date().toISOString();
+    const db = getFirestoreInstance();
+    const eventRef = getEventsCollection().doc(eventId);
     const wantRef = userEventCollection(uid, "events_want_to_visit").doc(eventId);
     const dismissedRef = userEventCollection(uid, "events_dismissed").doc(eventId);
+    let applied = false;
 
-    // Idempotent upsert + mutual exclusion with dismissed.
-    await Promise.all([
-        wantRef.set({ createdAt: now }, { merge: true }),
-        dismissedRef.delete(),
-    ]);
+    // Deterministic apply semantics + mutual exclusion with dismissed.
+    await db.runTransaction(async tx => {
+        const eventSnap = await tx.get(eventRef);
+        const event = eventSnap.exists ? eventSnap.data() : null;
+        if (!event || !isEventPublished(event) || isCountryBlocked(event.country)) {
+            throw notFound("EVENT_NOT_FOUND");
+        }
+
+        const wantSnap = await tx.get(wantRef);
+        if (wantSnap.exists) {
+            tx.delete(dismissedRef);
+            return;
+        }
+
+        tx.set(wantRef, { createdAt: FieldValue.serverTimestamp() });
+        tx.delete(dismissedRef);
+        applied = true;
+    });
+
+    return { applied };
 }
 
 export async function removeEventWantToVisit(eventId, uid) {
-    await userEventCollection(uid, "events_want_to_visit")
-        .doc(eventId)
-        .delete();
+    const db = getFirestoreInstance();
+    const wantRef = userEventCollection(uid, "events_want_to_visit").doc(eventId);
+    let removed = false;
+
+    await db.runTransaction(async tx => {
+        const wantSnap = await tx.get(wantRef);
+        if (!wantSnap.exists) return;
+        tx.delete(wantRef);
+        removed = true;
+    });
+
+    return { removed };
 }
 
 export async function dismissEvent(eventId, uid) {

@@ -1,4 +1,5 @@
 import { getFirestoreInstance } from "../../config/firebase.js";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { badRequest, forbidden, notFound } from "../../core/error.js";
 import { appendHistory, makeHistoryEntry } from "./_helpers.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
@@ -44,40 +45,40 @@ export async function rejectShowroomService(id, reason, user) {
             })
         );
 
-        return showroom;
+        return { statusChanged: true };
     }
 
     const db = getFirestoreInstance();
     const ref = db.collection("showrooms").doc(id);
-    const snap = await ref.get();
+    await db.runTransaction(async tx => {
+        const snap = await tx.get(ref);
+        if (!snap.exists) throw notFound("SHOWROOM_NOT_FOUND");
 
-    if (!snap.exists) throw notFound("SHOWROOM_NOT_FOUND");
+        const showroom = snap.data();
+        if (showroom.status !== "pending") {
+            throw badRequest("SHOWROOM_NOT_EDITABLE");
+        }
 
-    const showroom = snap.data();
-    if (showroom.status !== "pending") {
-        throw badRequest("SHOWROOM_NOT_EDITABLE");
-    }
+        const statusBefore = showroom.status;
+        const updates = buildRejectUpdates(showroom, reason, user, statusBefore);
+        tx.update(ref, updates);
+    });
 
-    const statusBefore = showroom.status;
-    const updatedAt = new Date().toISOString();
-
-    const updates = buildRejectUpdates(showroom, reason, user, statusBefore, updatedAt);
-
-    await ref.update(updates);
-    return { id, ...showroom, ...updates };
+    return { statusChanged: true };
 }
 
 /**
  * Builds one atomic reject update payload for Firestore.
  */
-function buildRejectUpdates(showroom, reason, user, statusBefore, updatedAt) {
+function buildRejectUpdates(showroom, reason, user, statusBefore) {
+    const historyAt = Timestamp.fromDate(new Date());
     return {
         status: "rejected",
-        reviewedAt: updatedAt,
+        reviewedAt: FieldValue.serverTimestamp(),
         reviewedBy: { uid: user.uid, role: user.role },
         reviewReason: reason,
         pendingSnapshot: null,
-        updatedAt,
+        updatedAt: FieldValue.serverTimestamp(),
         editHistory: appendHistory(
             showroom.editHistory || [],
             makeHistoryEntry({
@@ -89,7 +90,7 @@ function buildRejectUpdates(showroom, reason, user, statusBefore, updatedAt) {
                 diff: {
                     status: { from: statusBefore, to: "rejected" },
                 },
-                at: updatedAt,
+                at: historyAt,
             })
         ),
     };

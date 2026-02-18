@@ -93,8 +93,8 @@ export async function getShowroomById(req, res, next) {
 // FAVORITE
 export async function favoriteShowroom(req, res, next) {
     try {
-        const result = await favoriteShowroomService(req.auth.uid, req.params.id);
-        return ok(res, { showroomId: req.params.id, ...result });
+        await favoriteShowroomService(req.auth.uid, req.params.id);
+        return ok(res, { showroomId: req.params.id, status: "favorited" });
     } catch (err) {
         next(err);
     }
@@ -102,8 +102,8 @@ export async function favoriteShowroom(req, res, next) {
 
 export async function unfavoriteShowroom(req, res, next) {
     try {
-        const result = await unfavoriteShowroomService(req.auth.uid, req.params.id);
-        return ok(res, { showroomId: req.params.id, ...result });
+        await unfavoriteShowroomService(req.auth.uid, req.params.id);
+        return ok(res, { showroomId: req.params.id, status: "removed" });
     } catch (err) {
         next(err);
     }

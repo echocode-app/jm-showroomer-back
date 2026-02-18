@@ -1,4 +1,4 @@
-import { Timestamp } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getFirestoreInstance } from "../../config/firebase.js";
 import { notFound, badRequest } from "../../core/error.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
@@ -33,18 +33,64 @@ export async function assertShowroomFavoriteable(showroomId) {
 }
 
 export async function favoriteShowroom(uid, showroomId) {
-    await assertShowroomFavoriteable(showroomId);
+    if (useDevMock) {
+        await assertShowroomFavoriteable(showroomId);
 
-    await userFavoritesCollection(uid)
-        .doc(showroomId)
-        .set({ createdAt: Timestamp.fromDate(new Date()) }, { merge: true });
+        const favoriteRef = userFavoritesCollection(uid).doc(showroomId);
+        const favoriteSnap = await favoriteRef.get();
+        if (favoriteSnap.exists) {
+            return { applied: false };
+        }
 
-    return { status: "favorited" };
+        await favoriteRef.set({ createdAt: FieldValue.serverTimestamp() });
+        return { applied: true };
+    }
+
+    const db = getFirestoreInstance();
+    const showroomRef = db.collection("showrooms").doc(showroomId);
+    const favoriteRef = userFavoritesCollection(uid).doc(showroomId);
+    let applied = false;
+
+    await db.runTransaction(async tx => {
+        const showroomSnap = await tx.get(showroomRef);
+        const showroom = showroomSnap.exists ? showroomSnap.data() : null;
+        // Anti-leak rule: all non-favoritable states map to the same 404 response.
+        if (!showroom || showroom.status !== "approved" || showroom.status === "deleted") {
+            throw notFound("SHOWROOM_NOT_FOUND");
+        }
+
+        const favoriteSnap = await tx.get(favoriteRef);
+        if (favoriteSnap.exists) return;
+        tx.set(favoriteRef, { createdAt: FieldValue.serverTimestamp() });
+        applied = true;
+    });
+
+    return { applied };
 }
 
 export async function unfavoriteShowroom(uid, showroomId) {
-    await userFavoritesCollection(uid).doc(showroomId).delete();
-    return { status: "removed" };
+    if (useDevMock) {
+        const favoriteRef = userFavoritesCollection(uid).doc(showroomId);
+        const favoriteSnap = await favoriteRef.get();
+        if (!favoriteSnap.exists) {
+            return { removed: false };
+        }
+        await favoriteRef.delete();
+        return { removed: true };
+    }
+
+    const db = getFirestoreInstance();
+    const favoriteRef = userFavoritesCollection(uid).doc(showroomId);
+    let removed = false;
+
+    await db.runTransaction(async tx => {
+        const favoriteSnap = await tx.get(favoriteRef);
+        if (!favoriteSnap.exists) return;
+        tx.delete(favoriteRef);
+        removed = true;
+    });
+
+    return { removed };
 }
 
 export async function syncGuestShowroomFavorites(uid, payload = {}) {

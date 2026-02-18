@@ -1,4 +1,5 @@
 import { getFirestoreInstance } from "../../config/firebase.js";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { badRequest, forbidden, notFound } from "../../core/error.js";
 import { EDITABLE_FIELDS } from "./_constants.js";
 import { appendHistory, buildDiff, makeHistoryEntry } from "./_helpers.js";
@@ -48,54 +49,56 @@ export async function approveShowroomService(id, user) {
             })
         );
 
-        return showroom;
+        return { statusChanged: true };
     }
 
     const db = getFirestoreInstance();
     const ref = db.collection("showrooms").doc(id);
-    const snap = await ref.get();
+    await db.runTransaction(async tx => {
+        const snap = await tx.get(ref);
+        if (!snap.exists) throw notFound("SHOWROOM_NOT_FOUND");
 
-    if (!snap.exists) throw notFound("SHOWROOM_NOT_FOUND");
+        const showroom = snap.data();
+        if (showroom.status !== "pending") {
+            throw badRequest("SHOWROOM_NOT_EDITABLE");
+        }
 
-    const showroom = snap.data();
-    if (showroom.status !== "pending") {
-        throw badRequest("SHOWROOM_NOT_EDITABLE");
-    }
+        if (!showroom.pendingSnapshot) {
+            throw badRequest("SHOWROOM_PENDING_SNAPSHOT_MISSING");
+        }
 
-    if (!showroom.pendingSnapshot) {
-        throw badRequest("SHOWROOM_PENDING_SNAPSHOT_MISSING");
-    }
-    // Apply immutable pending snapshot to prevent post-submit drift.
-    const snapshot = showroom.pendingSnapshot;
-    const applied = { ...showroom, ...snapshot };
-    const { diff, changedFields } = buildDiff(showroom, applied, EDITABLE_FIELDS);
+        // Apply immutable pending snapshot to prevent post-submit drift.
+        const snapshot = showroom.pendingSnapshot;
+        const applied = { ...showroom, ...snapshot };
+        const { diff, changedFields } = buildDiff(showroom, applied, EDITABLE_FIELDS);
 
-    const updates = {};
-    changedFields.forEach(field => {
-        updates[field] = diff[field].to;
+        const updates = {};
+        changedFields.forEach(field => {
+            updates[field] = diff[field].to;
+        });
+
+        const statusBefore = showroom.status;
+        const historyAt = Timestamp.fromDate(new Date());
+        updates.status = "approved";
+        updates.reviewedAt = FieldValue.serverTimestamp();
+        updates.reviewedBy = { uid: user.uid, role: user.role };
+        updates.pendingSnapshot = null;
+        updates.updatedAt = FieldValue.serverTimestamp();
+        updates.editHistory = appendHistory(
+            showroom.editHistory || [],
+            makeHistoryEntry({
+                action: "approve",
+                actor: user,
+                statusBefore,
+                statusAfter: "approved",
+                changedFields,
+                diff,
+                at: historyAt,
+            })
+        );
+
+        tx.update(ref, updates);
     });
 
-    const statusBefore = showroom.status;
-    const updatedAt = new Date().toISOString();
-
-    updates.status = "approved";
-    updates.reviewedAt = updatedAt;
-    updates.reviewedBy = { uid: user.uid, role: user.role };
-    updates.pendingSnapshot = null;
-    updates.updatedAt = updatedAt;
-    updates.editHistory = appendHistory(
-        showroom.editHistory || [],
-        makeHistoryEntry({
-            action: "approve",
-            actor: user,
-            statusBefore,
-            statusAfter: "approved",
-            changedFields,
-            diff,
-            at: updatedAt,
-        })
-    );
-
-    await ref.update(updates);
-    return { id, ...showroom, ...updates };
+    return { statusChanged: true };
 }
