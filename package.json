@@ -12,6 +12,7 @@
     "test:admin": "NODE_ENV=test ./src/test/test_admin_and_collections.sh",
     "test:events": "NODE_ENV=test ./src/test/test_events_mvp1.sh",
     "test:events-guest-sync": "NODE_ENV=test ./src/test/test_events_guest_sync.sh",
+    "test:notifications": "NODE_ENV=test ./src/test/test_notifications_storage.sh",
     "test:lookbooks": "NODE_ENV=test ./src/test/test_lookbooks.sh",
     "test:geo": "NODE_ENV=test ./src/test/test_geo_paging_checks.sh",
     "test:media": "NODE_ENV=test ./src/test/test_media.sh",

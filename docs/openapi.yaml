@@ -97,6 +97,10 @@ components:
       $ref: './common.yaml#/components/schemas/ApiError'
     Error:
       $ref: './common.yaml#/components/schemas/Error'
+    NotificationType:
+      $ref: './common.yaml#/components/schemas/NotificationType'
+    Notification:
+      $ref: './common.yaml#/components/schemas/Notification'
     HealthResponse:
       $ref: './common.yaml#/components/schemas/HealthResponse'
     OAuthLoginInput:

@@ -45,6 +45,69 @@ components:
         - EVENTS_WRITE_MVP2_ONLY
         - CURSOR_INVALID
         - INDEX_NOT_READY
+        - NOTIFICATION_TYPE_INVALID
+    NotificationType:
+      type: string
+      description: |
+        Allowed notification types for Firestore storage layer (MVP).
+      enum:
+        - SHOWROOM_APPROVED
+        - SHOWROOM_REJECTED
+        - SHOWROOM_FAVORITED
+        - LOOKBOOK_FAVORITED
+        - EVENT_WANT_TO_VISIT
+    Notification:
+      type: object
+      description: |
+        Firestore storage-only notification document (MVP).
+        Structure: `users/{uid}/notifications/{dedupeKey}`.
+        No read/unread API endpoints are exposed yet.
+      required:
+        - type
+        - actorUid
+        - resource
+        - payload
+        - createdAt
+        - readAt
+        - isRead
+        - dedupeKey
+      properties:
+        type:
+          $ref: '#/components/schemas/NotificationType'
+        actorUid:
+          type: string
+          nullable: true
+          description: UID of actor that triggered the notification; null when not applicable.
+        resource:
+          type: object
+          required: [type, id]
+          properties:
+            type:
+              type: string
+              enum: [showroom, lookbook, event]
+            id:
+              type: string
+        payload:
+          type: object
+          additionalProperties: true
+          description: Compact metadata for UI rendering (for example showroomName).
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Set by backend using Firestore server timestamp.
+        readAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Null by default in MVP storage.
+        isRead:
+          type: boolean
+          description: False by default in MVP storage.
+          example: false
+        dedupeKey:
+          type: string
+          description: Deterministic idempotency key, also used as document id.
     HealthResponse:
       type: object
       properties:

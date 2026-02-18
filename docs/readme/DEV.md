@@ -33,6 +33,8 @@ NODE_ENV=test ./src/test/test_events_guest_sync.sh
 
 NODE_ENV=test ./src/test/test_lookbooks.sh
 # npm run test:lookbooks
+
+# npm run test:notifications
 ```
 
 Повний:

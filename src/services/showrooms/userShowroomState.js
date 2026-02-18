@@ -1,6 +1,9 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { log } from "../../config/logger.js";
 import { getFirestoreInstance } from "../../config/firebase.js";
 import { notFound, badRequest } from "../../core/error.js";
+import { createNotification } from "../notifications/notificationService.js";
+import { NOTIFICATION_TYPES } from "../notifications/types.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 
 const DEFAULT_LIMIT = 20;
@@ -34,7 +37,7 @@ export async function assertShowroomFavoriteable(showroomId) {
 
 export async function favoriteShowroom(uid, showroomId) {
     if (useDevMock) {
-        await assertShowroomFavoriteable(showroomId);
+        const showroom = await assertShowroomFavoriteable(showroomId);
 
         const favoriteRef = userFavoritesCollection(uid).doc(showroomId);
         const favoriteSnap = await favoriteRef.get();
@@ -43,6 +46,11 @@ export async function favoriteShowroom(uid, showroomId) {
         }
 
         await favoriteRef.set({ createdAt: FieldValue.serverTimestamp() });
+        await tryCreateShowroomFavoriteNotification({
+            showroom,
+            showroomId,
+            actorUid: uid,
+        });
         return { applied: true };
     }
 
@@ -50,6 +58,7 @@ export async function favoriteShowroom(uid, showroomId) {
     const showroomRef = db.collection("showrooms").doc(showroomId);
     const favoriteRef = userFavoritesCollection(uid).doc(showroomId);
     let applied = false;
+    let showroomForNotification = null;
 
     await db.runTransaction(async tx => {
         const showroomSnap = await tx.get(showroomRef);
@@ -58,12 +67,24 @@ export async function favoriteShowroom(uid, showroomId) {
         if (!showroom || showroom.status !== "approved" || showroom.status === "deleted") {
             throw notFound("SHOWROOM_NOT_FOUND");
         }
+        showroomForNotification = {
+            ownerUid: showroom.ownerUid ?? null,
+            name: showroom.name ?? null,
+        };
 
         const favoriteSnap = await tx.get(favoriteRef);
         if (favoriteSnap.exists) return;
         tx.set(favoriteRef, { createdAt: FieldValue.serverTimestamp() });
         applied = true;
     });
+
+    if (applied) {
+        await tryCreateShowroomFavoriteNotification({
+            showroom: showroomForNotification,
+            showroomId,
+            actorUid: uid,
+        });
+    }
 
     return { applied };
 }
@@ -241,6 +262,29 @@ function userFavoritesCollection(uid) {
         .collection("users")
         .doc(uid)
         .collection("showrooms_favorites");
+}
+
+async function tryCreateShowroomFavoriteNotification({ showroom, showroomId, actorUid }) {
+    const ownerUid = showroom?.ownerUid;
+    if (!ownerUid || ownerUid === actorUid) return;
+
+    try {
+        await createNotification({
+            targetUid: ownerUid,
+            actorUid,
+            type: NOTIFICATION_TYPES.SHOWROOM_FAVORITED,
+            resourceType: "showroom",
+            resourceId: showroomId,
+            payload: {
+                showroomName: showroom?.name ?? null,
+            },
+            dedupeKey: `showroom:${showroomId}:favorited:${actorUid}`,
+        });
+    } catch (err) {
+        log.error(
+            `Notification write skipped (showroom favorite ${showroomId}): ${err?.message || err}`
+        );
+    }
 }
 
 function parseCollectionFilters(filters = {}) {

@@ -31,6 +31,7 @@
 - **Moderation**: `src/routes/admin.js` → `src/controllers/adminShowroomController.js` → `src/services/showrooms/approveShowroom.js` / `rejectShowroom.js`
 - **Search**: `src/services/showrooms/listShowrooms.js` (entry) + `src/services/showrooms/list/*` (parse/dev/firestore + shared `devFilters.js`)
 - **Suggestions & Counters**: `src/services/showrooms/suggestShowrooms.js` (entry + `suggest/*` internals), `src/services/showrooms/countShowrooms.js`
+- **Notifications (MVP storage)**: `src/services/notifications/*` + trigger points у `approveShowroom.js`, `rejectShowroom.js`, `userShowroomState.js`, `lookbooks/crud.js`, `events/userEventState.js`
 - **Tests**: `src/test/test_smoke.sh`, `src/test/test_showrooms.sh`, `src/test/test_showrooms_favorites.sh`, `src/test/test_admin_and_collections.sh`, `src/test/test_media.sh`, `src/test/test_geo_paging_checks.sh`, `src/test/test_suggestions_and_counters.sh`
 
 ---
@@ -289,7 +290,41 @@
 
 ---
 
-### F) Помилки, які Flutter має обробляти обовʼязково
+### F) Notifications Domain (MVP)
+
+**Скоуп:** тільки storage layer. Немає read API, push або unread endpoints.
+
+**Firestore структура:**
+- `users/{uid}/notifications/{dedupeKey}`
+- `dedupeKey` використовується як `documentId` для ідемпотентності.
+
+**Схема документа:**
+- `type` — enum (`SHOWROOM_APPROVED`, `SHOWROOM_REJECTED`, `SHOWROOM_FAVORITED`, `LOOKBOOK_FAVORITED`, `EVENT_WANT_TO_VISIT`)
+- `actorUid` — uid актора або `null`
+- `resource` — `{ type: showroom|lookbook|event, id }`
+- `payload` — компактний metadata object
+- `createdAt` — `FieldValue.serverTimestamp()`
+- `isRead` — `false` (default)
+- `readAt` — `null` (default)
+- `dedupeKey` — детермінований ключ події
+
+**Trigger points:**
+- moderation approve/reject: notification write додається всередині тієї ж Firestore transaction.
+- showroom favorite / lookbook favorite / event want-to-visit: notification write після детермінованого `applied=true`.
+
+**Idempotency rules:**
+- approve: `showroom:{id}:approved`
+- reject: `showroom:{id}:rejected`
+- showroom favorite: `showroom:{id}:favorited:{actorUid}`
+- lookbook favorite: `lookbook:{id}:favorited:{actorUid}`
+- event want: `event:{id}:want:{actorUid}`
+
+**Self-action skip:**
+- favorite notifications не створюються, якщо `actorUid === targetUid`.
+
+---
+
+### G) Помилки, які Flutter має обробляти обовʼязково
 
 - `QUERY_INVALID` — некоректні query/body параметри
 - `CURSOR_INVALID` — cursor пошкоджений або не відповідає mode
@@ -299,10 +334,11 @@
 - `EVENT_NOT_FOUND` — event відсутній/недоступний
 - `AUTH_MISSING` / `AUTH_INVALID` — токен відсутній/невалідний
 - `COUNTRY_BLOCKED` — RU/BY policy
+- `NOTIFICATION_TYPE_INVALID` — невалідний тип notification
 
 ---
 
-### G) Короткий FAQ для Flutter (готові відповіді)
+### H) Короткий FAQ для Flutter (готові відповіді)
 
 **Q: Як правильно пагінувати список?**  
 A: Брати `meta.nextCursor` і передавати як `cursor` у наступний запит. Не генерувати cursor на клієнті.

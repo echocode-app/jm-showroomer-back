@@ -1,7 +1,10 @@
 import { getFirestoreInstance } from "../../config/firebase.js";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { log } from "../../config/logger.js";
 import { badRequest, forbidden, notFound } from "../../core/error.js";
 import { appendHistory, makeHistoryEntry } from "./_helpers.js";
+import { createNotification } from "../notifications/notificationService.js";
+import { NOTIFICATION_TYPES } from "../notifications/types.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 
 /**
@@ -44,6 +47,22 @@ export async function rejectShowroomService(id, reason, user) {
                 at: showroom.updatedAt,
             })
         );
+        try {
+            await createNotification({
+                targetUid: showroom.ownerUid ?? null,
+                actorUid: user.uid,
+                type: NOTIFICATION_TYPES.SHOWROOM_REJECTED,
+                resourceType: "showroom",
+                resourceId: id,
+                payload: {
+                    showroomName: showroom.name ?? null,
+                    reason,
+                },
+                dedupeKey: `showroom:${id}:rejected`,
+            });
+        } catch (err) {
+            log.error(`Notification write skipped (reject ${id}): ${err?.message || err}`);
+        }
 
         return { statusChanged: true };
     }
@@ -62,6 +81,23 @@ export async function rejectShowroomService(id, reason, user) {
         const statusBefore = showroom.status;
         const updates = buildRejectUpdates(showroom, reason, user, statusBefore);
         tx.update(ref, updates);
+        try {
+            await createNotification({
+                targetUid: showroom.ownerUid,
+                actorUid: user.uid,
+                type: NOTIFICATION_TYPES.SHOWROOM_REJECTED,
+                resourceType: "showroom",
+                resourceId: id,
+                payload: {
+                    showroomName: showroom.name ?? null,
+                    reason,
+                },
+                dedupeKey: `showroom:${id}:rejected`,
+                tx,
+            });
+        } catch (err) {
+            log.error(`Notification write skipped (reject ${id}): ${err?.message || err}`);
+        }
     });
 
     return { statusChanged: true };

@@ -1,8 +1,11 @@
 import { getFirestoreInstance } from "../../config/firebase.js";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { log } from "../../config/logger.js";
 import { badRequest, forbidden, notFound } from "../../core/error.js";
 import { EDITABLE_FIELDS } from "./_constants.js";
 import { appendHistory, buildDiff, makeHistoryEntry } from "./_helpers.js";
+import { createNotification } from "../notifications/notificationService.js";
+import { NOTIFICATION_TYPES } from "../notifications/types.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 
 // approveShowroomService
@@ -48,6 +51,31 @@ export async function approveShowroomService(id, user) {
                 at: showroom.updatedAt,
             })
         );
+        const targetUid = showroom.ownerUid ?? null;
+        const dedupeKey = `showroom:${id}:approved`;
+        const notificationRefPath = targetUid
+            ? dbNotificationPath(targetUid, dedupeKey)
+            : "invalid-target-uid";
+        log.info(
+            `approve notification context targetUid=${targetUid} dedupeKey=${dedupeKey} path=${notificationRefPath}`
+        );
+        try {
+            await createNotification({
+                targetUid,
+                actorUid: user.uid,
+                type: NOTIFICATION_TYPES.SHOWROOM_APPROVED,
+                resourceType: "showroom",
+                resourceId: id,
+                payload: {
+                    showroomName: showroom.name ?? null,
+                },
+                dedupeKey,
+            });
+        } catch (err) {
+            log.error(
+                `Notification write skipped (approve ${id}) targetUid=${targetUid} dedupeKey=${dedupeKey} path=${notificationRefPath}: ${err?.message || err}`
+            );
+        }
 
         return { statusChanged: true };
     }
@@ -98,7 +126,37 @@ export async function approveShowroomService(id, user) {
         );
 
         tx.update(ref, updates);
+        const targetUid = showroom.ownerUid ?? null;
+        const dedupeKey = `showroom:${id}:approved`;
+        const notificationRefPath = targetUid
+            ? dbNotificationPath(targetUid, dedupeKey)
+            : "invalid-target-uid";
+        log.info(
+            `approve notification context targetUid=${targetUid} dedupeKey=${dedupeKey} path=${notificationRefPath}`
+        );
+        try {
+            await createNotification({
+                targetUid,
+                actorUid: user.uid,
+                type: NOTIFICATION_TYPES.SHOWROOM_APPROVED,
+                resourceType: "showroom",
+                resourceId: id,
+                payload: {
+                    showroomName: updates.name ?? showroom.name ?? null,
+                },
+                dedupeKey,
+                tx,
+            });
+        } catch (err) {
+            log.error(
+                `Notification write skipped (approve ${id}) targetUid=${targetUid} dedupeKey=${dedupeKey} path=${notificationRefPath}: ${err?.message || err}`
+            );
+        }
     });
 
     return { statusChanged: true };
+}
+
+function dbNotificationPath(targetUid, dedupeKey) {
+    return `users/${targetUid}/notifications/${dedupeKey}`;
 }

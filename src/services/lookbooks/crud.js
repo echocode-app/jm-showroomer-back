@@ -1,6 +1,9 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getFirestoreInstance } from "../../config/firebase.js";
+import { log } from "../../config/logger.js";
 import { badRequest, notFound } from "../../core/error.js";
+import { createNotification } from "../notifications/notificationService.js";
+import { NOTIFICATION_TYPES } from "../notifications/types.js";
 import { parseLimit } from "./parse.js";
 import { getLookbooksCollection } from "./firestoreQuery.js";
 import { normalizeLookbook } from "./response.js";
@@ -180,6 +183,8 @@ export async function likeLookbookService(id, actor) {
         .map(key => db.collection("lookbooks").doc(id).collection("likes").doc(key));
     const now = Timestamp.fromDate(new Date());
     let applied = false;
+    let targetUid = null;
+    let lookbookLabel = null;
 
     await db.runTransaction(async tx => {
         const snap = await tx.get(ref);
@@ -189,6 +194,8 @@ export async function likeLookbookService(id, actor) {
         if (!canReadLookbook(lookbook, actor)) {
             throw notFound("LOOKBOOK_NOT_FOUND");
         }
+        targetUid = lookbook.authorId ?? null;
+        lookbookLabel = lookbook.name ?? lookbook.title ?? null;
 
         const likeSnaps = await Promise.all(readLikeRefs.map(likeReadRef => tx.get(likeReadRef)));
         const hasLike = likeSnaps.some(likeSnap => likeSnap.exists);
@@ -218,6 +225,23 @@ export async function likeLookbookService(id, actor) {
 
     if (applied && !actor.isAnonymous && actor.userId) {
         await userFavoritesCollection(actor.userId).doc(id).set({ createdAt: now }, { merge: true });
+        if (targetUid && targetUid !== actor.userId) {
+            try {
+                await createNotification({
+                    targetUid,
+                    actorUid: actor.userId,
+                    type: NOTIFICATION_TYPES.LOOKBOOK_FAVORITED,
+                    resourceType: "lookbook",
+                    resourceId: id,
+                    payload: { lookbookName: lookbookLabel },
+                    dedupeKey: `lookbook:${id}:favorited:${actor.userId}`,
+                });
+            } catch (err) {
+                log.error(
+                    `Notification write skipped (lookbook favorite ${id}): ${err?.message || err}`
+                );
+            }
+        }
     }
 
     return { status: "favorited" };

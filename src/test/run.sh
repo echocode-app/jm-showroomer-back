@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 usage() {
-  echo "Usage: $0 smoke|showrooms|showrooms-favorites|admin|events|events-guest-sync|lookbooks|geo|suggestions|media|user-delete|prod-smoke|all|all-with-user-delete|all-full"
+  echo "Usage: $0 smoke|showrooms|showrooms-favorites|admin|events|events-guest-sync|notifications|lookbooks|geo|suggestions|media|user-delete|prod-smoke|all|all-with-user-delete|all-full"
 }
 
 TARGET=${1:-}
@@ -31,6 +31,9 @@ case "$TARGET" in
     ;;
   events-guest-sync)
     "$SCRIPT_DIR/test_events_guest_sync.sh"
+    ;;
+  notifications)
+    "$SCRIPT_DIR/test_notifications_storage.sh"
     ;;
   lookbooks)
     "$SCRIPT_DIR/test_lookbooks.sh"

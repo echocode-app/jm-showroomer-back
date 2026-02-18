@@ -1,7 +1,10 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { log } from "../../config/logger.js";
 import { getFirestoreInstance } from "../../config/firebase.js";
 import { isCountryBlocked } from "../../constants/countries.js";
 import { notFound } from "../../core/error.js";
+import { createNotification } from "../notifications/notificationService.js";
+import { NOTIFICATION_TYPES } from "../notifications/types.js";
 import { buildEventResponse, compareByStartsAtAsc, isEventPublished, isFutureEvent } from "./eventResponse.js";
 import { getEventsCollection } from "./firestoreQuery.js";
 import { parseCollectionFilters } from "./parse.js";
@@ -14,6 +17,8 @@ export async function markEventWantToVisit(eventId, uid) {
     const wantRef = userEventCollection(uid, "events_want_to_visit").doc(eventId);
     const dismissedRef = userEventCollection(uid, "events_dismissed").doc(eventId);
     let applied = false;
+    let eventOwnerUid = null;
+    let eventName = null;
 
     // Deterministic apply semantics + mutual exclusion with dismissed.
     await db.runTransaction(async tx => {
@@ -22,6 +27,8 @@ export async function markEventWantToVisit(eventId, uid) {
         if (!event || !isEventPublished(event) || isCountryBlocked(event.country)) {
             throw notFound("EVENT_NOT_FOUND");
         }
+        eventOwnerUid = typeof event.ownerUid === "string" ? event.ownerUid : null;
+        eventName = typeof event.name === "string" ? event.name : null;
 
         const wantSnap = await tx.get(wantRef);
         if (wantSnap.exists) {
@@ -33,6 +40,24 @@ export async function markEventWantToVisit(eventId, uid) {
         tx.delete(dismissedRef);
         applied = true;
     });
+
+    if (applied && eventOwnerUid && eventOwnerUid !== uid) {
+        try {
+            await createNotification({
+                targetUid: eventOwnerUid,
+                actorUid: uid,
+                type: NOTIFICATION_TYPES.EVENT_WANT_TO_VISIT,
+                resourceType: "event",
+                resourceId: eventId,
+                payload: { eventName },
+                dedupeKey: `event:${eventId}:want:${uid}`,
+            });
+        } catch (err) {
+            log.error(
+                `Notification write skipped (event want-to-visit ${eventId}): ${err?.message || err}`
+            );
+        }
+    }
 
     return { applied };
 }
