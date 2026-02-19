@@ -56,9 +56,6 @@ export async function approveShowroomService(id, user) {
         const notificationRefPath = targetUid
             ? dbNotificationPath(targetUid, dedupeKey)
             : "invalid-target-uid";
-        log.info(
-            `approve notification context targetUid=${targetUid} dedupeKey=${dedupeKey} path=${notificationRefPath}`
-        );
         try {
             await createNotification({
                 targetUid,
@@ -131,9 +128,6 @@ export async function approveShowroomService(id, user) {
         const notificationRefPath = targetUid
             ? dbNotificationPath(targetUid, dedupeKey)
             : "invalid-target-uid";
-        log.info(
-            `approve notification context targetUid=${targetUid} dedupeKey=${dedupeKey} path=${notificationRefPath}`
-        );
         try {
             await createNotification({
                 targetUid,

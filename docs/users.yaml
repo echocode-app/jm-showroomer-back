@@ -128,6 +128,39 @@ components:
           type: string
         notificationsEnabled:
           type: boolean
+    NotificationReadResult:
+      type: object
+      required: [id, isRead]
+      properties:
+        id:
+          type: string
+        isRead:
+          type: boolean
+          example: true
+    NotificationsListData:
+      type: object
+      required: [items, meta]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: './common.yaml#/components/schemas/Notification'
+        meta:
+          type: object
+          required: [nextCursor, hasMore]
+          properties:
+            nextCursor:
+              type: string
+              nullable: true
+            hasMore:
+              type: boolean
+    NotificationsUnreadCountData:
+      type: object
+      required: [unreadCount]
+      properties:
+        unreadCount:
+          type: integer
+          minimum: 0
 
     SyncGuestEventsInput:
       type: object
@@ -285,6 +318,126 @@ paths:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "409":
           description: Delete blocked (active assets, USER_DELETE_BLOCKED)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
+  /users/me/notifications:
+    get:
+      tags: [Users]
+      summary: List my notifications
+      description: |
+        Returns notifications for current authenticated user only.
+        Ordered by `createdAt desc`, then `documentId desc`.
+        Cursor is backend-owned base64 JSON `{ v, createdAt, id }`.
+      operationId: listMyNotifications
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Page size (values are clamped to 1..100; default 20).
+        - in: query
+          name: cursor
+          schema:
+            type: string
+          description: Opaque backend cursor from previous response.
+      responses:
+        "200":
+          description: Notifications list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/NotificationsListData'
+        "400":
+          description: Invalid query or cursor
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
+  /users/me/notifications/{notificationId}/read:
+    patch:
+      tags: [Users]
+      summary: Mark notification as read
+      operationId: markMyNotificationRead
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: notificationId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Notification marked as read (idempotent)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/NotificationReadResult'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "404":
+          description: Notification not found
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
+  /users/me/notifications/unread-count:
+    get:
+      tags: [Users]
+      summary: Get unread notifications count
+      description: |
+        Computes unread count server-side with Firestore query
+        `where("isRead", "==", false)`.
+      operationId: getMyUnreadNotificationsCount
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Unread count
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/NotificationsUnreadCountData'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "503":
+          description: Index not ready (if required in specific Firestore env)
           content:
             application/json:
               schema:

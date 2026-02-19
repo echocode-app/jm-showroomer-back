@@ -1,0 +1,112 @@
+name: Manual Smoke (External)
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "External base URL (e.g. https://host/api/v1). Empty = local server startup."
+        required: false
+        default: ""
+      node_env:
+        description: "NODE_ENV when starting local server"
+        required: false
+        default: "prod"
+      test_target:
+        description: "Test suite target from src/test/run.sh"
+        required: true
+        default: "smoke"
+        type: choice
+        options:
+          - smoke
+          - showrooms
+          - showrooms-favorites
+          - admin
+          - events
+          - events-guest-sync
+          - notifications
+          - notifications-read
+          - lookbooks
+          - geo
+          - suggestions
+          - media
+          - user-delete
+
+jobs:
+  manual-smoke:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Export runtime env
+        run: |
+          if [ -n "${{ inputs.base_url }}" ]; then
+            echo "BASE_URL=${{ inputs.base_url }}" >> "$GITHUB_ENV"
+          fi
+          echo "NODE_ENV=${{ inputs.node_env }}" >> "$GITHUB_ENV"
+
+      - name: Start local server (only when base_url is empty)
+        if: ${{ inputs.base_url == '' }}
+        run: |
+          set -euo pipefail
+          NODE_ENV=${{ inputs.node_env }} node src/core/server.js > /tmp/server.log 2>&1 &
+          echo $! > /tmp/server.pid
+
+      - name: Wait for health (only when base_url is empty)
+        if: ${{ inputs.base_url == '' }}
+        run: |
+          set -euo pipefail
+          for i in {1..45}; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:3005/api/v1/health" || true)
+            if [ "$code" = "200" ]; then
+              echo "Server ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Server failed health check"
+          echo "---- /tmp/server.log ----"
+          cat /tmp/server.log || true
+          exit 1
+
+      - name: Run selected test target
+        env:
+          TEST_USER_TOKEN: ${{ secrets.TEST_USER_TOKEN || '' }}
+          TEST_ADMIN_TOKEN: ${{ secrets.TEST_ADMIN_TOKEN || '' }}
+        run: |
+          set -euo pipefail
+          target="${{ inputs.test_target }}"
+          case "$target" in
+            smoke|showrooms|showrooms-favorites|lookbooks|events|events-guest-sync|geo|suggestions|media|notifications|notifications-read|user-delete)
+              if [ -z "$TEST_USER_TOKEN" ]; then
+                echo "Skipping $target: TEST_USER_TOKEN is missing"
+                exit 0
+              fi
+              ;;
+            admin)
+              if [ -z "$TEST_USER_TOKEN" ] || [ -z "$TEST_ADMIN_TOKEN" ]; then
+                echo "Skipping $target: TEST_USER_TOKEN or TEST_ADMIN_TOKEN is missing"
+                exit 0
+              fi
+              ;;
+          esac
+          ./src/test/run.sh "${{ inputs.test_target }}"
+
+      - name: Stop local server
+        if: ${{ always() && inputs.base_url == '' }}
+        run: |
+          if [ -f /tmp/server.pid ]; then
+            kill "$(cat /tmp/server.pid)" || true
+          fi

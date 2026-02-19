@@ -292,7 +292,7 @@
 
 ### F) Notifications Domain (MVP)
 
-**Скоуп:** тільки storage layer. Немає read API, push або unread endpoints.
+**Скоуп:** Firestore storage + read/unread state API. Немає push або realtime listeners.
 
 **Firestore структура:**
 - `users/{uid}/notifications/{dedupeKey}`
@@ -311,6 +311,22 @@
 **Trigger points:**
 - moderation approve/reject: notification write додається всередині тієї ж Firestore transaction.
 - showroom favorite / lookbook favorite / event want-to-visit: notification write після детермінованого `applied=true`.
+
+**Read endpoints:**
+- `GET /users/me/notifications`
+  - auth required, тільки власна підколекція `users/{uid}/notifications`
+  - ordering: `createdAt desc`, tie-breaker `documentId desc`
+  - pagination: `limit` default `20`, clamp `1..100`, `limit+1` pattern
+  - cursor: base64 JSON `{ v: 1, createdAt, id }`
+  - response shape: `data.items[]` + `data.meta.{nextCursor,hasMore}`
+- `PATCH /users/me/notifications/{notificationId}/read`
+  - auth required, idempotent mark-as-read
+  - update: `isRead=true`, `readAt=serverTimestamp()`
+  - not found: `404 NOTIFICATION_NOT_FOUND`
+- `GET /users/me/notifications/unread-count`
+  - auth required
+  - server-side aggregation query `where("isRead","==",false)`
+  - повертає `data.unreadCount`
 
 **Idempotency rules:**
 - approve: `showroom:{id}:approved`
@@ -332,6 +348,7 @@
 - `LOOKBOOK_NOT_FOUND` — lookbook відсутній або unpublished
 - `LOOKBOOK_SYNC_LIMIT_EXCEEDED` — перевищено ліміт `favoriteIds` у lookbooks sync
 - `EVENT_NOT_FOUND` — event відсутній/недоступний
+- `NOTIFICATION_NOT_FOUND` — notification відсутня у поточного користувача
 - `AUTH_MISSING` / `AUTH_INVALID` — токен відсутній/невалідний
 - `COUNTRY_BLOCKED` — RU/BY policy
 - `NOTIFICATION_TYPE_INVALID` — невалідний тип notification
@@ -379,6 +396,7 @@ A: Для такого фільтра не готовий композитний
 - `health.js` — `GET /health`.
 - `auth.js` — `POST /auth/oauth`.
 - `user.js` — `/users/*` (me, delete, onboarding, owner-profile, profile update). Є dev-only: `/users/dev/*` (не в OpenAPI).
+  - notifications: `GET /users/me/notifications`, `PATCH /users/me/notifications/{notificationId}/read`, `GET /users/me/notifications/unread-count`
 - `showrooms.js` — всі showroom endpoints, draft flow, submit.
 - `admin.js` — admin moderation endpoints (`/admin/showrooms/*`).
 - `lookbooks.js` — `GET /lookbooks`, `GET /lookbooks/{id}`, `POST/DELETE /lookbooks/{id}/favorite` (auth-only, idempotent), `POST/PATCH/DELETE /lookbooks/{id}` (public-compatible ownership), `POST /lookbooks/create` (legacy alias), `POST /lookbooks/{id}/rsvp` (stub).

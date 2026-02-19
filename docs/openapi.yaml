@@ -17,6 +17,12 @@ paths:
 
   /users/me:
     $ref: './users.yaml#/paths/~1users~1me'
+  /users/me/notifications:
+    $ref: './users.yaml#/paths/~1users~1me~1notifications'
+  /users/me/notifications/unread-count:
+    $ref: './users.yaml#/paths/~1users~1me~1notifications~1unread-count'
+  /users/me/notifications/{notificationId}/read:
+    $ref: './users.yaml#/paths/~1users~1me~1notifications~1{notificationId}~1read'
   /users/complete-onboarding:
     $ref: './users.yaml#/paths/~1users~1complete-onboarding'
   /users/complete-owner-profile:

@@ -14,6 +14,9 @@ import {
   updateUserProfile,
   makeOwnerDev,
   deleteMyProfile,
+  listMyNotifications,
+  markMyNotificationRead,
+  getMyUnreadNotificationsCount,
 } from "../controllers/userController.js";
 
 import { registerTestUser } from "../controllers/testUserController.js";
@@ -37,6 +40,36 @@ router.delete(
   "/me",
   authMiddleware,
   deleteMyProfile
+);
+
+/**
+ * GET /users/me/notifications
+ */
+router.get(
+  "/me/notifications",
+  authMiddleware,
+  loadUser,
+  listMyNotifications
+);
+
+/**
+ * GET /users/me/notifications/unread-count
+ */
+router.get(
+  "/me/notifications/unread-count",
+  authMiddleware,
+  loadUser,
+  getMyUnreadNotificationsCount
+);
+
+/**
+ * PATCH /users/me/notifications/:notificationId/read
+ */
+router.patch(
+  "/me/notifications/:notificationId/read",
+  authMiddleware,
+  loadUser,
+  markMyNotificationRead
 );
 
 /**

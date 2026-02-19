@@ -11,3 +11,9 @@ export {
     makeOwnerDev,
     deleteMyProfile,
 } from "./users/accountController.js";
+
+export {
+    listMyNotifications,
+    markMyNotificationRead,
+    getMyUnreadNotificationsCount,
+} from "./users/notificationsController.js";

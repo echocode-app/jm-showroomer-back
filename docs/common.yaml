@@ -42,6 +42,7 @@ components:
         - LOOKBOOK_SYNC_LIMIT_EXCEEDED
         - SHOWROOM_SYNC_LIMIT_EXCEEDED
         - EVENT_NOT_FOUND
+        - NOTIFICATION_NOT_FOUND
         - EVENTS_WRITE_MVP2_ONLY
         - CURSOR_INVALID
         - INDEX_NOT_READY
@@ -59,9 +60,9 @@ components:
     Notification:
       type: object
       description: |
-        Firestore storage-only notification document (MVP).
+        Firestore notification document (MVP).
         Structure: `users/{uid}/notifications/{dedupeKey}`.
-        No read/unread API endpoints are exposed yet.
+        Used by read endpoints for list, mark-as-read, and unread count.
       required:
         - type
         - actorUid

@@ -11,6 +11,7 @@ export const ERROR_STATUS = {
     SHOWROOM_NOT_FOUND: 404,
     LOOKBOOK_NOT_FOUND: 404,
     EVENT_NOT_FOUND: 404,
+    NOTIFICATION_NOT_FOUND: 404,
     NOT_FOUND: 404,
 
     VALIDATION_ERROR: 400,
@@ -59,6 +60,7 @@ export const ERROR_MESSAGE = {
     USER_NOT_FOUND: "User profile not found",
     LOOKBOOK_NOT_FOUND: "Lookbook not found",
     EVENT_NOT_FOUND: "Event not found",
+    NOTIFICATION_NOT_FOUND: "Notification not found",
     NOT_FOUND: "Not found",
     VALIDATION_ERROR: "Validation error",
     QUERY_INVALID: "Query parameters are invalid",
