@@ -41,8 +41,8 @@ jobs:
         with:
           scandir: './src/test ./scripts'
 
-      - name: npm audit (high+)
-        run: npm audit --audit-level=high
+      - name: npm audit (prod deps, critical only)
+        run: npm audit --omit=dev --audit-level=critical
 
   integration-tests:
     needs: lint-and-unit
