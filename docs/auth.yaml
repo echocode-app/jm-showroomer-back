@@ -13,6 +13,7 @@ paths:
     post:
       tags: [Auth]
       summary: Login via Firebase ID token (Google/Apple/any)
+      description: Bootstrap auth endpoint using Firebase ID token.
       operationId: oauthLogin
       security: []
       requestBody:

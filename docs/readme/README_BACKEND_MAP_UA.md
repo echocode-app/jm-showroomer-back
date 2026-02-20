@@ -319,7 +319,7 @@ User subcollections:
 - `src/test/lib/helpers/` — domain helper suites.
 - `src/test/archive/` — legacy/retired scripts.
 
-Root `src/test/test_*.sh` залишені як compatibility wrappers.
+Root-level wrappers прибрані; canonical entrypoint: `src/test/run.sh`.
 
 ## 13) Документація
 

@@ -415,11 +415,7 @@ paths:
         Map mode with multiple geohashPrefixes explicitly disables paging.
         Combining geohashPrefix(es) with q/name search is rejected.
         Showrooms from blocked countries are silently excluded.
-        For MVP1 client recipes and combination rules, see external docs.
-        MVP1 guide: [Open search guide](/docs/spec/readme/SHOWROOMS_MVP1_SEARCH.md)
-      externalDocs:
-        description: MVP1 search guide (recipes, combinations, client state rules)
-        url: /docs/spec/readme/SHOWROOMS_MVP1_SEARCH.md
+        For MVP1 clients, follow response `meta.paging` and `meta.nextCursor` as the source of truth.
       operationId: listShowrooms
       security: []
       parameters:
@@ -650,11 +646,7 @@ paths:
         q is required; q length < 2 returns empty suggestions.
         Geo params are not supported for suggestions.
         Brand suggestions are API-ready, but MVP1 clients may ignore suggestion.type=brand.
-        See external docs for MVP1 search recipes.
-        MVP1 guide: [Open search guide](/docs/spec/readme/SHOWROOMS_MVP1_SEARCH.md)
-      externalDocs:
-        description: MVP1 search guide (recipes and client behavior)
-        url: /docs/spec/readme/SHOWROOMS_MVP1_SEARCH.md
+        Suggestions are lightweight and should not be treated as full list results.
       operationId: listShowroomSuggestions
       security: []
       parameters:
@@ -742,11 +734,7 @@ paths:
         Returns count of showrooms by current filters.
         q is optional. geohashPrefix(es) with q is invalid.
         cursor/fields/limit are not supported.
-        See external docs for MVP1 search recipes.
-        MVP1 guide: [Open search guide](/docs/spec/readme/SHOWROOMS_MVP1_SEARCH.md)
-      externalDocs:
-        description: MVP1 search guide (recipes and client behavior)
-        url: /docs/spec/readme/SHOWROOMS_MVP1_SEARCH.md
+        Endpoint is intended for count-only UI (facets, badges, map overlays).
       operationId: getShowroomCounters
       security: []
       parameters:

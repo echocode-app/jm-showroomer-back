@@ -283,6 +283,7 @@ paths:
     get:
       tags: [Users]
       summary: Get current user
+      description: Canonical profile bootstrap endpoint.
       operationId: getMyProfile
       security:
         - bearerAuth: []
@@ -704,6 +705,61 @@ paths:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "409":
           description: Country change blocked (owner has active showrooms/lookbooks/events)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
+  /users/dev/register-test:
+    post:
+      tags: [Users]
+      summary: DEV only - register test user
+      description: |
+        Development helper endpoint for local/integration environments.
+        Not intended for production client usage.
+      operationId: registerTestUser
+      x-internal: true
+      security: []
+      responses:
+        "200":
+          description: Test user prepared
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiSuccess'
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
+  /users/dev/make-owner:
+    post:
+      tags: [Users]
+      summary: DEV only - upgrade current user to owner
+      description: |
+        Development helper endpoint for local/integration environments.
+        Requires auth.
+      operationId: makeOwnerDev
+      x-internal: true
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: User role upgraded to owner
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiSuccess'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "404":
+          description: User not found
           content:
             application/json:
               schema:

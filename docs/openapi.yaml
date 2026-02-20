@@ -2,6 +2,28 @@ openapi: 3.0.3
 info:
   title: JM Showroomer API
   version: 1.0.0
+  description: |
+    **Docs Navigation (Flutter + Product + Backend)**
+
+    - **SHOWROOMS_MVP1_SEARCH.md**  
+      For Flutter: detailed showroom search logic (modes, cursor, geo, fallback, constraints).  
+      Value: correct client-side search implementation aligned with backend behavior.  
+      <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_MVP1_SEARCH.md" target="_blank" rel="noopener noreferrer">Open document</a>
+
+    - **README_UA.md**  
+      For PM/client: business logic and key product flows in plain language.  
+      Value: clear understanding of system behavior without technical implementation details.  
+      <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/README_UA.md" target="_blank" rel="noopener noreferrer">Open document</a>
+
+    - **README_DETAIL.md**  
+      For Flutter: full integration specification for routes, states, validation, error codes, and rules.  
+      Value: fewer API clarification rounds and stable integration from the first iteration.  
+      <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/README_DETAIL.md" target="_blank" rel="noopener noreferrer">Open document</a>
+
+    - **README_BACKEND_MAP_UA.md**  
+      Detailed backend map: modules, dependencies, layers, responsibilities, key invariants.  
+      Value: fast navigation across the codebase during development and review.  
+      <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/README_BACKEND_MAP_UA.md" target="_blank" rel="noopener noreferrer">Open document</a>
   license:
     name: UNLICENSED
     url: https://unlicense.org/
@@ -33,6 +55,10 @@ paths:
     $ref: './users.yaml#/paths/~1users~1complete-owner-profile'
   /users/profile:
     $ref: './users.yaml#/paths/~1users~1profile'
+  /users/dev/register-test:
+    $ref: './users.yaml#/paths/~1users~1dev~1register-test'
+  /users/dev/make-owner:
+    $ref: './users.yaml#/paths/~1users~1dev~1make-owner'
 
   /showrooms:
     $ref: './showrooms.yaml#/paths/~1showrooms'
@@ -93,6 +119,45 @@ paths:
     $ref: './events.yaml#/paths/~1events~1{id}~1dismiss'
   /events/{id}/rsvp:
     $ref: './events.yaml#/paths/~1events~1{id}~1rsvp'
+
+tags:
+  - name: Health
+    description: Service liveness endpoint.
+  - name: Auth
+    description: Authentication via Firebase ID token.
+    externalDocs:
+      description: Full integration detail
+      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/README_DETAIL.md
+  - name: Users
+    description: User profile, onboarding, notifications, and devices.
+    externalDocs:
+      description: Full integration detail
+      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/README_DETAIL.md
+  - name: Collections
+    description: Favorites and want-to-visit collections with guest->auth sync endpoints.
+    externalDocs:
+      description: Full integration detail
+      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/README_DETAIL.md
+  - name: Showrooms
+    description: Showroom lifecycle, listing, moderation state, favorites, search.
+    externalDocs:
+      description: Showrooms search and geo rules (Flutter)
+      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_MVP1_SEARCH.md
+  - name: Lookbooks
+    description: Lookbooks list/detail/create/update/favorites.
+    externalDocs:
+      description: Full integration detail
+      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/README_DETAIL.md
+  - name: Events
+    description: Events list/detail, want-to-visit and dismiss state.
+    externalDocs:
+      description: Full integration detail
+      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/README_DETAIL.md
+  - name: Admin
+    description: Admin moderation endpoints for showrooms.
+    externalDocs:
+      description: Backend map (UA)
+      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/README_BACKEND_MAP_UA.md
 
 components:
   securitySchemes:

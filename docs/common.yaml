@@ -31,22 +31,58 @@ components:
           type: string
     ErrorCode:
       type: string
-      description: Common error codes (partial list).
+      description: |
+        Canonical backend error codes used by `error.code`.
+        Flutter clients should branch on `error.code` first, then map UX locally.
       enum:
         - AUTH_MISSING
         - AUTH_INVALID
+        - NO_AUTH
+        - ID_TOKEN_REQUIRED
+        - ACCESS_DENIED
         - FORBIDDEN
         - COUNTRY_BLOCKED
+        - USER_NOT_FOUND
+        - SHOWROOM_NOT_FOUND
+        - LOOKBOOK_NOT_FOUND
+        - EVENT_NOT_FOUND
+        - NOT_FOUND
+        - VALIDATION_ERROR
+        - SHOWROOM_NAME_REQUIRED
+        - SHOWROOM_TYPE_REQUIRED
+        - COUNTRY_REQUIRED
+        - SHOWROOM_NAME_INVALID
+        - SHOWROOM_CATEGORY_GROUP_INVALID
+        - SHOWROOM_SUBCATEGORY_INVALID
+        - SHOWROOM_SUBCATEGORY_GROUP_MISMATCH
+        - INSTAGRAM_INVALID
+        - PHONE_INVALID
+        - SHOWROOM_INCOMPLETE
+        - SHOWROOM_NOT_EDITABLE
+        - SHOWROOM_NAME_ALREADY_EXISTS
+        - SHOWROOM_DUPLICATE
+        - NO_FIELDS_TO_UPDATE
         - QUERY_INVALID
+        - CURSOR_INVALID
         - EVENT_SYNC_LIMIT_EXCEEDED
         - LOOKBOOK_SYNC_LIMIT_EXCEEDED
         - SHOWROOM_SYNC_LIMIT_EXCEEDED
-        - EVENT_NOT_FOUND
+        - LOOKBOOK_FORBIDDEN
+        - SHOWROOM_ID_INVALID
+        - ANON_ID_INVALID
         - NOTIFICATION_NOT_FOUND
-        - EVENTS_WRITE_MVP2_ONLY
-        - CURSOR_INVALID
-        - INDEX_NOT_READY
         - NOTIFICATION_TYPE_INVALID
+        - INDEX_NOT_READY
+        - SHOWROOM_LOCKED_PENDING
+        - SHOWROOM_PENDING_SNAPSHOT_MISSING
+        - USER_COUNTRY_CHANGE_BLOCKED
+        - USER_DELETE_BLOCKED
+        - RATE_LIMIT_EXCEEDED
+        - EVENTS_WRITE_MVP2_ONLY
+        - NOT_IMPLEMENTED
+        - LOAD_USER_ERROR
+        - AUTH_ERROR
+        - INTERNAL_ERROR
     NotificationType:
       type: string
       description: |
