@@ -1,317 +1,384 @@
-# JM Showroomer Backend — Покрокове тестування в Postman
-> Аудиторія: внутрішні manual API перевірки для dev/QA.
+# DEV Postman Tests (Full Backend Scenarios)
 
----
+## 0) Підготовка Postman Environment
 
-## 0) Передумови
+Створи Environment змінні:
+- `baseUrl` = `http://localhost:3005/api/v1`
+- `idToken_user`
+- `idToken_owner`
+- `idToken_admin`
+- `auth_user` = `Bearer {{idToken_user}}`
+- `auth_owner` = `Bearer {{idToken_owner}}`
+- `auth_admin` = `Bearer {{idToken_admin}}`
+- `showroom_id`
+- `lookbook_id`
+- `event_id`
+- `notification_id`
+- `cursor`
 
-1. Сервер запущений:
-   - `NODE_ENV=dev npm run dev` або `NODE_ENV=test npm run dev`.
-2. Є `.env.dev` або `.env.test` з валідними Firebase конфігами.
-3. Якщо тестуєш Storage/Media або емулюєш Firestore — піднятий емулатор (за потреби):
-   - `firebase emulators:start --only firestore`.
+## 1) Health + базова доступність
 
----
-
-## 1) Налаштування Postman
-
-### 1.1. Створити Collection
-- Назва: `JM Showroomer API`
-
-### 1.2. Environment змінні
-Створи Environment `JM Dev` з такими змінними:
-
-- `baseUrl` → `http://localhost:3005/api/v1` (або свій host)
-- `idToken_owner` → (Firebase ID token для owner)
-- `idToken_owner2` → (додатковий owner для глобальних дублювань)
-- `idToken_admin` → (Firebase ID token для admin)
-- `idToken_user` → (звичайний user)
-- `idToken_delete_user` → (throwaway user для DELETE /users/me)
-- `showroomId` → (буде заповнюватись під час тестів)
-- `showroomId2` → (другий showroom)
-- `adminShowroomId` → (шоурум для адмін‑флоу)
-- `now` → (timestamp, наприклад `{{timestamp}}` можна ставити вручну)
-
-### 1.3. Загальні заголовки
-Для захищених endpoint:
-- `Authorization: Bearer {{idToken_owner}}`
-- `Content-Type: application/json`
-
-Для публічних — без Authorization.
-
----
-
-## 2) Health + Public
-
-### 2.1. Health
-- **GET** `{{baseUrl}}/health`
-- Очікування: `200`, `status=ok ✅`
-
-### 2.2. Public list
-- **GET** `{{baseUrl}}/showrooms`
-- Очікування: `200`, тільки `approved`.
-
-### 2.2.1. Public list (search examples)
-- **GET** `{{baseUrl}}/showrooms?city=Kyiv&limit=20&fields=marker`
-- **GET** `{{baseUrl}}/showrooms?q=ate&fields=card`
-- **GET** `{{baseUrl}}/showrooms?brand=gucci&limit=10`
-- **GET** `{{baseUrl}}/showrooms?categoryGroup=clothing`
-- **GET** `{{baseUrl}}/showrooms?subcategories=dresses,suits`
-- **GET** `{{baseUrl}}/showrooms?brand=zara&subcategories=dresses`
-- **GET** `{{baseUrl}}/showrooms?geohashPrefix=u9yx8`
-- **GET** `{{baseUrl}}/showrooms?geohashPrefixes=u9yx8,u9yx9` (cursor not supported)
-
-Validation errors:
-- `QUERY_INVALID` for invalid params or unsupported combinations
-- `CURSOR_INVALID` for invalid cursor format
-  - Cursor v2 format: `{v:2,f,d,value,id}` (base64 JSON)
-
-### 2.3. Lookbooks public
-- **GET** `{{baseUrl}}/lookbooks?country=Ukraine&seasonKey=ss-2026`
-- Очікування: `200`, тільки published.
-- Без `country` або `seasonKey` -> `400 QUERY_INVALID`.
-
-### 2.4. Events RSVP (MVP2-only)
-- **POST** `{{baseUrl}}/events/{id}/rsvp`
-- Header: `Authorization: Bearer {{idToken_owner}}`
-- Очікування: `501 EVENTS_WRITE_MVP2_ONLY`.
-
-### 2.4.1. Lookbooks RSVP (stub)
-- **POST** `{{baseUrl}}/lookbooks/{id}/rsvp`
-- Header: `Authorization: Bearer {{idToken_owner}}`
-- Очікування: `200`, same stub response.
-
-### 2.5. Collections checks
-- **GET** `{{baseUrl}}/collections/favorites/showrooms`
-- **POST** `{{baseUrl}}/collections/favorites/showrooms/sync`
-- **GET** `{{baseUrl}}/collections/favorites/lookbooks`
-- **GET** `{{baseUrl}}/collections/want-to-visit/events`
-- Очікування:
-  - `favorites/showrooms`: `200` (public route; guest returns empty, auth returns user favorites)
-  - `favorites/lookbooks`: `200` (public-compatible; guest returns empty, auth returns user favorites)
-  - `want-to-visit/events`: `200` (public-compatible; guest returns empty, auth returns user state)
-  - `POST /lookbooks/{id}/favorite` та `DELETE /lookbooks/{id}/favorite`:
-    - без auth -> `401 AUTH_MISSING`
-    - з auth -> `200`, idempotent
-  - `POST /collections/favorites/showrooms/sync` (auth):
-    - payload: `{ "favoriteIds": ["<approved_showroom_id>", "<missing_or_non_approved_id>"] }`
-    - `200`, `applied.favorites` містить лише approved ids, решта у `skipped`
-  - `POST /collections/favorites/showrooms/sync` з `favoriteIds > 100` -> `400 SHOWROOM_SYNC_LIMIT_EXCEEDED`
-  - `POST /collections/favorites/lookbooks/sync` з `favoriteIds > 100` -> `400 LOOKBOOK_SYNC_LIMIT_EXCEEDED`
-
----
-
-## 3) Auth
-
-### 3.1. OAuth login (optional, якщо хочеш перевірити)
-- **POST** `{{baseUrl}}/auth/oauth`
-- Body:
-```json
-{ "idToken": "<firebase-id-token>" }
+### 1.1 Health
+```http
+GET {{baseUrl}}/health
 ```
-- Очікування: `200` + дані user.
+Очікування:
+- `200`
+- `success=true`
 
-### 3.2. Users/me
-- **GET** `{{baseUrl}}/users/me`
-- Header: `Authorization: Bearer {{idToken_owner}}`
-- Очікування: `200` + `role`, `onboardingState`.
-
-### 3.3. User delete (throwaway)
-- **DELETE** `{{baseUrl}}/users/me`
-- Header: `Authorization: Bearer {{idToken_delete_user}}`
-- Очікування: `200`.
-- **GET** `{{baseUrl}}/users/me` → `404 USER_NOT_FOUND`.
-- **DELETE** повторно → `200` (idempotent).
-
----
-
-## 4) Onboarding + Owner profile
-
-### 4.1. Complete onboarding
-- **POST** `{{baseUrl}}/users/complete-onboarding`
-- Header: Bearer `{{idToken_user}}`
-- Body:
-```json
-{ "country": "Ukraine" }
+### 1.2 Root sanity
+```http
+GET http://localhost:3005/
 ```
-- Очікування: `200`.
+Очікування:
+- `200`
 
-### 4.2. Owner profile (upgrade)
-- **POST** `{{baseUrl}}/users/complete-owner-profile`
-- Header: Bearer `{{idToken_user}}`
-- Body:
-```json
-{ "name": "Owner Test", "position": "Founder", "country": "Ukraine", "instagram": "https://instagram.com/owner_test" }
+## 2) Auth сценарії
+
+### 2.1 OAuth login (valid)
+```http
+POST {{baseUrl}}/auth/oauth
+Content-Type: application/json
+
+{
+  "idToken": "{{idToken_user}}"
+}
 ```
-- Очікування: `200`, `role=owner`.
+Очікування:
+- `200`
+- повертається `user`
 
-### 4.3. Profile update
-- **PATCH** `{{baseUrl}}/users/profile`
-- Header: Bearer `{{idToken_owner}}`
-- Body:
-```json
-{ "name": "Owner Test Updated", "appLanguage": "uk", "notificationsEnabled": true }
+### 2.2 OAuth login (missing token)
+```http
+POST {{baseUrl}}/auth/oauth
+Content-Type: application/json
+
+{}
 ```
-- Очікування: `200`.
+Очікування:
+- `400`
+- `ID_TOKEN_REQUIRED`
 
----
+## 3) Users / profile сценарії
 
-## 5) Showrooms — Draft Flow
-
-### 5.1. Create draft
-- **POST** `{{baseUrl}}/showrooms/draft`
-- Header: Bearer `{{idToken_owner}}`
-- Body: `{}`
-- Очікування: `200` + `status=draft`.
-- Збережи `id` в `showroomId`.
-
-### 5.2. PATCH step1 (name/type)
-- **PATCH** `{{baseUrl}}/showrooms/{{showroomId}}`
-- Body:
-```json
-{ "name": "My Showroom {{now}}", "type": "multibrand" }
+### 3.1 Get me
+```http
+GET {{baseUrl}}/users/me
+Authorization: {{auth_user}}
 ```
-- Очікування: `200`.
+Очікування:
+- `200`
+- `data.uid` існує
 
-### 5.3. PATCH step2 (country/availability)
-```json
-{ "country": "Ukraine", "availability": "open" }
+### 3.2 Profile update
+```http
+PATCH {{baseUrl}}/users/profile
+Authorization: {{auth_user}}
+Content-Type: application/json
+
+{
+  "appLanguage": "uk",
+  "notificationsEnabled": true
+}
 ```
+Очікування:
+- `200`
 
-### 5.4. PATCH step3 (address/city/location)
-```json
-{ "address": "Kyiv, Khreshchatyk 1", "city": "Kyiv", "location": { "lat": 50.45, "lng": 30.52 } }
+### 3.3 Complete owner profile
+```http
+POST {{baseUrl}}/users/complete-owner-profile
+Authorization: {{auth_user}}
+Content-Type: application/json
+
+{
+  "name": "Owner Test",
+  "country": "Ukraine",
+  "instagram": "https://instagram.com/owner_test",
+  "position": "Owner"
+}
+```
+Очікування:
+- `200`
+- `role=owner`
+
+## 4) Device registration / push prerequisites
+
+### 4.1 Register device
+```http
+POST {{baseUrl}}/users/me/devices
+Authorization: {{auth_user}}
+Content-Type: application/json
+
+{
+  "deviceId": "dev-ios-1",
+  "fcmToken": "fake-fcm-token-1",
+  "platform": "ios",
+  "appVersion": "1.0.0",
+  "locale": "uk-UA"
+}
+```
+Очікування:
+- `200`
+- `data.success=true`
+
+### 4.2 Update same device (upsert)
+```http
+POST {{baseUrl}}/users/me/devices
+Authorization: {{auth_user}}
+Content-Type: application/json
+
+{
+  "deviceId": "dev-ios-1",
+  "fcmToken": "fake-fcm-token-2",
+  "platform": "ios",
+  "appVersion": "1.0.1",
+  "locale": "uk-UA"
+}
+```
+Очікування:
+- `200`
+
+### 4.3 Delete device
+```http
+DELETE {{baseUrl}}/users/me/devices/dev-ios-1
+Authorization: {{auth_user}}
+```
+Очікування:
+- `200`
+
+## 5) Showrooms owner/admin flow
+
+### 5.1 Create draft showroom
+```http
+POST {{baseUrl}}/showrooms/draft
+Authorization: {{auth_owner}}
+Content-Type: application/json
+
+{
+  "name": "Flow Showroom",
+  "country": "Ukraine"
+}
+```
+Після запиту збережи `data.showroom.id` у `showroom_id`.
+
+### 5.2 Update showroom
+```http
+PATCH {{baseUrl}}/showrooms/{{showroom_id}}
+Authorization: {{auth_owner}}
+Content-Type: application/json
+
+{
+  "city": "Kyiv",
+  "address": "Khreshchatyk 1",
+  "contacts": {
+    "phone": "+380501112233",
+    "instagram": "https://instagram.com/flow_showroom"
+  }
+}
 ```
 
-### 5.5. PATCH geo (MVP1)
-```json
-{ "geo": { "city": "Kyiv", "country": "Ukraine", "coords": { "lat": 50.4501, "lng": 30.5234 }, "placeId": "test-place-1" } }
+### 5.3 Submit showroom
+```http
+POST {{baseUrl}}/showrooms/{{showroom_id}}/submit
+Authorization: {{auth_owner}}
 ```
-Очікування: `geo.cityNormalized` і `geo.geohash` у відповіді.
+Очікування:
+- `200`
+- `pending`
 
-### 5.6. PATCH geo update
-```json
-{ "geo": { "city": "Lviv", "country": "Ukraine", "coords": { "lat": 49.8397, "lng": 24.0297 }, "placeId": "test-place-2" } }
+### 5.4 Approve showroom (admin)
+```http
+POST {{baseUrl}}/admin/showrooms/{{showroom_id}}/approve
+Authorization: {{auth_admin}}
 ```
-Очікування: оновився `geo`.
+Очікування:
+- `200`
+- статус `approved`
 
-### 5.7. PATCH contacts
-```json
-{ "contacts": { "phone": "+380999999999", "instagram": "https://instagram.com/myshowroom" } }
+### 5.5 Reject showroom (alt scenario)
+```http
+POST {{baseUrl}}/admin/showrooms/{{showroom_id}}/reject
+Authorization: {{auth_admin}}
+Content-Type: application/json
+
+{
+  "reason": "Incomplete contacts"
+}
+```
+Очікування:
+- `200`
+
+## 6) Showroom favorites
+
+### 6.1 Favorite
+```http
+POST {{baseUrl}}/showrooms/{{showroom_id}}/favorite
+Authorization: {{auth_user}}
 ```
 
-### 5.8. GET showroom
-- **GET** `{{baseUrl}}/showrooms/{{showroomId}}`
-- Очікування: всі поля заповнені.
-
----
-
-## 6) Submit / Pending / Approve
-
-### 6.1. Submit
-- **POST** `{{baseUrl}}/showrooms/{{showroomId}}/submit`
-- Очікування: `status=pending`, `pendingSnapshot` існує.
-
-### 6.2. PATCH pending (має бути lock)
-- **PATCH** `{{baseUrl}}/showrooms/{{showroomId}}`
-- Body: `{ "name": "Should Fail" }`
-- Очікування: `409 SHOWROOM_LOCKED_PENDING`.
-
-### 6.3. Admin approve
-- Header: Bearer `{{idToken_admin}}`
-- **POST** `{{baseUrl}}/admin/showrooms/{{showroomId}}/approve`
-- Очікування: `status=approved`, `pendingSnapshot=null`, `geo` збережений.
-
----
-
-## 7) Search
-
-### 7.1. City filter
-- **GET** `{{baseUrl}}/showrooms?city=Lviv`
-- Очікування: showroom присутній у списку (approved).
-
-### 7.2. Suggestions
-- **GET** `{{baseUrl}}/showrooms/suggestions?q=to`
-- Очікування: масив `suggestions` з типом `showroom` або `brand`.
-- **GET** `{{baseUrl}}/showrooms/suggestions?q=to&categories=womenswear&categoryGroup=clothing` → `400 QUERY_INVALID` (mutually exclusive filters)
-
-### 7.3. Counters
-- **GET** `{{baseUrl}}/showrooms/counters?city=Kyiv`
-- **GET** `{{baseUrl}}/showrooms/counters?categoryGroup=clothing&subcategories=dresses` → `400 QUERY_INVALID` (mutually exclusive filters)
-- Очікування: `data.total` дорівнює кількості approved шоурумів у Kyiv.
-
----
-
-## 8) Duplicates (owner + global)
-
-### 8.1. Create second showroom
-- **POST** `{{baseUrl}}/showrooms/create`
-- Header: Bearer `{{idToken_owner}}`
-- Body:
-```json
-{ "name": "Seed Showroom", "type": "multibrand", "country": "Ukraine" }
+### 6.2 Favorite again (idempotent)
+```http
+POST {{baseUrl}}/showrooms/{{showroom_id}}/favorite
+Authorization: {{auth_user}}
 ```
-- Збережи id в `showroomId2`.
+Очікування:
+- обидва `200`
 
-### 8.2. PATCH (duplicate name)
-```json
-{ "name": "My Showroom {{now}}", "availability": "open", "address": "Kyiv, Khreshchatyk 1", "city": "Kyiv", "contacts": { "phone": "+380999999999", "instagram": "https://instagram.com/myshowroom" }, "location": { "lat": 50.45, "lng": 30.52 } }
+### 6.3 Unfavorite
+```http
+DELETE {{baseUrl}}/showrooms/{{showroom_id}}/favorite
+Authorization: {{auth_user}}
 ```
-- **POST** submit → очікування: `SHOWROOM_NAME_ALREADY_EXISTS`.
 
-### 8.3. Global duplicate (owner2)
-- **POST** draft (owner2)
-- PATCH тим самим `name+address`
-- **POST** submit → очікування: `SHOWROOM_DUPLICATE`.
+## 7) Lookbooks flow
 
----
+### 7.1 Create lookbook
+```http
+POST {{baseUrl}}/lookbooks/create
+Authorization: {{auth_owner}}
+Content-Type: application/json
 
-## 9) Admin flows
+{
+  "imageUrl": "https://example.com/lookbook.jpg",
+  "showroomId": "{{showroom_id}}",
+  "description": "Lookbook flow"
+}
+```
+Збережи `data.lookbook.id` у `lookbook_id`.
 
-### 9.1. Admin reject
-- **POST** `{{baseUrl}}/admin/showrooms/{{showroomId}}/reject`
-- Body: `{ "reason": "Missing details" }`
-- Очікування: `status=rejected`, `pendingSnapshot=null`.
+### 7.2 Favorite lookbook
+```http
+POST {{baseUrl}}/lookbooks/{{lookbook_id}}/favorite
+Authorization: {{auth_user}}
+```
 
-### 9.2. Owner resubmit → admin approve
-- **PATCH** name
-- **POST** submit
-- **POST** admin approve
-- Очікування: `status=approved`.
+### 7.3 Unfavorite lookbook
+```http
+DELETE {{baseUrl}}/lookbooks/{{lookbook_id}}/favorite
+Authorization: {{auth_user}}
+```
 
-### 9.3. Admin delete
-- **DELETE** `{{baseUrl}}/admin/showrooms/{{showroomId}}`
-- Очікування: `status=deleted`.
+## 8) Events flow + want-to-visit
 
----
+### 8.1 List events
+```http
+GET {{baseUrl}}/events
+Authorization: {{auth_user}}
+```
+Візьми `data.events[0].id` у `event_id`.
 
-## 10) Negative cases
+### 8.2 Want-to-visit
+```http
+POST {{baseUrl}}/events/{{event_id}}/want-to-visit
+Authorization: {{auth_user}}
+```
 
-- PATCH name digits only → `SHOWROOM_NAME_INVALID`.
-- PATCH invalid instagram → `INSTAGRAM_INVALID`.
-- PATCH invalid phone → `PHONE_INVALID`.
-- PATCH country blocked (Russia) → `COUNTRY_BLOCKED`.
+### 8.3 Remove want-to-visit
+```http
+DELETE {{baseUrl}}/events/{{event_id}}/want-to-visit
+Authorization: {{auth_user}}
+```
 
----
+### 8.4 Dismiss / undismiss
+```http
+POST {{baseUrl}}/events/{{event_id}}/dismiss
+Authorization: {{auth_user}}
+```
+```http
+DELETE {{baseUrl}}/events/{{event_id}}/dismiss
+Authorization: {{auth_user}}
+```
 
-## 11) Geo model rules (контроль)
+## 9) Guest sync сценарії
 
-- `geo` **не видаляється** через PATCH (не передавати `null`).
-- `geo` оновлюється лише повним обʼєктом.
-- `geo.cityNormalized` та `geo.geohash` завжди повертаються сервером.
-- `country` — повна назва (наприклад `Ukraine`), **не** ISO2.
-- `location` — legacy, `geo.coords` — канонічні для пошуку.
+### 9.1 Showrooms favorites sync
+```http
+POST {{baseUrl}}/collections/favorites/showrooms/sync
+Authorization: {{auth_user}}
+Content-Type: application/json
 
----
+{
+  "favoriteIds": ["{{showroom_id}}"]
+}
+```
 
-## 12) Медіа (optional)
+### 9.2 Lookbooks favorites sync
+```http
+POST {{baseUrl}}/collections/favorites/lookbooks/sync
+Authorization: {{auth_user}}
+Content-Type: application/json
 
-Залежить від Storage/seed. Ручна перевірка:
-- **GET** `/lookbooks` → coverUrl існує та є URL.
-- Перевірити signed URL (відкривається в браузері).
+{
+  "favoriteIds": ["{{lookbook_id}}"]
+}
+```
 
----
+### 9.3 Events sync
+```http
+POST {{baseUrl}}/collections/want-to-visit/events/sync
+Authorization: {{auth_user}}
+Content-Type: application/json
 
-## 13) Завершення
+{
+  "wantToVisitIds": ["{{event_id}}"],
+  "dismissedIds": []
+}
+```
 
-Якщо всі кроки проходять з очікуваними статусами — бекенд готовий до інтеграції та QA.
+## 10) Notifications read/unread сценарії
+
+### 10.1 List notifications
+```http
+GET {{baseUrl}}/users/me/notifications?limit=20
+Authorization: {{auth_owner}}
+```
+Візьми `data.items[0].id` -> `notification_id`.
+
+### 10.2 Mark as read
+```http
+PATCH {{baseUrl}}/users/me/notifications/{{notification_id}}/read
+Authorization: {{auth_owner}}
+```
+
+### 10.3 Unread count
+```http
+GET {{baseUrl}}/users/me/notifications/unread-count
+Authorization: {{auth_owner}}
+```
+
+### 10.4 Cursor paging
+```http
+GET {{baseUrl}}/users/me/notifications?limit=2
+Authorization: {{auth_owner}}
+```
+Потім:
+```http
+GET {{baseUrl}}/users/me/notifications?limit=2&cursor={{cursor}}
+Authorization: {{auth_owner}}
+```
+
+## 11) Push logic validation (без реального девайса)
+
+- Зареєструй fake device token для target user.
+- Згенеруй notification trigger (approve/reject/favorite/want-to-visit).
+- Перевір:
+  - API відповідає успішно навіть якщо push не відправився.
+  - нотифікація в storage створена.
+  - повторна та сама дія не створює дубль push через dedupe notification id.
+
+## 12) Error cases (обов’язково)
+
+### 12.1 Missing auth
+- Будь-який auth endpoint без токена -> `401 AUTH_MISSING`.
+
+### 12.2 Invalid params/body
+- invalid `limit`, invalid payload fields -> `400 QUERY_INVALID` або `VALIDATION_ERROR`.
+
+### 12.3 Forbidden role
+- user на admin endpoint -> `403 ACCESS_DENIED`.
+
+### 12.4 Invalid cursor
+- random cursor string -> `400 CURSOR_INVALID`.
+
+### 12.5 Country restrictions
+- blocked country value -> `403 COUNTRY_BLOCKED`.

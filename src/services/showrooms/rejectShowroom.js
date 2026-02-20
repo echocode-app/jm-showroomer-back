@@ -70,6 +70,11 @@ export async function rejectShowroomService(id, reason, user) {
     const db = getFirestoreInstance();
     const ref = db.collection("showrooms").doc(id);
     let notificationDraft = null;
+
+    // =========================
+    // SECTION: Atomic Moderation
+    // =========================
+    // Reason: reject transition and audit history must be committed together.
     await db.runTransaction(async tx => {
         const snap = await tx.get(ref);
         if (!snap.exists) throw notFound("SHOWROOM_NOT_FOUND");
@@ -97,6 +102,7 @@ export async function rejectShowroomService(id, reason, user) {
     });
 
     try {
+        // Guard: emit notification after commit to prevent tx-retry duplicate push sends.
         await createNotification(notificationDraft);
     } catch (err) {
         log.error(`Notification write skipped (reject ${id}): ${err?.message || err}`);

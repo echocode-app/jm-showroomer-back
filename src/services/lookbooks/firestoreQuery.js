@@ -1,6 +1,7 @@
-import { FieldPath, Timestamp } from "firebase-admin/firestore";
+import { FieldPath } from "firebase-admin/firestore";
 import { getFirestoreInstance } from "../../config/firebase.js";
 import { isIndexNotReadyError, buildDomainError } from "../showrooms/list/firestore/indexErrors.js";
+import { toIsoString, toTimestamp } from "../../utils/timestamp.js";
 
 // Single source of truth for lookbooks collection reference.
 export function getLookbooksCollection() {
@@ -37,31 +38,4 @@ export function mapIndexError(err) {
     throw err;
 }
 
-// Normalize Firestore/date-like values into ISO string for API responses.
-export function toIsoString(value) {
-    if (!value) return null;
-    if (typeof value === "string") {
-        const ms = Date.parse(value);
-        return Number.isFinite(ms) ? new Date(ms).toISOString() : null;
-    }
-    if (value instanceof Date) return value.toISOString();
-    if (value instanceof Timestamp) return value.toDate().toISOString();
-    if (typeof value?.toDate === "function") {
-        return value.toDate().toISOString();
-    }
-    return null;
-}
-
-// Normalize Firestore/date-like values into Timestamp for query cursors.
-export function toTimestamp(value) {
-    if (!value) return null;
-    if (value instanceof Timestamp) return value;
-    if (value instanceof Date) return Timestamp.fromDate(value);
-    if (typeof value?.toDate === "function") return Timestamp.fromDate(value.toDate());
-    if (typeof value === "string") {
-        const ms = Date.parse(value);
-        if (!Number.isFinite(ms)) return null;
-        return Timestamp.fromDate(new Date(ms));
-    }
-    return null;
-}
+export { toIsoString, toTimestamp };

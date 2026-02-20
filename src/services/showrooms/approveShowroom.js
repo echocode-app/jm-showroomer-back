@@ -80,6 +80,11 @@ export async function approveShowroomService(id, user) {
     const db = getFirestoreInstance();
     const ref = db.collection("showrooms").doc(id);
     let notificationDraft = null;
+
+    // =========================
+    // SECTION: Atomic Moderation
+    // =========================
+    // Reason: status transition + immutable snapshot apply must be one transaction.
     await db.runTransaction(async tx => {
         const snap = await tx.get(ref);
         if (!snap.exists) throw notFound("SHOWROOM_NOT_FOUND");
@@ -143,6 +148,7 @@ export async function approveShowroomService(id, user) {
         ? dbNotificationPath(notificationDraft.targetUid, notificationDraft.dedupeKey)
         : "invalid-target-uid";
     try {
+        // Guard: side effects run after commit to avoid tx-retry duplicate push sends.
         await createNotification(notificationDraft);
     } catch (err) {
         log.error(

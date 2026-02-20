@@ -1,5 +1,6 @@
 import { Timestamp } from "firebase-admin/firestore";
 import { badRequest } from "../../core/error.js";
+import { parseStrictLimit } from "../../utils/pagination.js";
 
 export const DEFAULT_LIMIT = 20;
 export const COLLECTION_DEFAULT_LIMIT = 100;
@@ -22,14 +23,11 @@ export function parseCollectionFilters(filters = {}) {
 }
 
 export function parseLimit(value, defaultValue, maxValue) {
-    if (value === undefined || value === null || value === "") {
-        return defaultValue;
-    }
-    const parsed = Number(value);
-    if (!Number.isInteger(parsed) || parsed < 1 || parsed > maxValue) {
-        throw badRequest("QUERY_INVALID");
-    }
-    return parsed;
+    return parseStrictLimit(value, {
+        defaultValue,
+        maxValue,
+        errorCode: "QUERY_INVALID",
+    });
 }
 
 export function parseOptionalString(value) {

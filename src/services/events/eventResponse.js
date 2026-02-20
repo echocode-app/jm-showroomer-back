@@ -1,28 +1,8 @@
 import { Timestamp } from "firebase-admin/firestore";
+import { toIsoString, toTimestamp } from "../../utils/timestamp.js";
 
-export function toIsoString(value) {
-    // API contract exposes date-time fields as ISO strings.
-    if (!value) return null;
-    if (typeof value === "string") return value;
-    if (value instanceof Date) return value.toISOString();
-    if (value instanceof Timestamp) return value.toDate().toISOString();
-    if (typeof value?.toDate === "function") return value.toDate().toISOString();
-    return null;
-}
-
-export function toTimestamp(value) {
-    // Accept mixed runtime types to keep reads/backfills tolerant.
-    if (!value) return null;
-    if (value instanceof Timestamp) return value;
-    if (value instanceof Date) return Timestamp.fromDate(value);
-    if (typeof value?.toDate === "function") return Timestamp.fromDate(value.toDate());
-    if (typeof value === "string") {
-        const ms = Date.parse(value);
-        if (!Number.isFinite(ms)) return null;
-        return Timestamp.fromDate(new Date(ms));
-    }
-    return null;
-}
+// Re-export for existing imports in events domain.
+export { toIsoString, toTimestamp };
 
 export function isEventPublished(event) {
     return event?.published === true || event?.status === "published";

@@ -1,16 +1,4 @@
-import { Timestamp } from "firebase-admin/firestore";
-
-function toIsoString(value) {
-    if (!value) return null;
-    if (typeof value === "string") {
-        const ms = Date.parse(value);
-        return Number.isFinite(ms) ? new Date(ms).toISOString() : value;
-    }
-    if (value instanceof Date) return value.toISOString();
-    if (value instanceof Timestamp) return value.toDate().toISOString();
-    if (typeof value?.toDate === "function") return value.toDate().toISOString();
-    return null;
-}
+import { toIsoString } from "../../utils/timestamp.js";
 
 function normalizeHistory(history) {
     if (!Array.isArray(history)) return [];

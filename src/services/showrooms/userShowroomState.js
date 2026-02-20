@@ -5,6 +5,7 @@ import { notFound, badRequest } from "../../core/error.js";
 import { createNotification } from "../notifications/notificationService.js";
 import { NOTIFICATION_TYPES } from "../notifications/types.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
+import { parseStrictLimit } from "../../utils/pagination.js";
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
@@ -266,6 +267,7 @@ function userFavoritesCollection(uid) {
 
 async function tryCreateShowroomFavoriteNotification({ showroom, showroomId, actorUid }) {
     const ownerUid = showroom?.ownerUid;
+    // Guard: self-favorite should not produce notifications/push.
     if (!ownerUid || ownerUid === actorUid) return;
 
     try {
@@ -311,16 +313,11 @@ function parseSyncPayload(payload = {}) {
 }
 
 function parseLimit(value) {
-    if (value === undefined || value === null || value === "") {
-        return DEFAULT_LIMIT;
-    }
-
-    const parsed = Number(value);
-    if (!Number.isInteger(parsed) || parsed < 1 || parsed > MAX_LIMIT) {
-        throw badRequest("QUERY_INVALID");
-    }
-
-    return parsed;
+    return parseStrictLimit(value, {
+        defaultValue: DEFAULT_LIMIT,
+        maxValue: MAX_LIMIT,
+        errorCode: "QUERY_INVALID",
+    });
 }
 
 function parseIdsList(value) {

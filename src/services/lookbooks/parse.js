@@ -1,6 +1,7 @@
 import { badRequest } from "../../core/error.js";
 import { normalizeCountry } from "../../constants/countries.js";
 import { decodeListCursor, encodeListCursor, CURSOR_VERSION } from "./parseCursor.js";
+import { parseStrictLimit } from "../../utils/pagination.js";
 
 export const DEFAULT_LIMIT = 20;
 export const MAX_LIMIT = 100;
@@ -43,14 +44,11 @@ export function parseSyncPayload(payload) {
 }
 
 export function parseLimit(value, defaultValue, maxValue) {
-    if (value === undefined || value === null || value === "") {
-        return defaultValue;
-    }
-    const parsed = Number(value);
-    if (!Number.isInteger(parsed) || parsed < 1 || parsed > maxValue) {
-        throw badRequest("QUERY_INVALID");
-    }
-    return parsed;
+    return parseStrictLimit(value, {
+        defaultValue,
+        maxValue,
+        errorCode: "QUERY_INVALID",
+    });
 }
 
 function parseRequiredString(value) {

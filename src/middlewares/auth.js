@@ -1,4 +1,4 @@
-import { getAuthInstance, getFirestoreInstance } from "../config/firebase.js";
+import { getAuthInstance } from "../config/firebase.js";
 import { fail } from "../utils/apiResponse.js";
 
 // authMiddleware

@@ -5,9 +5,9 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # shellcheck source=./_lib.sh
 # shellcheck disable=SC1091
 source "$SCRIPT_DIR/_lib.sh"
-# shellcheck source=./helpers/smoke_suite.sh
+# shellcheck source=./lib/helpers/smoke_suite.sh
 # shellcheck disable=SC1091
-source "$SCRIPT_DIR/helpers/smoke_suite.sh"
+source "$SCRIPT_DIR/lib/helpers/smoke_suite.sh"
 
 load_env
 require_cmd curl jq

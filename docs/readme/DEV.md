@@ -1,129 +1,80 @@
-# DEV Test & Release Runbook
+# DEV
 
-## 1) Test environment (`NODE_ENV=test`)
-
+## Priority 1 — before every commit
 ```bash
-chmod +x src/test/*.sh
+npm run lint
+npm run test:unit
+npm run test:smoke
+npm run test:push
 ```
 
+## Priority 2 — before PR
 ```bash
-NODE_ENV=test ./src/test/test_smoke.sh
-# npm run test:smoke
-
-NODE_ENV=test ./src/test/test_showrooms.sh
-# npm run test:showrooms
-
-NODE_ENV=test ./src/test/test_showrooms_favorites.sh
-# npm run test:showrooms-favorites
-
-NODE_ENV=test ./src/test/test_admin_and_collections.sh
-# npm run test:admin
-
-NODE_ENV=test ./src/test/test_geo_paging_checks.sh
-# npm run test:geo
-
-NODE_ENV=test ./src/test/test_suggestions_and_counters.sh
-# npm run test:suggestions
-
-NODE_ENV=test ./src/test/test_events_mvp1.sh
-# npm run test:events
-
-NODE_ENV=test ./src/test/test_events_guest_sync.sh
-# npm run test:events-guest-sync
-
-NODE_ENV=test ./src/test/test_lookbooks.sh
-# npm run test:lookbooks
-
-# npm run test:notifications
+npm run test:flows
+npm run test:notifications
+npm run test:full
 ```
 
-Повний:
+## Priority 3 — extended / optional
 ```bash
-npm run test:all
-# npm run test:all:extended
-# npm run test:all:full
+NODE_ENV=test ./src/test/integrations/test_geo_paging.sh
+NODE_ENV=test ./src/test/integrations/test_guest_sync.sh
+NODE_ENV=test ./src/test/integrations/test_media.sh
+NODE_ENV=test ./src/test/integrations/test_extended.sh
 ```
 
-Після прогону (очищення тестових даних):
+## Priority 4 — production only
 ```bash
+npm run test:prod-smoke
+```
+
+## Cleanup
+```bash
+npm run test:cleanup:dry
 npm run test:cleanup
 ```
 
----
+## Pre-commit checklist
+- `npm run lint`
+- `npm run test:unit`
+- `npm run test:smoke`
+- `npm run test:push`
+- if API changed: `npm run test:notifications`
 
-За потреби медіа-тесту:
+## Validation commands
 ```bash
-# Terminal 1: Firestore emulator
-firebase emulators:start --only firestore
-
-# Terminal 2: app with emulator host
-export FIRESTORE_EMULATOR_HOST=localhost:8085
-npm run dev
-
-# Terminal 3: media test
-export FIRESTORE_EMULATOR_HOST=localhost:8085
-NODE_ENV=test ./src/test/test_media.sh
-# npm run test:media
+bash -lc 'shopt -s nullglob; shellcheck src/test/*.sh src/test/core/*.sh src/test/flows/*.sh src/test/integrations/*.sh src/test/prod/*.sh src/test/lib/*.sh src/test/lib/helpers/*.sh scripts/*.sh && echo "shellcheck OK"'
+npm run lint
+npm run test:unit
+npm run test:full
 ```
 
----
-
-## 2) Production read-only check
+## Firebase block
 ```bash
-NODE_ENV=prod ./src/test/test_prod_readonly.sh
-# npm run test:prod-smoke
+firebase login
+firebase use <project-id>
+firebase deploy --only firestore:indexes --project <project-id>
+firebase deploy --only hosting --project <project-id>
 
-PROD_ID_TOKEN="<fresh_firebase_id_token>" NODE_ENV=prod ./src/test/test_prod_readonly.sh
-```
-
----
-
-## 3) Before commit (mandatory)
-```bash
-bash -lc 'shopt -s nullglob; shellcheck src/test/*.sh src/test/helpers/*.sh scripts/*.sh && echo "shellcheck OK"'
-npm run test:unit -- --watchman=false
-npx @redocly/cli lint docs/openapi.yaml
-```
-
----
-
-## 4) Local docs check
-```bash
-npm run dev
-```
-
-- http://localhost:3005/docs
-
----
-
-## 5) Firebase / Firestore block
-
-### Hosting deploy
-```bash
-firebase deploy --only hosting --project jm-showroom
-```
-
----
-
-### Firestore indexes deploy
-```bash
-firebase deploy --only firestore:indexes --project jm-showroom
-```
-
----
-
-### Firestore indexes check (gcloud)
-```bash
+# verify indexes
 gcloud auth login
-gcloud config set project jm-showroom
-gcloud firestore indexes composite list --project=jm-showroom
-gcloud firestore indexes fields list --project=jm-showroom
-```
+gcloud config set project <project-id>
+gcloud firestore indexes composite list --project=<project-id>
+gcloud firestore indexes fields list --project=<project-id>
 
----
-
-### (Optional) Migration helper
-```bash
+# migration helper
 npm run firebase:migration -- --project <new-project-id> --env-file .env.prod
-npm run firebase:migration -- --project <new-project-id> --write-firebaserc --deploy-indexes
 ```
+
+## Environment flags reference
+- `NODE_ENV`: `dev` | `test` | `prod`
+- `PORT`: server port
+- `BASE_URL`: base API URL for bash tests
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_CLIENT_EMAIL`
+- `FIREBASE_PRIVATE_KEY`
+- `FIREBASE_STORAGE_BUCKET`
+- `PUSH_ENABLED`: `true` to enable push in non-test env, default `false`
+- `TEST_USER_TOKEN`
+- `TEST_ADMIN_TOKEN`
+- `TEST_OWNER_TOKEN_2`

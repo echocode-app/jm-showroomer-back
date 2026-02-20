@@ -24,7 +24,7 @@ async function probeFirestoreIndexes() {
     } catch (err) {
         if (isIndexNotReadyError(err)) {
             log.info(
-                "⚠ Firestore index not ready for status+geo.cityNormalized. Search may return INDEX_NOT_READY until indexes are built."
+                "Firestore index not ready for status+geo.cityNormalized ⚠️"
             );
         }
     }
@@ -32,9 +32,12 @@ async function probeFirestoreIndexes() {
 
 async function startServer() {
     initFirebase();
-    await probeFirestoreIndexes();
     app.listen(CONFIG.port, () => {
         log.success(`Server running in ${CONFIG.env} mode on port ${CONFIG.port}`);
+        // Non-blocking index probe: startup must not wait on Firestore network conditions.
+        probeFirestoreIndexes().catch(err =>
+            log.error(`Firestore index probe skipped: ${err?.message || err}`)
+        );
     });
 }
 

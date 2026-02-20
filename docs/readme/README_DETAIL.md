@@ -1,347 +1,593 @@
-# JM Showroomer API v1
-> Audience: Flutter/mobile integrators. This file is integration-oriented and API-contract focused.
+# README_DETAIL (Flutter Integration, Full Current Iteration)
 
-## Quick Start (Flutter)
-
-1. Firebase Sign-In (Google/Apple/any) → get Firebase `idToken`.
-2. `GET /users/me` with `Authorization: Bearer <ID_TOKEN>`.
-3. Check `onboardingState` and `role` before protected endpoints.
-
-Example (Dart/Flutter):
-
-```dart
-final response = await http.get(
-  Uri.parse('https://<BACKEND_URL>/api/v1/users/me'),
-  headers: {'Authorization': 'Bearer $idToken'},
-);
-```
-
-## Core Flow (must implement)
-
-1. Onboarding: `POST /users/complete-onboarding` with `country`.
-   - blocked countries: russia, belarus → `403 COUNTRY_BLOCKED`
-2. Complete owner profile (auto-upgrade): `POST /users/complete-owner-profile`.
-   - required: `name`, `country`, `instagram` (position optional)
-3. Draft flow (OWNER only):
-   - `POST /showrooms/draft` → create/reuse draft
-   - `PATCH /showrooms/{id}` → save step-by-step
-   - `POST /showrooms/{id}/submit` → status becomes `pending`
-   - `DELETE /showrooms/{id}` → soft delete (not allowed while pending)
-
-Notes:
-
-- Owner role is granted by `POST /users/complete-owner-profile`.
-- Owner can edit `approved` showrooms and submit changes again.
-- When status is `pending`, owner cannot PATCH/DELETE (review freeze).
-- Soft delete sets status=`deleted` and hides from public/owner lists.
-- User delete: `DELETE /users/me` performs soft delete with PII nulling.
-  - Owner deletion is blocked if the user has any showrooms/lookbooks/events → `409 USER_DELETE_BLOCKED`.
-  - Deleted users get `404 USER_NOT_FOUND` on `GET /users/me`.
-- Each action appends to `editHistory` with before/after diff (audit log).
-- Lookbooks and events are standalone entities (no showroom linkage or geo inheritance).
-- Profile settings: `PATCH /users/profile` (name/country/instagram/position/settings).
-  - Owner country change is blocked if there are active showrooms/lookbooks/events → `409 USER_COUNTRY_CHANGE_BLOCKED`.
-- Showroom country must match owner country; changing it to a different country is blocked on PATCH/submit.
-
-Required fields for submit:  
-`name`, `type`, `country`, `address`, `city`, `availability`, `contacts.phone`, `contacts.instagram`, `location.lat`, `location.lng`.
-
-## Geo model (MVP1)
-
-The client provides geo data; the backend does **not** geocode or call Google APIs.
-Send `geo` during draft PATCH or create; backend computes `cityNormalized` and `geohash`.
-
-Geo payload example:
-
-```json
-{
-  "geo": {
-    "city": "Kyiv",
-    "country": "Ukraine",
-    "coords": { "lat": 50.4501, "lng": 30.5234 },
-    "placeId": "ChIJBUVa4U7P1EAR_kYBF9IxSXY"
-  }
-}
-```
-
-Rules:
-- Send only `geo.city`, `geo.country`, `geo.coords`, `geo.placeId`.
-- `geo.city` and `geo.country` must be non-empty strings.
-- `geo.coords.lat`/`geo.coords.lng` must be valid coordinates.
-- `geo.placeId` is optional; if present it must be a non-empty string.
-- Do **not** send `cityNormalized` or `geohash` (backend ignores client values and recomputes).
-- `geo` is optional for drafts/legacy records.
-- `geo` is updated as a whole object (no partial or null removal).
-- `geo.country` must match top-level `country` (case-insensitive), otherwise 400.
-- `country` uses full name (e.g., `Ukraine`), **not** ISO2.
-
-Search by city (public): `GET /showrooms?city=Kyiv`  
-Filter uses normalized city on backend (`geo.cityNormalized`).
-
-Response includes:
-`geo.cityNormalized` (lowercase/trimmed) and `geo.geohash` (precision 9).
-
-Location vs Geo:
-- `location` is legacy address coordinates.
-- `geo.coords` is the canonical geo used for search.
-
-Possible Firestore index:
-If combining `city`, `categoryGroup`, `subcategories`, or `brand` with other filters (e.g., `status`, `ownerUid`),
-Firestore may require a composite index. For brand filtering, indexes are needed per `brandsMap.<brandKey>`.
-
-## Showroom Search & Pagination
-
-Query params:
-- `limit`: 1..100, default 20
-- `fields`: `marker` or `card`
-- `q`: prefix search by `nameNormalized` (ignored when `city` is set or `qMode=city`)
-- `qMode`: `city` or `name` (forces how `q` is interpreted)
-- `city`: exact match on `geo.cityNormalized`
-- `brand`: exact match on `brandsMap.<brandKey>` (MVP2 client feature; API is already available)
-- `category` or `categories`
-- `categoryGroup`
-- `subcategories` (array-contains-any)
-- `geohashPrefix` or `geohashPrefixes[]`
-- `cursor`: base64 JSON (v2) with fields `{v,f,d,value,id}`
-
-Note: Showrooms from blocked countries are silently excluded from public lists.
-
-Examples:
-- `GET /showrooms?type=unique`
-- `GET /showrooms?categoryGroup=clothing`
-- `GET /showrooms?subcategories=dresses,suits`
-- `GET /showrooms?brand=zara&subcategories=dresses`
-
-Migration note:
-If existing showrooms lack `brandsMap`, run `scripts/migrate_brands_map.js` to backfill.
-
-Pagination contract (backend-owned):
-- Client must only follow `meta.nextCursor`; no client-side merging/deduping.
-- `meta.paging` values: `enabled` (more pages), `end` (no more results), `disabled` (paging unsupported).
-- Cursor works only with a single `geohashPrefix`.
-- Cursor is not supported for `geohashPrefixes[]` (returns `paging=disabled`).
-- `geohashPrefix(es) + q` is rejected as `QUERY_INVALID`.
-
-Validation errors:
-- `QUERY_INVALID`
-- `CURSOR_INVALID`
-
-Search implementation:
-- `src/services/showrooms/listShowrooms.js` (entry)
-- `src/services/showrooms/list/` (parse/utils/ordering/dev/firestore + shared `devFilters.js`)
-
-## Suggestions & Counters
-
-Endpoints:
-- `GET /showrooms/suggestions` (lightweight hints)
-- `GET /showrooms/counters` (total count for current filters)
-
-Rules:
-- `suggestions`: `q` is required; `q.length < 2` returns `[]`.
-- `suggestions`: geo params are not supported.
-- `suggestions`: brand suggestions are API-ready, but MVP1 client can ignore them.
-- `suggestions` internals are split into `src/services/showrooms/suggest/` (`dev`, `firestore`, `builders`, `constants`).
-- `counters`: `q` is optional; `cursor/fields/limit` are rejected.
-- `counters`: `geohashPrefix(es) + q` is rejected as `QUERY_INVALID`.
-- `suggestions/counters`: `categoryGroup`, `subcategories`, `categories` are mutually exclusive (2+ → `QUERY_INVALID`).
-
-## Events (MVP1)
-
-- Events are standalone entities (no showroom linkage).
-- Content is seeded; create/update/delete endpoints are not available in MVP1.
-- Public list: `GET /events`
-  - includes only `published=true` and upcoming (`startsAt >= now`)
-  - past events are excluded from list
-  - blocked countries are silently excluded
-  - cursor shape: base64 JSON `{ v: 1, startsAt: string, id: string }`
-  - `city` query is normalized server-side before matching
-- Public details: `GET /events/{id}`
-  - published events can be opened by direct link (including past)
-  - event payload fields for MVP1 UI: `name`, `startsAt`, `endsAt`, `city`, `country`, `address`, `type`, `coverPath`, `externalUrl`
-- Auth actions:
-  - `POST /events/{id}/want-to-visit` (idempotent)
-  - `DELETE /events/{id}/want-to-visit` (idempotent)
-  - `POST /events/{id}/dismiss` (idempotent)
-  - `DELETE /events/{id}/dismiss` (idempotent)
-- User collections:
-  - `GET /collections/want-to-visit/events` (public-compatible: guest empty, auth list)
-  - returns upcoming events only (`startsAt >= now`)
-  - `POST /collections/want-to-visit/events/sync` (auth required)
-    - accepts guest-local state payload: `{ wantToVisitIds: [], dismissedIds: [] }`
-    - max `100` ids per list (`EVENT_SYNC_LIMIT_EXCEEDED` on overflow)
-    - if same id appears in both lists, want-to-visit wins
-    - invalid/unpublished/blocked/past ids are skipped and returned in `skipped`
-- MVP2 only:
-  - `POST /events/{id}/rsvp` returns `501 EVENTS_WRITE_MVP2_ONLY`.
-
-### Guest Event Likes Flow (MVP1)
-
-Guests can like/dismiss events in local app storage only (no anonymous backend writes).
-After login, Flutter should sync that local state once:
-
-- `POST /collections/want-to-visit/events/sync`
-
-Server merges the payload idempotently into user collections and returns:
-
-- `applied.wantToVisit[]`
-- `applied.dismissed[]`
-- `skipped[]`
-
-## Lookbooks (MVP1)
-
-- Lookbooks expose full API surface, but MVP1 mobile flow is read-focused (seed/admin content + favorites/sync).
-- Actor can be authenticated (`uid`) or guest (`x-anonymous-id`).
-- Ownership for update/delete: `authorId === uid` OR `anonymousId === x-anonymous-id`.
-- Card metadata fields (optional):
-  - `author`: `{ name, position?, instagram? }`
-  - `items[]`: `{ name, link }` (what is on the photo)
-- Public list: `GET /lookbooks`
-  - requires `country` + `seasonKey` query params
-  - returns `published=true` only
-  - ordering is deterministic: ranked first (`sortRank asc`), then unranked (`publishedAt desc`), with id tie-breaker
-  - supports cursor pagination with `meta.hasMore`, `meta.nextCursor`, `meta.paging`
-  - signs only `coverPath` as `coverUrl`
-- Public detail: `GET /lookbooks/{id}`
-  - returns published lookbook for public callers
-  - owner (auth/guest) can read own unpublished draft
-  - signs `coverPath` and every `images[].storagePath`
-- Favorites:
-  - `POST /lookbooks/{id}/favorite`, `DELETE /lookbooks/{id}/favorite` are auth-only and idempotent
-  - canonical likes storage: `lookbooks/{id}/likes/{actorKey}`
-  - `likesCount` maintained atomically
-  - authenticated calls are mirrored into `users/{uid}/lookbooks_favorites/{lookbookId}` for collections/sync compatibility
-  - guest flow: keep local state in app and send it via `POST /collections/favorites/lookbooks/sync` after login
-- Collections:
-  - `GET /collections/favorites/lookbooks` (public-compatible: guest empty, auth list)
-  - returns only existing published lookbooks; stale/unpublished ids are filtered out at read time
-  - `POST /collections/favorites/lookbooks/sync` (auth required)
-    - payload: `{ favoriteIds: [] }`
-    - max `100` ids (`LOOKBOOK_SYNC_LIMIT_EXCEEDED` on overflow)
-    - unknown/unpublished ids returned in `skipped`
-    - idempotent
-    - sync reconciles canonical likes (`lookbooks/{id}/likes/{u:uid}`) and updates `likesCount`
-  - `x-anonymous-id` validation:
-    - allowed pattern `[A-Za-z0-9_-]`, bounded length
-    - invalid value -> `400 ANON_ID_INVALID`
-
-## Firestore Index Runbook
-
-If you see `INDEX_NOT_READY`, Firestore is missing a required composite index for the query. This is not a server crash; it means the index must be created before the query can run.
-
-How to deploy indexes:
-```bash
-firebase deploy --only firestore:indexes --project "$FIREBASE_PROJECT_ID"
-```
-
-Important: brand filtering uses `brandsMap.<brandKey>`. For **new brand keys**, Firestore may require a **new composite index** that includes that specific `brandsMap.<brandKey>` field. Until it exists, queries can return `INDEX_NOT_READY`.
-
-### Firebase Project Migration (Standardized)
-When switching from corporate Firebase to owner Firebase, use the migration helper to avoid missing steps:
-
-```bash
-npm run firebase:migration -- --project <new-project-id> --env-file .env.prod
-npm run firebase:migration -- --project <new-project-id> --write-firebaserc --deploy-indexes
-```
-
-Script path: `scripts/firebase_project_migration.sh`  
-It validates required Firebase env keys, aligns project id, optionally updates `.firebaserc`, deploys indexes, and prints pre-prod checklist commands.
-
-Events list index-required query shapes:
-- `published + startsAt + __name__`
-- `published + country + startsAt + __name__`
-- `published + cityNormalized + startsAt + __name__`
-- `published + country + cityNormalized + startsAt + __name__`
-
-Lookbooks list index-required query shapes:
-- `published + countryNormalized + seasonKey + sortRank + __name__`
-- `published + countryNormalized + seasonKey + sortRank + publishedAt + __name__`
-
-## Base URL
-
-`https://<BACKEND_URL>/api/v1`
-
-## Media/Storage (MVP1)
-
-- Media paths are canonical storage paths (e.g., `lookbooks/{id}/cover/{file}.webp`).
-- Clients receive short‑lived signed URLs (e.g., `coverUrl`) for read access (TTL 6h).
-- Upload is MVP2; MVP1 uses seeded content only.
-
-## Error Handling (Flutter)
-
-- 401 `AUTH_MISSING` / `AUTH_INVALID` → re-login
-- 403 `FORBIDDEN` → no permission
-- 403 `COUNTRY_BLOCKED` → russia or belarus
-- 409 `USER_COUNTRY_CHANGE_BLOCKED` → owner has active showrooms/lookbooks/events
-- 400 validation → show message from `error`
-
-## Endpoints (essentials)
-
-- `GET /users/me`
-- `DELETE /users/me`
-- `POST /users/complete-onboarding`
-- `POST /users/complete-owner-profile`
-- `PATCH /users/profile`
-- `POST /showrooms/draft`
-- `PATCH /showrooms/{id}`
-- `POST /showrooms/{id}/submit`
-- `DELETE /showrooms/{id}`
-
-## Admin moderation
-
-- `POST /admin/showrooms/{id}/approve`
-- `POST /admin/showrooms/{id}/reject` (body: `{ reason: string }`)
-- `DELETE /admin/showrooms/{id}` (soft delete any)
+Prod Swagger: https://jm-showroomer-back.onrender.com/docs/
 
 ---
 
-API Table (actual)
+## 1) Базові принципи контракту
 
-| Scope       | Method | Endpoint                      | Roles / Notes                                                                           |
-| ----------- | ------ | ----------------------------- | --------------------------------------------------------------------------------------- |
-| Health      | GET    | /health                       | Public. Service health check.                                                           |
-| Auth        | POST   | /auth/oauth                   | Public. Login via Firebase ID token (Google/Apple/any).                                 |
-| Users       | GET    | /users/me                     | Authenticated only. Returns current profile. Deleted users get 404 USER_NOT_FOUND.      |
-| Users       | DELETE | /users/me                     | Authenticated only. Soft delete + PII nulling; owner blocked if any assets.             |
-| Users       | POST   | /users/complete-onboarding    | Authenticated only. Finishes onboarding flow.                                           |
-| Users       | POST   | /users/complete-owner-profile | USER/OWNER. Upgrades to OWNER; requires schema validation.                              |
-| Users       | PATCH  | /users/profile                | Authenticated. Update profile; owner country change blocked with active assets.         |
-| Showrooms   | GET    | /showrooms                    | Public: approved only. OWNER: own (excludes deleted). ADMIN: all; can filter by status. |
-| Showrooms   | GET    | /showrooms/suggestions         | Public. Lightweight suggestions (q required).                                           |
-| Showrooms   | GET    | /showrooms/counters            | Public. Total count for current filters.                                                |
-| Showrooms   | POST   | /showrooms/create             | OWNER/MANAGER. Creates showroom. `?mode=draft` to create draft.                         |
-| Showrooms   | POST   | /showrooms/draft              | OWNER only. Create/reuse draft.                                                         |
-| Showrooms   | GET    | /showrooms/{id}               | Public for approved; OWNER/ADMIN for own/any (incl pending/deleted).                    |
-| Showrooms   | PATCH  | /showrooms/{id}               | OWNER only (own). Draft/rejected/approved; blocked while pending.                       |
-| Showrooms   | DELETE | /showrooms/{id}               | OWNER only (own). Soft delete; blocked while pending.                                   |
-| Showrooms   | POST   | /showrooms/{id}/submit        | OWNER only (own). Draft/rejected/approved → pending.                                    |
-| Showrooms   | POST   | /showrooms/{id}/favorite      | Authenticated users. Idempotent favorite add; only approved showrooms.                 |
-| Showrooms   | DELETE | /showrooms/{id}/favorite      | Authenticated users. Idempotent favorite remove.                                        |
-| Admin       | GET    | /admin/showrooms              | ADMIN only. List all (incl pending/deleted).                                            |
-| Admin       | GET    | /admin/showrooms/{id}         | ADMIN only. Get any showroom (incl deleted).                                            |
-| Admin       | POST   | /admin/showrooms/{id}/approve | ADMIN only. Pending → approved.                                                         |
-| Admin       | POST   | /admin/showrooms/{id}/reject  | ADMIN only. Pending → rejected (body: { reason }).                                      |
-| Admin       | DELETE | /admin/showrooms/{id}         | ADMIN only. Soft delete any status.                                                     |
-| Lookbooks   | GET    | /lookbooks                    | Public. Requires `country` + `seasonKey`; cursor pagination over ranked/published ordering. |
-| Lookbooks   | GET    | /lookbooks/{id}               | Public. Published lookbook details with signed cover/images URLs.                       |
-| Lookbooks   | POST   | /lookbooks                    | Public-compatible create. Auth or guest (`x-anonymous-id`).                             |
-| Lookbooks   | POST   | /lookbooks/create             | Legacy alias for `POST /lookbooks`.                                                     |
-| Lookbooks   | PATCH  | /lookbooks/{id}               | Public-compatible update. Owner only (auth/guest ownership).                            |
-| Lookbooks   | DELETE | /lookbooks/{id}               | Public-compatible delete. Owner only (auth/guest ownership).                            |
-| Lookbooks   | POST   | /lookbooks/{id}/favorite      | Authenticated users. Idempotent favorite add.                                           |
-| Lookbooks   | DELETE | /lookbooks/{id}/favorite      | Authenticated users. Idempotent favorite remove.                                        |
-| Lookbooks   | POST   | /lookbooks/{id}/rsvp          | Authenticated users. Stub.                                                              |
-| Events      | GET    | /events                       | Public. Upcoming published events only (past excluded).                                 |
-| Events      | GET    | /events/{id}                  | Public. Published event by id (direct link supports past events).                       |
-| Events      | POST   | /events/{id}/want-to-visit    | Authenticated users. Idempotent.                                                        |
-| Events      | DELETE | /events/{id}/want-to-visit    | Authenticated users. Idempotent.                                                        |
-| Events      | POST   | /events/{id}/dismiss          | Authenticated users. Idempotent; hides event from authed list.                          |
-| Events      | DELETE | /events/{id}/dismiss          | Authenticated users. Idempotent.                                                        |
-| Events      | POST   | /events/{id}/rsvp             | Authenticated users. MVP2-only (`501 EVENTS_WRITE_MVP2_ONLY`).                          |
-| Collections | GET    | /collections/favorites/showrooms | Public/any role. Guest gets empty; auth gets own favorite approved showrooms.      |
-| Collections | POST   | /collections/favorites/showrooms/sync | Authenticated users. Sync guest-local showroom favorites.                        |
-| Collections | GET    | /collections/favorites/lookbooks | Public route: guest gets empty, auth gets favorite lookbooks (published-only revalidation). |
-| Collections | POST   | /collections/favorites/lookbooks/sync | Authenticated users. Sync guest-local lookbook favorites.                        |
-| Collections | GET    | /collections/want-to-visit/events | Public route: guest gets empty, auth gets upcoming want-to-visit events.           |
-| Collections | POST   | /collections/want-to-visit/events/sync | Authenticated users. Sync guest-local event state.                           |
-| Dev         | POST   | /users/dev/register-test       | Dev/Test only. Creates mock user (not in OpenAPI).                                     |
-| Dev         | POST   | /users/dev/make-owner          | Dev/Test only. Upgrades current user to owner (not in OpenAPI).                       |
+1. Backend є джерелом істини по станах (`status`, `likedByMe`, `isWantToVisit`, `isRead`, `meta.paging`, `nextCursor`).
+2. Cursor завжди backend-owned, opaque, versioned.
+3. Ключові mutate-flow endpoint-и реалізовані ідемпотентно.
+4. Push не є критичним кроком бізнес-flow: якщо push не відправився, write-flow не має ламатися.
+
+---
+
+## 2) Auth та user identity
+
+## `POST /auth/oauth`
+
+Що робить:
+
+- перевіряє Firebase ID token;
+- піднімає Firestore user doc (якщо немає — створює базовий profile);
+- повертає user payload, який далі використовується у Flutter bootstrap.
+
+Що врахувати у Flutter:
+
+- login завершеним вважається після успішного `/auth/oauth` + актуального `GET /users/me`.
+
+## `GET /users/me`
+
+Що робить:
+
+- повертає актуальний profile з роллю, country, onboarding state та preference полями.
+
+Що врахувати:
+
+- не покладатись на локальний cached profile після зміни ролі/профілю — перечитувати `/users/me`.
+
+## `PATCH /users/profile`
+
+Що робить:
+
+- partial update профілю.
+
+Ключові правила:
+
+- owner-only поля (`instagram`, `position`) доступні лише owner;
+- country change для owner може бути заблокований якщо є активні showrooms/lookbooks/events;
+- `notificationsEnabled` — user-level opt-out для push eligibility.
+
+---
+
+## 3) Devices та push prerequisites
+
+## `POST /users/me/devices`
+
+Що робить:
+
+- upsert у `users/{uid}/devices/{deviceId}`;
+- підтримка multi-device;
+- оновлення `fcmToken/platform/appVersion/locale/lastSeenAt/updatedAt`.
+
+Важливий інваріант:
+
+- device-level `notificationsEnabled` не має випадково скидатись у `true` при update, якщо юзер раніше вимкнув device.
+
+## `DELETE /users/me/devices/{deviceId}`
+
+Що робить:
+
+- видаляє конкретний device registration.
+
+Що врахувати:
+
+- викликати при logout, якщо треба припинити push саме для цього device.
+
+---
+
+## 4) Showrooms — бізнес-логіка
+
+## 4.1 Стани showrooms
+
+Реальний стан lifecycle:
+
+- `draft`
+- `pending`
+- `approved`
+- `rejected`
+- `deleted`
+
+Логічні наслідки:
+
+- `approved` — публічно доступний у browse/list/favorites;
+- `pending` — під модерацією, не повинен дрейфити від snapshot;
+- `rejected` — може бути доопрацьований і повторно submit;
+- `deleted` — soft delete, приховується у публічних flow.
+
+## 4.2 Детальна логіка створення showroom
+
+Є два шляхи створення:
+
+### A) `POST /showrooms/draft`
+
+- явно створює draft.
+- використовується, коли UI хоче спочатку пустий/частково заповнений чернетковий об'єкт.
+
+### B) `POST /showrooms/create`
+
+- створює showroom через основний owner create flow;
+- якщо передано query `mode=draft`, payload примусово маркується як draft-path.
+
+Що реально відбувається в бекенді при create:
+
+1. Перевірка auth + role (`owner`/дозволені ролі для create endpoint).
+2. Country guard (blocked country блокує операцію).
+3. Joi валідація payload.
+4. Нормалізація ключових полів (name/address/geo-похідні поля, якщо релевантно).
+5. Підготовка server-managed полів:
+   - `createdAt`, `updatedAt`
+   - статус
+   - технічні поля для подальшого submit/moderation
+6. Persist у Firestore.
+7. Повернення normalized response DTO.
+
+## 4.3 Update / Submit / Moderation
+
+### `PATCH /showrooms/{id}`
+
+- owner patch;
+- back заповнює edit-history та updatedAt;
+- валідація поля-до-поля.
+
+### `POST /showrooms/{id}/submit`
+
+- переводить у `pending`;
+- фіксує `pendingSnapshot` (щоб модерація працювала з immutable зрізом);
+- після submit showroom переходить у moderation-locked semantics.
+
+### `POST /admin/showrooms/{id}/approve`
+
+- перевірка статусу всередині tx;
+- apply snapshot + status transition;
+- атомарне оновлення history/review fields;
+- notification owner-у створюється post-commit.
+
+### `POST /admin/showrooms/{id}/reject`
+
+- аналогічно атомарна tx перевірка;
+- status -> rejected + reason;
+- notification owner-у post-commit.
+
+### `DELETE /showrooms/{id}`
+
+- soft delete.
+
+## 4.4 Favorites по showroom
+
+`POST/DELETE /showrooms/{id}/favorite`
+
+- idempotent add/remove;
+- self-action не генерує owner notification;
+- favorite-flow має anti-leak behavior для недоступних статусів.
+
+---
+
+## 5) Гео-правила і geo-логіка
+
+## 5.1 Geo model
+
+Бекенд працює з гео-даними у структурі showroom (через `geo` поля та нормалізовані похідні значення).
+Клієнт передає первинні geo поля, бекенд виконує нормалізацію/перевірки та використовує їх для search/filter.
+
+## 5.2 Що валідуюється
+
+На рівні логіки geo перевіряється:
+
+- коректність координат (`lat/lng` в допустимих межах);
+- валідність/непорожність міста в geo-контексті;
+- консистентність країни (де потрібно — узгодженість з top-level `country`);
+- нормалізовані похідні значення не приймаються як source-of-truth з клієнта, вони перераховуються сервером.
+
+## 5.3 Що зберігається і як використовується
+
+- `geo.cityNormalized` використовується для city query.
+- `geo.geohash` використовується у map/geo prefix режимах.
+- гео-поля впливають на suggestions/counters/list modes.
+
+## 5.4 Search режими з geo
+
+### City mode
+
+- `qMode=city` або explicit `city`.
+- explicit `city` має пріоритет.
+- порівняння йде по normalized city.
+
+### Geohash mode
+
+- `geohashPrefix` або `geohashPrefixes`.
+- multi-prefix може вимикати cursor paging (`paging=disabled`) через multi-branch злиття.
+
+## 5.5 Geo та індекси
+
+- частина geo-комбінацій потребує Firestore composite indexes;
+- якщо index не готовий — повертається стабільна доменна помилка;
+- Flutter має мати retry UX, а не трактувати як фатальний crash-case.
+
+## 5.6 Практичні інтеграційні наслідки для Flutter
+
+- при зміні geo-фільтра скидати cursor;
+- не очікувати cursor у multi-prefix режимі;
+- не генерувати geohash-related cursor локально;
+- читати `meta.paging/nextCursor` як є.
+
+---
+
+## 6) Lookbooks — реалізована логіка
+
+## `GET /lookbooks`
+
+- list з actor-aware полями (`likedByMe`);
+- роль/видимість впливають на результат.
+
+## `POST /lookbooks` і `POST /lookbooks/create`
+
+- create lookbook (`/create` — legacy alias).
+
+## `GET /lookbooks/{id}`
+
+- detail з visibility guard.
+
+## `PATCH/DELETE /lookbooks/{id}`
+
+- ownership/permission checks.
+
+## `POST/DELETE /lookbooks/{id}/favorite`
+
+- idempotent like/unlike;
+- консистентність canonical likes + favorites collection.
+
+## `POST /lookbooks/{id}/rsvp`
+
+- endpoint з поточним контрактом (flow збережений).
+
+---
+
+## 7) Events — реалізована логіка
+
+## `GET /events`
+
+- public-compatible list;
+- при auth збагачення user state.
+
+## `GET /events/{id}`
+
+- detail rules по published/visibility.
+
+## `POST/DELETE /events/{id}/want-to-visit`
+
+- idempotent state transitions.
+
+## `POST/DELETE /events/{id}/dismiss`
+
+- dismiss state transitions.
+
+## `POST /events/{id}/rsvp`
+
+- endpoint збережено по контракту.
+
+---
+
+## 8) Collections + guest sync
+
+## Favorites collections
+
+- `/collections/favorites/showrooms`
+- `/collections/favorites/lookbooks`
+
+## Want-to-visit collection
+
+- `/collections/want-to-visit/events`
+
+## Sync endpoints
+
+- `/collections/favorites/showrooms/sync`
+- `/collections/favorites/lookbooks/sync`
+- `/collections/want-to-visit/events/sync`
+
+Sync behavior:
+
+- strict payload validation;
+- max IDs enforcement;
+- order-preserving dedupe;
+- `skipped` для неприйнятих ids.
+
+---
+
+## 9) Notifications та push
+
+## Notifications triggers
+
+- showroom approved
+- showroom rejected
+- showroom favorited
+- lookbook favorited
+- event want-to-visit
+
+Storage:
+
+- `users/{uid}/notifications/{dedupeKey}`;
+- dedupe key = document id.
+
+Read API:
+
+- list/read/unread-count.
+
+Push:
+
+- запускається після create notification;
+- йде тільки якщо notification newly created;
+- поважає user/device opt-out;
+- поважає env guard;
+- fail-safe (не валить бізнес flow).
+
+---
+
+## 10) Транзакційні інваріанти
+
+1. side effects (push) поза Firestore tx callbacks;
+2. moderation transitions перевіряються повторно всередині tx;
+3. dedupe semantics захищає від повторних notification/push у retry-сценаріях;
+4. idempotent mutate-flow не інфлейтить counters/state при повторі.
+
+---
+
+## 11) Error semantics
+
+Критичні коди:
+
+- `AUTH_MISSING`, `AUTH_INVALID`
+- `QUERY_INVALID`, `VALIDATION_ERROR`
+- `CURSOR_INVALID`
+- `ACCESS_DENIED`, `FORBIDDEN`
+- `COUNTRY_BLOCKED`
+- `NOTIFICATION_NOT_FOUND`
+- `INDEX_NOT_READY`
+
+Практика:
+
+- UX будувати по `error.code`;
+- invalid cursor -> reset pagination state;
+- index-not-ready -> retry pattern.
+
+---
+
+## 12) Реалізовані правила валідації
+
+## 12.1 Загальна схема валідації
+
+1. На рівні route використовується `schemaValidate(...)` з Joi-схемами (`src/schemas/*`).
+2. Усі schema працюють з `allowUnknown: false`:
+   - зайві поля від клієнта відхиляються;
+   - системні поля (статуси, нормалізовані поля, ownerUid тощо) не приймаються з клієнта.
+3. Для missing required полів у ключових payload діє мапінг кодів:
+   - `name` -> `SHOWROOM_NAME_REQUIRED`
+   - `type` -> `SHOWROOM_TYPE_REQUIRED`
+   - `country` -> `COUNTRY_REQUIRED`
+4. Інші Joi-помилки мапляться у `VALIDATION_ERROR`.
+
+## 12.2 Валідація showroom create/update/submit
+
+- `showroom.create.schema`:
+  - два режими: draft і non-draft;
+  - non-draft вимагає мінімум `name/type/country`;
+  - `geo.coords.lat/lng` строго в межах (`-90..90`, `-180..180`);
+  - server-managed поля заборонені (`status`, `ownerUid`, `nameNormalized`, `submittedAt` тощо).
+- `showroom.update.schema`:
+  - patch-only: мінімум одне поле (`.min(1)`);
+  - заборона на технічні/модераційні поля (`pendingSnapshot`, `reviewedAt`, `deletedAt` тощо);
+  - `geo` валідований аналогічно create.
+- `showroom.submit.schema`:
+  - body має бути порожнім обʼєктом;
+  - `id` у params обовʼязковий.
+
+## 12.3 Доменно-логічна валідація showroom
+
+Додатково до Joi у сервісному шарі:
+
+- `validateShowroomName(...)`:
+  - довжина, набір символів, заборона чисто цифр/спаму/emoji;
+  - помилка: `SHOWROOM_NAME_INVALID`.
+- `validateInstagramUrl(...)`:
+  - тільки `instagram.com` / `www.instagram.com`;
+  - заборона query/hash;
+  - помилка: `INSTAGRAM_INVALID`.
+- `validatePhone(...)`:
+  - E.164 + перевірка через `libphonenumber-js`;
+  - помилка: `PHONE_INVALID`.
+- `assertShowroomComplete(...)` перед submit:
+  - вимагає обовʼязкові бізнес-поля;
+  - помилка: `SHOWROOM_INCOMPLETE`.
+- Перевірка доступу/власності/ролей:
+  - `ACCESS_DENIED`, `FORBIDDEN`.
+
+## 12.4 Гео-валідація
+
+- `buildGeo(...)` і `normalizeCity(...)`:
+  - сервер сам обчислює `geo.cityNormalized` і `geo.geohash`;
+  - похідні geo-поля не є source-of-truth з клієнта;
+  - гарантується консистентність для list/suggestions/counters.
+- Geo/cursor/query некоректні комбінації:
+  - повертають `QUERY_INVALID` або `CURSOR_INVALID`.
+
+## 12.5 Валідація lookbooks/events/users/devices
+
+- `lookbook.create/update`:
+  - `imageUrl` та item `link` — тільки http/https URI;
+  - `items` обмежено (max 30);
+  - update вимагає мінімум 1 поле.
+- `event.rsvp` / event state endpoints:
+  - обовʼязковий `id` у params;
+  - list-фільтри й cursor валідуються окремо.
+- `user.profile`:
+  - patch мінімум 1 поле;
+  - типи і довжини полів обмежені;
+  - `notificationsEnabled` строго boolean.
+- `users/me/devices`:
+  - `platform` тільки `ios|android`;
+  - `fcmToken` і `deviceId` обовʼязкові;
+  - params `deviceId` валідований окремо.
+
+---
+
+## 13) Перелік всіх error-кодів
+
+Нижче зведений перелік кодів, які реально використовуються в поточній ітерації.
+
+| Code                                  | HTTP | Де виникає / коли                                      |
+| ------------------------------------- | ---- | ------------------------------------------------------ |
+| `AUTH_MISSING`                        | 401  | немає auth header/token                                |
+| `AUTH_INVALID`                        | 401  | невалідний/протермінований токен                       |
+| `NO_AUTH`                             | 401  | auth-контекст відсутній там, де потрібен               |
+| `ID_TOKEN_REQUIRED`                   | 400  | `/auth/oauth` без `idToken`                            |
+| `FORBIDDEN`                           | 403  | роль/доступ заборонено                                 |
+| `ACCESS_DENIED`                       | 403  | owner/admin доступ до ресурсу заборонено               |
+| `COUNTRY_BLOCKED`                     | 403  | запит з заблокованої країни                            |
+| `USER_NOT_FOUND`                      | 404  | профіль користувача не знайдено                        |
+| `SHOWROOM_NOT_FOUND`                  | 404  | showroom не знайдено/непублічний у поточному контексті |
+| `LOOKBOOK_NOT_FOUND`                  | 404  | lookbook не знайдено                                   |
+| `EVENT_NOT_FOUND`                     | 404  | event не знайдено                                      |
+| `NOTIFICATION_NOT_FOUND`              | 404  | notification не знайдено                               |
+| `NOT_FOUND`                           | 404  | загальний not found                                    |
+| `VALIDATION_ERROR`                    | 400  | Joi/domain валідація (загальний випадок)               |
+| `SHOWROOM_NAME_REQUIRED`              | 400  | обовʼязкове `name` відсутнє                            |
+| `SHOWROOM_TYPE_REQUIRED`              | 400  | обовʼязкове `type` відсутнє                            |
+| `COUNTRY_REQUIRED`                    | 400  | обовʼязкове `country` відсутнє                         |
+| `SHOWROOM_NAME_INVALID`               | 400  | невалідний showroom name                               |
+| `SHOWROOM_CATEGORY_GROUP_INVALID`     | 400  | невалідний category group                              |
+| `SHOWROOM_SUBCATEGORY_INVALID`        | 400  | невалідні subcategories                                |
+| `SHOWROOM_SUBCATEGORY_GROUP_MISMATCH` | 400  | subcategories не відповідають group                    |
+| `INSTAGRAM_INVALID`                   | 400  | невалідний Instagram URL                               |
+| `PHONE_INVALID`                       | 400  | невалідний phone                                       |
+| `SHOWROOM_INCOMPLETE`                 | 400  | submit/showroom не заповнений                          |
+| `SHOWROOM_NOT_EDITABLE`               | 400  | showroom у стані без права edit                        |
+| `SHOWROOM_NAME_ALREADY_EXISTS`        | 400  | name-конфлікт по бізнес-правилах                       |
+| `SHOWROOM_DUPLICATE`                  | 400  | дубль showroom за нормалізованими ключами              |
+| `NO_FIELDS_TO_UPDATE`                 | 400  | patch без полів для оновлення                          |
+| `QUERY_INVALID`                       | 400  | невалідні query/filter params                          |
+| `CURSOR_INVALID`                      | 400  | курсор невалідний/несумісний з режимом                 |
+| `EVENT_SYNC_LIMIT_EXCEEDED`           | 400  | events sync payload перевищив ліміт                    |
+| `LOOKBOOK_SYNC_LIMIT_EXCEEDED`        | 400  | lookbooks sync payload перевищив ліміт                 |
+| `SHOWROOM_SYNC_LIMIT_EXCEEDED`        | 400  | showrooms sync payload перевищив ліміт                 |
+| `LOOKBOOK_FORBIDDEN`                  | 403  | зміна чужого lookbook                                  |
+| `SHOWROOM_ID_INVALID`                 | 400  | невалідний showroom id                                 |
+| `ANON_ID_INVALID`                     | 400  | невалідний `x-anonymous-id`                            |
+| `NOTIFICATION_TYPE_INVALID`           | 400  | невалідний тип notification                            |
+| `INDEX_NOT_READY`                     | 503  | відсутній Firestore індекс для запиту                  |
+| `SHOWROOM_LOCKED_PENDING`             | 409  | showroom locked у pending                              |
+| `SHOWROOM_PENDING_SNAPSHOT_MISSING`   | 409  | немає snapshot для approve                             |
+| `USER_COUNTRY_CHANGE_BLOCKED`         | 409  | зміну country заборонено через активні сутності        |
+| `USER_DELETE_BLOCKED`                 | 409  | delete user заблоковано до очищення даних              |
+| `RATE_LIMIT_EXCEEDED`                 | 429  | перевищено rate-limit middleware                       |
+| `EVENTS_WRITE_MVP2_ONLY`              | 501  | write-endpoint події недоступний у MVP1                |
+| `NOT_IMPLEMENTED`                     | 501  | не реалізовано                                         |
+| `LOAD_USER_ERROR`                     | 500  | помилка `loadUser` middleware                          |
+| `AUTH_ERROR`                          | 500  | внутрішня auth-помилка сервісу                         |
+| `INTERNAL_ERROR`                      | 500  | fallback для непередбачених помилок                    |
+
+Примітка по mapping:
+
+- canonical status/message беруться з `src/core/errorCodes.js`;
+- якщо код не описаний у `ERROR_STATUS`, використовується `err.status` або fallback `500`.
+
+---
+
+## 14) 
+
+---
+
+## 15) Трасувальна таблиця
+
+Формат: `Route -> Controller -> Service -> Firestore`
+
+| Route                                         | Controller                                                    | Service (основний)                                                                             | Firestore основні колекції                                                                        |
+| --------------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `POST /auth/oauth`                            | `authController.oauthLogin`                                   | `authService.verifyOAuthToken`                                                                 | `users/{uid}`                                                                                     |
+| `GET /users/me`                               | `users/profileController.getMyProfile`                        | `middlewares/loadUser`                                                                         | `users/{uid}`                                                                                     |
+| `PATCH /users/profile`                        | `users/profileController.updateUserProfile`                   | `users/profileService.updateUserProfileDoc`                                                    | `users/{uid}`                                                                                     |
+| `POST /users/me/devices`                      | `users/devicesController.registerMyDevice`                    | `users/devices/register.registerUserDevice`                                                    | `users/{uid}/devices/{deviceId}`                                                                  |
+| `DELETE /users/me/devices/{deviceId}`         | `users/devicesController.deleteMyDevice`                      | `users/devices/remove.removeUserDevice`                                                        | `users/{uid}/devices/{deviceId}`                                                                  |
+| `GET /users/me/notifications`                 | `users/notificationsController.listMyNotifications`           | `notifications/read.listUserNotifications`                                                     | `users/{uid}/notifications/*`                                                                     |
+| `PATCH /users/me/notifications/{id}/read`     | `users/notificationsController.markMyNotificationRead`        | `notifications/read.markNotificationRead`                                                      | `users/{uid}/notifications/{id}`                                                                  |
+| `GET /users/me/notifications/unread-count`    | `users/notificationsController.getMyUnreadNotificationsCount` | `notifications/read.getUnreadNotificationsCount`                                               | `users/{uid}/notifications/*`                                                                     |
+| `GET /showrooms`                              | `showroomController.listShowrooms`                            | `showrooms/listShowrooms.listShowroomsService`                                                 | `showrooms/*`                                                                                     |
+| `GET /showrooms/{id}`                         | `showroomController.getShowroomById`                          | `showrooms/getShowroomById.getShowroomByIdService`                                             | `showrooms/{id}`                                                                                  |
+| `POST /showrooms/create`                      | `showroomController.createShowroomController`                 | `showrooms/createShowroom.createShowroom`                                                      | `showrooms/*`                                                                                     |
+| `POST /showrooms/draft`                       | `showroomController.createDraftShowroomController`            | `showrooms/createDraftShowroom.createDraftShowroom`                                            | `showrooms/*`                                                                                     |
+| `PATCH /showrooms/{id}`                       | `showroomController.updateShowroom`                           | `showrooms/updateShowroom.updateShowroomService`                                               | `showrooms/{id}`                                                                                  |
+| `POST /showrooms/{id}/submit`                 | `showroomController.submitShowroomForReviewController`        | `showrooms/submitShowroomForReview.submitShowroomForReviewService`                             | `showrooms/{id}`                                                                                  |
+| `POST /admin/showrooms/{id}/approve`          | `adminShowroomController.approveShowroom`                     | `showrooms/approveShowroom.approveShowroomService` + `notifications/create.createNotification` | `showrooms/{id}`, `users/{ownerUid}/notifications/{dedupeKey}`                                    |
+| `POST /admin/showrooms/{id}/reject`           | `adminShowroomController.rejectShowroom`                      | `showrooms/rejectShowroom.rejectShowroomService` + `notifications/create.createNotification`   | `showrooms/{id}`, `users/{ownerUid}/notifications/{dedupeKey}`                                    |
+| `POST /showrooms/{id}/favorite`               | `showroomController.favoriteShowroom`                         | `showrooms/userShowroomState.favoriteShowroom`                                                 | `users/{uid}/showrooms_favorites/{id}`, `users/{ownerUid}/notifications/*`                        |
+| `DELETE /showrooms/{id}/favorite`             | `showroomController.unfavoriteShowroom`                       | `showrooms/userShowroomState.unfavoriteShowroom`                                               | `users/{uid}/showrooms_favorites/{id}`                                                            |
+| `GET /lookbooks`                              | `lookbookController.listLookbooks`                            | `lookbooks/crud.listLookbooksCrudService`                                                      | `lookbooks/*`, `lookbooks/{id}/likes/*`                                                           |
+| `POST /lookbooks`                             | `lookbookController.createLookbook`                           | `lookbooks/crud.createLookbookService`                                                         | `lookbooks/*`                                                                                     |
+| `POST /lookbooks/{id}/favorite`               | `lookbookController.favoriteLookbook`                         | `lookbooks/crud.likeLookbookService` + notifications                                           | `lookbooks/{id}/likes/*`, `users/{uid}/lookbooks_favorites/*`, `users/{ownerUid}/notifications/*` |
+| `DELETE /lookbooks/{id}/favorite`             | `lookbookController.unfavoriteLookbook`                       | `lookbooks/crud.unlikeLookbookService`                                                         | `lookbooks/{id}/likes/*`, `users/{uid}/lookbooks_favorites/*`                                     |
+| `GET /events`                                 | `eventController.listEvents`                                  | `events/listEvents.listEventsService`                                                          | `events/*`, user event state collections                                                          |
+| `POST /events/{id}/want-to-visit`             | `eventController.markWantToVisit`                             | `events/userEventState.markEventWantToVisit` + notifications                                   | `users/{uid}/events_want_to_visit/*`, `users/{ownerUid}/notifications/*`                          |
+| `DELETE /events/{id}/want-to-visit`           | `eventController.removeWantToVisit`                           | `events/userEventState.removeEventWantToVisit`                                                 | `users/{uid}/events_want_to_visit/*`                                                              |
+| `POST /events/{id}/dismiss`                   | `eventController.dismissEvent`                                | `events/userEventState.dismissEvent`                                                           | `users/{uid}/events_dismissed/*`                                                                  |
+| `POST /collections/favorites/showrooms/sync`  | `collectionController.syncGuestShowrooms`                     | `showrooms/userShowroomState.syncGuestShowroomFavorites`                                       | `users/{uid}/showrooms_favorites/*`                                                               |
+| `POST /collections/favorites/lookbooks/sync`  | `collectionController.syncGuestLookbooks`                     | `lookbooks/syncGuestFavorites.syncGuestLookbookFavorites`                                      | `users/{uid}/lookbooks_favorites/*`, `lookbooks/{id}/likes/*`                                     |
+| `POST /collections/want-to-visit/events/sync` | `collectionController.syncGuestEvents`                        | `events/syncGuestState.syncGuestEventsState`                                                   | `users/{uid}/events_want_to_visit/*`, `users/{uid}/events_dismissed/*`                            |
+
+---
+
+## 16) Таблиця всіх реалізованих роутів
+
+| Method | Route                                           | Що робить (дуже коротко)   |
+| ------ | ----------------------------------------------- | -------------------------- |
+| GET    | `/health/`                                      | health check сервісу       |
+| POST   | `/auth/oauth`                                   | логін по Firebase token    |
+| GET    | `/users/me`                                     | поточний профіль           |
+| DELETE | `/users/me`                                     | soft-delete профілю        |
+| GET    | `/users/me/notifications`                       | список нотифікацій         |
+| GET    | `/users/me/notifications/unread-count`          | кількість непрочитаних     |
+| PATCH  | `/users/me/notifications/{notificationId}/read` | помітити як read           |
+| POST   | `/users/me/devices`                             | upsert device для push     |
+| DELETE | `/users/me/devices/{deviceId}`                  | видалити device            |
+| POST   | `/users/complete-onboarding`                    | завершити onboarding       |
+| POST   | `/users/complete-owner-profile`                 | завершити owner profile    |
+| PATCH  | `/users/profile`                                | часткове оновлення профілю |
+| POST   | `/users/dev/register-test`                      | DEV: створити test user    |
+| POST   | `/users/dev/make-owner`                         | DEV: підняти role до owner |
+| GET    | `/showrooms`                                    | list showroom              |
+| GET    | `/showrooms/suggestions`                        | showroom suggestions       |
+| GET    | `/showrooms/counters`                           | showroom counters          |
+| GET    | `/showrooms/{id}`                               | showroom detail            |
+| POST   | `/showrooms/create`                             | create showroom            |
+| POST   | `/showrooms/draft`                              | create draft               |
+| PATCH  | `/showrooms/{id}`                               | update showroom            |
+| DELETE | `/showrooms/{id}`                               | soft delete showroom       |
+| POST   | `/showrooms/{id}/submit`                        | submit на модерацію        |
+| POST   | `/showrooms/{id}/favorite`                      | favorite showroom          |
+| DELETE | `/showrooms/{id}/favorite`                      | unfavorite showroom        |
+| GET    | `/lookbooks`                                    | list lookbooks             |
+| POST   | `/lookbooks`                                    | create lookbook            |
+| POST   | `/lookbooks/create`                             | legacy create alias        |
+| GET    | `/lookbooks/{id}`                               | lookbook detail            |
+| PATCH  | `/lookbooks/{id}`                               | update lookbook            |
+| DELETE | `/lookbooks/{id}`                               | delete lookbook            |
+| POST   | `/lookbooks/{id}/favorite`                      | favorite lookbook          |
+| DELETE | `/lookbooks/{id}/favorite`                      | unfavorite lookbook        |
+| POST   | `/lookbooks/{id}/rsvp`                          | lookbook rsvp flow         |
+| GET    | `/events`                                       | list events                |
+| GET    | `/events/{id}`                                  | event detail               |
+| POST   | `/events/{id}/want-to-visit`                    | mark want-to-visit         |
+| DELETE | `/events/{id}/want-to-visit`                    | remove want-to-visit       |
+| POST   | `/events/{id}/dismiss`                          | dismiss event              |
+| DELETE | `/events/{id}/dismiss`                          | undismiss event            |
+| POST   | `/events/{id}/rsvp`                             | event rsvp flow            |
+| GET    | `/collections/favorites/showrooms`              | list showroom favorites    |
+| POST   | `/collections/favorites/showrooms/sync`         | sync showroom favorites    |
+| GET    | `/collections/favorites/lookbooks`              | list lookbook favorites    |
+| POST   | `/collections/favorites/lookbooks/sync`         | sync lookbook favorites    |
+| GET    | `/collections/want-to-visit/events`             | list want-to-visit events  |
+| POST   | `/collections/want-to-visit/events/sync`        | sync event guest state     |
+| GET    | `/admin/showrooms`                              | admin list showrooms       |
+| GET    | `/admin/showrooms/{id}`                         | admin showroom detail      |
+| POST   | `/admin/showrooms/{id}/approve`                 | approve showroom           |
+| POST   | `/admin/showrooms/{id}/reject`                  | reject showroom            |
+| DELETE | `/admin/showrooms/{id}`                         | admin soft delete showroom |
