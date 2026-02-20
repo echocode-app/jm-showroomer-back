@@ -27,7 +27,11 @@ const geoSchema = Joi.object({
     country: Joi.string().trim().min(1).required(),
     coords: geoCoordsSchema,
     placeId: Joi.string().trim().min(1).optional(),
+    // Compatibility input only:
+    // accepted to avoid breaking older clients; backend ignores and recomputes these fields.
     cityNormalized: Joi.string().trim().min(1).optional(),
+    // Compatibility input only:
+    // accepted to avoid breaking older clients; backend ignores and recomputes these fields.
     geohash: Joi.string().trim().min(1).optional(),
 }).unknown(false);
 

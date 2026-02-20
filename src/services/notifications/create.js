@@ -1,8 +1,10 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { getFirestoreInstance } from "../../config/firebase.js";
+import { log } from "../../config/logger.js";
 import { badRequest } from "../../core/error.js";
 import { sendPushToUser } from "../push/send.js";
 import { buildPushPayload } from "./payload.js";
+import { isNotificationTypeEnabled } from "./policy.js";
 import { assertValidNotificationType } from "./types.js";
 import { isNotificationAlreadyExistsError } from "./dedupe.js";
 
@@ -27,6 +29,13 @@ export async function createNotification({
 }) {
     assertValidNotificationType(type);
     assertCreateParams({ targetUid, dedupeKey, resourceType, resourceId });
+    if (!isNotificationTypeEnabled(type)) {
+        return {
+            skippedByPolicy: true,
+            created: false,
+            pushed: false,
+        };
+    }
 
     const db = getFirestoreInstance();
     const ref = db
@@ -52,11 +61,23 @@ export async function createNotification({
     if (tx) {
         // Guard: transaction callback can be retried by Firestore; skip side effects here.
         tx.set(ref, doc);
-        return;
+        return {
+            skippedByPolicy: false,
+            created: false,
+            pushed: false,
+            transactionWrite: true,
+        };
     }
 
     const created = await upsertNotificationDoc(ref, doc);
-    if (!created) return;
+    if (!created) {
+        return {
+            skippedByPolicy: false,
+            created: false,
+            pushed: false,
+            deduped: true,
+        };
+    }
 
     const pushPayload = buildPushPayload({
         type,
@@ -66,6 +87,11 @@ export async function createNotification({
         payload: doc.payload,
     });
     await sendPushToUser(targetUid, pushPayload);
+    return {
+        skippedByPolicy: false,
+        created: true,
+        pushed: true,
+    };
 }
 
 function assertCreateParams({ targetUid, dedupeKey, resourceType, resourceId }) {
@@ -93,8 +119,33 @@ async function upsertNotificationDoc(ref, doc) {
         }
     }
 
+    const existingSnap = await ref.get();
+    const existing = existingSnap.exists ? existingSnap.data() : null;
+    if (!isCompatibleDedupeCollision(existing, doc)) {
+        log.error(
+            `Notification dedupe collision skipped path=${ref.path} existingType=${existing?.type || "unknown"} incomingType=${doc.type}`
+        );
+        // Guard: never overwrite a dedupe doc that belongs to a different notification identity.
+        return false;
+    }
+
     // Keep storage semantics backward compatible (existing dedupe doc is refreshed).
     await ref.set(doc, { merge: true });
     // Guard: prevent duplicate push delivery on dedupe-key collisions.
     return false;
+}
+
+function isCompatibleDedupeCollision(existing, incoming) {
+    if (!existing || typeof existing !== "object") return true;
+    if (existing.type && existing.type !== incoming.type) return false;
+    const existingActor = existing.actorUid ?? null;
+    const incomingActor = incoming.actorUid ?? null;
+    if (existingActor && existingActor !== incomingActor) return false;
+    const existingResourceType = existing.resource?.type ?? null;
+    const incomingResourceType = incoming.resource?.type ?? null;
+    if (existingResourceType && existingResourceType !== incomingResourceType) return false;
+    const existingResourceId = existing.resource?.id ?? null;
+    const incomingResourceId = incoming.resource?.id ?? null;
+    if (existingResourceId && existingResourceId !== incomingResourceId) return false;
+    return true;
 }

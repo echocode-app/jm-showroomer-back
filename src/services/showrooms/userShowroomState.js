@@ -4,6 +4,7 @@ import { getFirestoreInstance } from "../../config/firebase.js";
 import { notFound, badRequest } from "../../core/error.js";
 import { createNotification } from "../notifications/notificationService.js";
 import { NOTIFICATION_TYPES } from "../notifications/types.js";
+import { shouldNotifyActorAction } from "../notifications/selfAction.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 import { parseStrictLimit } from "../../utils/pagination.js";
 
@@ -268,7 +269,7 @@ function userFavoritesCollection(uid) {
 async function tryCreateShowroomFavoriteNotification({ showroom, showroomId, actorUid }) {
     const ownerUid = showroom?.ownerUid;
     // Guard: self-favorite should not produce notifications/push.
-    if (!ownerUid || ownerUid === actorUid) return;
+    if (!shouldNotifyActorAction(ownerUid, actorUid)) return;
 
     try {
         await createNotification({

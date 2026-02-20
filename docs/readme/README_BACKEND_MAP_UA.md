@@ -226,6 +226,26 @@ Compatibility wrapper:
 - `utils/*` — visibility/meta/cursor helper logic.
 - `ordering.js`, `dev.js`, `devFilters.js`.
 
+### Canonical vs Derived Fields (Showroom)
+
+- Canonical (source-of-truth):
+  - `name`, `address`, `country`
+  - `geo.city`, `geo.coords`
+  - `brands`
+- Derived (persisted для query/index/perf):
+  - `nameNormalized`
+  - `addressNormalized`
+  - `geo.cityNormalized`, `geo.geohash`
+  - `brandsNormalized`, `brandsMap`
+- Compatibility (legacy contract support):
+  - `city` (canonical source: `geo.city`)
+  - `location` (canonical source: `geo.coords`)
+
+Правило домену:
+- derived-поля не є клієнтським source-of-truth;
+- backend перераховує їх сервером;
+- видалення compatibility/derived полів вимагає deprecation етапу і version bump API.
+
 ## 6.5 Lookbooks
 
 Ключові файли:

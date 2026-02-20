@@ -84,7 +84,14 @@ export async function approveShowroomService(id, user) {
     // =========================
     // SECTION: Atomic Moderation
     // =========================
-    // Reason: status transition + immutable snapshot apply must be one transaction.
+    // Transaction boundary:
+    // status transition + immutable snapshot apply must commit atomically.
+    // No push inside tx:
+    // notification side effects are emitted only after commit.
+    // Derived fields assumed already normalized:
+    // pendingSnapshot contains server-normalized fields from submit flow.
+    // Snapshot immutable after pending:
+    // moderation applies stored snapshot as-is to avoid post-submit drift.
     await db.runTransaction(async tx => {
         const snap = await tx.get(ref);
         if (!snap.exists) throw notFound("SHOWROOM_NOT_FOUND");

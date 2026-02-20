@@ -4,6 +4,7 @@ import { log } from "../../config/logger.js";
 import { badRequest, notFound } from "../../core/error.js";
 import { createNotification } from "../notifications/notificationService.js";
 import { NOTIFICATION_TYPES } from "../notifications/types.js";
+import { shouldNotifyActorAction } from "../notifications/selfAction.js";
 import { parseLimit } from "./parse.js";
 import { getLookbooksCollection } from "./firestoreQuery.js";
 import { normalizeLookbook } from "./response.js";
@@ -225,7 +226,7 @@ export async function likeLookbookService(id, actor) {
 
     if (applied && !actor.isAnonymous && actor.userId) {
         await userFavoritesCollection(actor.userId).doc(id).set({ createdAt: now }, { merge: true });
-        if (targetUid && targetUid !== actor.userId) {
+        if (shouldNotifyActorAction(targetUid, actor.userId)) {
             try {
                 await createNotification({
                     targetUid,

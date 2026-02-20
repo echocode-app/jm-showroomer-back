@@ -57,22 +57,32 @@ export async function createShowroom(data, ownerUid, options = {}) {
 
     const showroom = {
         ownerUid,
+        // CANONICAL FIELD
         name: data.name,
+        // DERIVED FIELD (persisted for Firestore query/index performance)
         nameNormalized: normalized.nameNormalized,
         type: data.type,
         availability: data.availability ?? null,
         category: data.category ?? null,
         categoryGroup: normalized.categoryGroup,
         subcategories: normalized.subcategories,
+        // CANONICAL FIELD
         brands: data.brands ?? [],
+        // DERIVED FIELD (persisted for Firestore query/index performance)
         brandsNormalized: normalized.brandsNormalized,
+        // DERIVED FIELD (persisted for Firestore query/index performance)
         brandsMap: normalized.brandsMap,
+        // CANONICAL FIELD
         address: normalized.address,
+        // DERIVED FIELD (duplicate detection only)
         addressNormalized: normalized.addressNormalized,
         country: data.country,
+        // COMPATIBILITY FIELD (kept for API stability; canonical source is `geo.city`)
         city: data.city ?? null,
+        // CANONICAL FIELD
         geo: normalized.geo,
         contacts: normalized.contacts,
+        // COMPATIBILITY FIELD (kept for API stability; canonical source is `geo.coords`)
         location: data.location ?? null,
         status: "draft",
         editCount: 0,

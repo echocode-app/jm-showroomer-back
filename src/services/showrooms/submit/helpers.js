@@ -4,10 +4,9 @@ import { badRequest, forbidden, notFound } from "../../../core/error.js";
 import { isCountryBlocked } from "../../../constants/countries.js";
 import {
     assertShowroomComplete,
-    normalizeAddressForCompare,
-    normalizeShowroomName,
 } from "../../../utils/showroomValidation.js";
 import { appendHistory, buildPendingSnapshot, isSameCountry, makeHistoryEntry } from "../_helpers.js";
+import { deriveAddressNormalized, deriveNameNormalized } from "../derivedFields.js";
 
 export function assertSubmittableShowroom(showroom, user) {
     if (!showroom) throw notFound("SHOWROOM_NOT_FOUND");
@@ -33,11 +32,20 @@ export function assertCountryAllowed(showroom, user) {
 }
 
 export function ensureNormalizedFields(showroom) {
+    // CANONICAL FIELD
+    // `name` is source-of-truth.
+    // DERIVED FIELD (persisted for search + duplicate guard)
+    // `nameNormalized` is never accepted from client as authoritative input.
     const nameNormalized =
-        showroom.nameNormalized ?? normalizeShowroomName(showroom.name);
+        showroom.nameNormalized ?? deriveNameNormalized(showroom.name);
+
+    // CANONICAL FIELD
+    // `address` is source-of-truth.
+    // DERIVED FIELD (duplicate detection only)
+    // `addressNormalized` exists to make duplicate checks stable across address formatting variants.
     const addressNormalized =
         showroom.addressNormalized ??
-        normalizeAddressForCompare(showroom.address);
+        deriveAddressNormalized(showroom.address);
 
     return { nameNormalized, addressNormalized };
 }
@@ -47,7 +55,9 @@ export function buildSubmitUpdates(showroom, user, normalized, updatedAt) {
         status: "pending",
         submittedAt: updatedAt,
         updatedAt,
+        // DERIVED FIELD (persisted for search + duplicate guard)
         nameNormalized: normalized.nameNormalized,
+        // DERIVED FIELD (duplicate detection only)
         addressNormalized: normalized.addressNormalized,
         pendingSnapshot: buildPendingSnapshot(showroom, {
             nameNormalized: normalized.nameNormalized,

@@ -63,6 +63,8 @@ function assertCountryPatchAllowed(data, user) {
  */
 function buildPatchPayload(showroom, data, user) {
     assertEditableShowroom(showroom, user);
+    // Canonical/derived policy is enforced in one place:
+    // `normalizePatchData` recomputes all persisted derived fields from canonical inputs.
     normalizePatchData(data, user);
 
     // Geo country and top-level showroom country must stay aligned for map filtering correctness.

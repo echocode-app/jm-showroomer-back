@@ -31,13 +31,15 @@ components:
     GeoLocation:
       type: object
       required: [city, country, coords]
+      description: Canonical geo block. geo.city + geo.coords are source-of-truth.
       properties:
         city:
           type: string
+          description: Canonical city value used for display and compatibility mirrors.
         cityNormalized:
           type: string
           readOnly: true
-          description: Server-computed. Client input is ignored.
+          description: Derived field persisted for city query/index performance. Server-computed; client input ignored.
         country:
           type: string
           description: Full country name (e.g., Ukraine). Must match showroom.country (case-insensitive). Not ISO2.
@@ -46,7 +48,7 @@ components:
         geohash:
           type: string
           readOnly: true
-          description: Server-computed. Client input is ignored.
+          description: Derived field persisted for geospatial prefix query/index performance. Server-computed; client input ignored.
         placeId:
           type: string
           description: Optional place ID (non-empty when provided).
@@ -63,6 +65,7 @@ components:
         nameNormalized:
           type: string
           readOnly: true
+          description: Derived field persisted for prefix search and duplicate guard.
         type:
           type: string
           enum: [multibrand, unique]
@@ -90,24 +93,28 @@ components:
           additionalProperties:
             type: boolean
           readOnly: true
+          description: Derived field persisted for brand map filtering (brandsMap.<brandKey>).
         address:
           type: string
           nullable: true
         addressNormalized:
           type: string
           readOnly: true
+          description: Derived field used by duplicate detection on submit/moderation flow.
         country:
           type: string
           description: Full country name (e.g., Ukraine). Not ISO2.
         city:
           type: string
           nullable: true
+          description: Compatibility field kept for API stability. Canonical source is geo.city.
         geo:
           $ref: '#/components/schemas/GeoLocation'
         contacts:
           $ref: '#/components/schemas/Contacts'
         location:
           $ref: '#/components/schemas/Location'
+          description: Compatibility field kept for API stability. Canonical source is geo.coords.
         status:
           type: string
           enum: [draft, pending, approved, rejected, deleted]

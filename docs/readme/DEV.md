@@ -24,6 +24,18 @@ NODE_ENV=test ./src/test/integrations/test_suggestions_and_counters.sh
 NODE_ENV=test ./src/test/integrations/test_user_delete.sh
 ```
 
+## Media test (3 terminals)
+```bash
+# Terminal 1
+NODE_ENV=test node src/core/server.js
+
+# Terminal 2
+npm run test:cleanup
+
+# Terminal 3
+NODE_ENV=test ./src/test/integrations/test_media.sh
+```
+
 ## Priority 4 — production only
 ```bash
 npm run test:prod-smoke
@@ -76,6 +88,7 @@ npm run firebase:migration -- --project <new-project-id> --env-file .env.prod
 - `FIREBASE_PRIVATE_KEY`
 - `FIREBASE_STORAGE_BUCKET`
 - `PUSH_ENABLED`: `true` to enable push in non-test env, default `false`
+- `MVP_MODE`: `true` disables engagement notifications (`LOOKBOOK_FAVORITED`, `EVENT_WANT_TO_VISIT`)
 - `TEST_USER_TOKEN`
 - `TEST_ADMIN_TOKEN`
 - `TEST_OWNER_TOKEN_2`

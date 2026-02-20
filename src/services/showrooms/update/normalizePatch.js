@@ -2,45 +2,60 @@
 
 import {
     normalizeAddress,
-    normalizeAddressForCompare,
     normalizeInstagramUrl,
-    buildBrandsMap,
-    normalizeBrands,
-    normalizeShowroomName,
     validateInstagramUrl,
     validatePhone,
     validateShowroomName,
 } from "../../../utils/showroomValidation.js";
-import { buildGeo } from "../../../utils/geoValidation.js";
+import {
+    deriveAddressNormalized,
+    deriveBrandsFields,
+    deriveGeoFields,
+    deriveNameNormalized,
+} from "../derivedFields.js";
 
 export function normalizePatchData(data, user) {
-    // Step 1: keep normalized name in sync whenever name is patched.
+    // CANONICAL FIELD
+    // `name` is source-of-truth and may be updated by client.
+    // DERIVED FIELD (persisted for Firestore query/index performance)
+    // `nameNormalized` is recomputed server-side from canonical name.
     if (data.name !== undefined) {
         validateShowroomName(data.name);
-        data.nameNormalized = normalizeShowroomName(data.name);
+        data.nameNormalized = deriveNameNormalized(data.name);
     } else if (data.nameNormalized !== undefined) {
+        // Guard: derived fields cannot be client-controlled.
         delete data.nameNormalized;
     }
 
-    // Step 2: keep `address` and `addressNormalized` pair consistent for duplicate checks.
+    // CANONICAL FIELD
+    // `address` is source-of-truth.
+    // DERIVED FIELD (duplicate detection only)
+    // `addressNormalized` is recomputed from canonical address.
     if (data.address !== undefined) {
         if (data.address) {
             data.address = normalizeAddress(data.address);
-            data.addressNormalized = normalizeAddressForCompare(data.address);
+            data.addressNormalized = deriveAddressNormalized(data.address);
         } else {
             data.address = null;
             data.addressNormalized = null;
         }
     } else if (data.addressNormalized !== undefined) {
+        // Guard: derived fields cannot be client-controlled.
         delete data.addressNormalized;
     }
 
-    // Step 3: rebuild brand derivatives used by filter queries.
+    // CANONICAL FIELD
+    // `brands` is source-of-truth.
+    // DERIVED FIELD (persisted for Firestore query/index performance)
+    // `brandsNormalized` + `brandsMap` are recomputed from canonical brands.
     if (data.brands !== undefined) {
-        data.brandsNormalized = normalizeBrands(data.brands);
-        data.brandsMap = buildBrandsMap(data.brands);
+        const derived = deriveBrandsFields(data.brands);
+        data.brandsNormalized = derived.brandsNormalized;
+        data.brandsMap = derived.brandsMap;
     } else if (data.brandsNormalized !== undefined) {
+        // Guard: derived fields cannot be client-controlled.
         delete data.brandsNormalized;
+        delete data.brandsMap;
     }
 
     // Step 4: normalize mutable contact fields into persisted canonical format.
@@ -68,12 +83,11 @@ export function normalizePatchData(data, user) {
         data.contacts = contacts;
     }
 
-    // Step 5: rebuild geo derived fields from raw map payload.
+    // CANONICAL FIELD
+    // `geo.city` + `geo.coords` are source-of-truth for geo flows.
+    // DERIVED FIELD (persisted for Firestore query/index performance)
+    // `geo.cityNormalized` + `geo.geohash` are recomputed from canonical geo payload.
     if (data.geo !== undefined) {
-        if (data.geo) {
-            data.geo = buildGeo(data.geo);
-        } else {
-            data.geo = null;
-        }
+        data.geo = deriveGeoFields(data.geo);
     }
 }

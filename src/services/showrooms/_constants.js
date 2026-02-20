@@ -20,4 +20,5 @@ export const EDITABLE_FIELDS = [
     "geo",
 ];
 
-export const HISTORY_LIMIT = 200;
+// Soft cap to prevent unbounded editHistory growth in long-lived documents.
+export const HISTORY_LIMIT = 50;

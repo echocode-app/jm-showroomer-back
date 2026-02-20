@@ -36,6 +36,14 @@ export async function submitShowroomForReviewService(id, user) {
         return showroom;
     }
 
+    // Transaction boundary:
+    // submit flow intentionally uses ordered reads + one final update (no tx side effects here).
+    // No push inside tx:
+    // submit flow does not emit push/notification writes.
+    // Derived fields assumed already normalized:
+    // duplicate checks rely on server-managed `nameNormalized` and `addressNormalized`.
+    // Snapshot immutable after pending:
+    // `pendingSnapshot` becomes the moderation source-of-truth after status flips to pending.
     const db = getFirestoreInstance();
     const ref = db.collection("showrooms").doc(id);
     const snap = await ref.get();
@@ -57,7 +65,8 @@ export async function submitShowroomForReviewService(id, user) {
     const duplicateSnapshot = await db
         .collection("showrooms")
         .where("nameNormalized", "==", normalized.nameNormalized)
-        // Address-normalized pair makes duplicate detection stable across formatting variants.
+        // Derived-field invariant:
+        // `addressNormalized` is used only for duplicate detection.
         .where("addressNormalized", "==", normalized.addressNormalized)
         .get();
 
@@ -74,6 +83,8 @@ export async function submitShowroomForReviewService(id, user) {
     }
 
     const updatedAt = new Date().toISOString();
+    // Snapshot invariant:
+    // once pendingSnapshot is built on submit, moderation must treat it as immutable source.
     const updates = buildSubmitUpdates(showroom, user, normalized, updatedAt);
 
     await ref.update(updates);

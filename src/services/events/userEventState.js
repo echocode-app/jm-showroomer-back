@@ -5,6 +5,7 @@ import { isCountryBlocked } from "../../constants/countries.js";
 import { notFound } from "../../core/error.js";
 import { createNotification } from "../notifications/notificationService.js";
 import { NOTIFICATION_TYPES } from "../notifications/types.js";
+import { shouldNotifyActorAction } from "../notifications/selfAction.js";
 import { buildEventResponse, compareByStartsAtAsc, isEventPublished, isFutureEvent } from "./eventResponse.js";
 import { getEventsCollection } from "./firestoreQuery.js";
 import { parseCollectionFilters } from "./parse.js";
@@ -41,7 +42,7 @@ export async function markEventWantToVisit(eventId, uid) {
         applied = true;
     });
 
-    if (applied && eventOwnerUid && eventOwnerUid !== uid) {
+    if (applied && shouldNotifyActorAction(eventOwnerUid, uid)) {
         try {
             await createNotification({
                 targetUid: eventOwnerUid,

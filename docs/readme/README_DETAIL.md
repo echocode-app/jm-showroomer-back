@@ -162,6 +162,33 @@ Prod Swagger: https://jm-showroomer-back.onrender.com/docs/
 - self-action не генерує owner notification;
 - favorite-flow має anti-leak behavior для недоступних статусів.
 
+## 4.5 Canonical vs Derived Fields (Showroom)
+
+Canonical (source-of-truth):
+
+- `name`, `address`, `country`
+- `geo.city`, `geo.coords`
+- `brands`
+
+Derived (persisted for Firestore query/index performance):
+
+- `nameNormalized` (name prefix search + duplicate guard)
+- `addressNormalized` (duplicate detection only)
+- `geo.cityNormalized` (city filter key)
+- `geo.geohash` (map/geohash prefix mode)
+- `brandsNormalized`, `brandsMap` (brand filtering/suggestions support)
+
+Compatibility (kept for API stability):
+
+- `city` (legacy mirror of `geo.city`)
+- `location` (legacy mirror of `geo.coords`)
+
+Important:
+
+- client must not treat derived fields as writable source-of-truth;
+- backend always recomputes derived values from canonical inputs;
+- removing compatibility/derived fields requires staged deprecation + API version bump.
+
 ---
 
 ## 5) Гео-правила і geo-логіка
@@ -321,6 +348,13 @@ Push:
 - поважає user/device opt-out;
 - поважає env guard;
 - fail-safe (не валить бізнес flow).
+
+Notification policy (`MVP_MODE`):
+
+- `MVP_MODE=false` (default): всі notification type-и дозволені.
+- `MVP_MODE=true`: відключені `LOOKBOOK_FAVORITED` і `EVENT_WANT_TO_VISIT`.
+- `SHOWROOM_APPROVED`, `SHOWROOM_REJECTED`, `SHOWROOM_FAVORITED` залишаються активними.
+- policy впливає тільки на `notification storage + push dispatch` (доменної бізнес-операції не змінює).
 
 ---
 
@@ -493,7 +527,71 @@ Push:
 
 ---
 
-## 14) 
+## 14) Ліміти в проекті
+
+Нижче зведені фактичні ліміти, які зашиті в коді на поточній ітерації.
+
+### 14.1 API pagination / list limits
+
+| Домен / endpoint group                                      | Значення                 | Пояснення                                    |
+| ----------------------------------------------------------- | ------------------------ | -------------------------------------------- |
+| Showrooms list (`GET /showrooms`)                           | `default=20`, `max=100`  | Пагінація списку шоурумів                    |
+| Showrooms suggestions (`GET /showrooms/suggestions`)        | `default=10`, `max=20`   | Окремий, більш строгий ліміт для suggestions |
+| Showrooms counters sample internals                         | `MAX_SCAN=200`           | Внутрішня верхня межа скану/обробки          |
+| Showrooms user favorites collection list                    | `default=20`, `max=100`  | Колекція обраних шоурумів користувача        |
+| Lookbooks list (`GET /lookbooks`)                           | `default=20`, `max=100`  | Основний лістинг лукбуків                    |
+| Lookbooks favorites collection list                         | `default=100`, `max=100` | Колекційний endpoint читає одразу до 100     |
+| Events list (`GET /events`)                                 | `default=20`, `max=100`  | Основний лістинг подій                       |
+| Events collection list (want-to-visit/dismissed read paths) | `default=100`, `max=100` | Колекційні read-потоки                       |
+| Notifications list (`GET /users/me/notifications`)          | `default=20`, `max=100`  | Read/unread notifications pagination         |
+
+### 14.2 Sync payload limits
+
+| Flow                                                | Значення                    | Помилка/наслідок               |
+| --------------------------------------------------- | --------------------------- | ------------------------------ |
+| Showroom favorites sync                             | `SYNC_MAX_IDS=100`          | `SHOWROOM_SYNC_LIMIT_EXCEEDED` |
+| Lookbook favorites sync                             | `SYNC_MAX_IDS=100`          | `LOOKBOOK_SYNC_LIMIT_EXCEEDED` |
+| Event guest sync (`wantToVisitIds`, `dismissedIds`) | `MAX_SYNC_IDS_PER_LIST=100` | `EVENT_SYNC_LIMIT_EXCEEDED`    |
+
+### 14.3 Geo / search / filter limits
+
+| Ліміт                                  | Значення      | Де застосовується                                         |
+| -------------------------------------- | ------------- | --------------------------------------------------------- |
+| `MAX_GEO_PREFIXES`                     | `8`           | `geohashPrefix/geohashPrefixes` у showrooms list/counters |
+| `SHOWROOM_SUGGEST_LIMIT`               | `10`          | Максимум showroom-name suggestions у змішаній видачі      |
+| `SAMPLE_LIMIT`                         | `200`         | Семпл для city/brand suggestions                          |
+| `categories` (`in`)                    | максимум `10` | Firestore `in`-фільтр                                     |
+| `categoryGroup` (`in`)                 | максимум `10` | Firestore `in`-фільтр                                     |
+| `subcategories` (`array-contains-any`) | максимум `10` | Firestore array filter                                    |
+| `parseCategoryGroups`                  | максимум `10` | Валідаційна межа в parser                                 |
+| `parseSubcategories`                   | максимум `10` | Валідаційна межа в parser                                 |
+
+### 14.4 Internal batching / safety caps
+
+| Ліміт                                                      | Значення      | Призначення                                         |
+| ---------------------------------------------------------- | ------------- | --------------------------------------------------- |
+| `IDS_CHUNK` (showrooms/lookbooks/events sync/read helpers) | `100`         | Chunked `db.getAll` для уникнення oversized RPC     |
+| `LIKE_DELETE_BATCH_LIMIT`                                  | `500`         | Пакетне каскадне видалення likes у lookbook cleanup |
+| `HISTORY_LIMIT` (showroom edit history)                    | `50`          | Soft-cap росту `editHistory` (зріз найстаріших)     |
+| Media signed URL TTL                                       | `21600s` (6h) | Дефолтний строк дії signed read URL                 |
+
+### 14.5 Middleware / platform guard limits
+
+| Ліміт                             | Значення           | Коментар                               |
+| --------------------------------- | ------------------ | -------------------------------------- |
+| Rate limiter `dev`                | `2000 req / 5 min` | Для локальної/інтеграційної розробки   |
+| Rate limiter `test`               | `2000 req / 5 min` | Для тестового середовища               |
+| Rate limiter `prod`               | `300 req / 15 min` | Прод ліміт                             |
+| Rate limiter fallback             | `100 req / 15 min` | Якщо env не мапиться                   |
+| `x-anonymous-id` max length       | `128`              | Валідація actor identity               |
+| Input sanitizer max depth         | `5`                | Захист від надмірної вкладеності       |
+| Input sanitizer max string length | `10000`            | Обрізання надто довгих string payloads |
+
+### 14.6 Як парситься `limit` (важливо для клієнта)
+
+- У більшості list endpoint-ів використовується strict parser: нецілий/вихід за діапазон -> `QUERY_INVALID`.
+- У notifications використовується clamped parser: дробові/завеликі значення притискаються до допустимого діапазону.
+- Для стабільної інтеграції Flutter краще завжди передавати цілі значення в офіційних межах.
 
 ---
 

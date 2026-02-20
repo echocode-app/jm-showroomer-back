@@ -1,32 +1,46 @@
 // Normalizes create payload into Firestore-ready fields.
 
 import {
-    buildBrandsMap,
     normalizeAddress,
-    normalizeAddressForCompare,
-    normalizeBrands,
     normalizeInstagramUrl,
-    normalizeShowroomName,
     validateInstagramUrl,
     validatePhone,
     validateShowroomName,
 } from "../../../utils/showroomValidation.js";
-import { buildGeo } from "../../../utils/geoValidation.js";
 import { applyCategoryPayload } from "../_categoryHelpers.js";
+import {
+    deriveAddressNormalized,
+    deriveBrandsFields,
+    deriveGeoFields,
+    deriveNameNormalized,
+} from "../derivedFields.js";
 
 export function normalizeCreatePayload(data, options = {}) {
-    // Step 1: validate and normalize name once; this key powers prefix search.
+    // CANONICAL FIELD
+    // `name` is source-of-truth. `nameNormalized` is always recomputed from it.
+    // DERIVED FIELD (persisted for Firestore query/index performance)
+    // `nameNormalized` powers prefix search and stable duplicate checks.
     validateShowroomName(data.name);
-    const nameNormalized = normalizeShowroomName(data.name);
+    const nameNormalized = deriveNameNormalized(data.name);
 
-    // Step 2: canonicalize address and store comparison key for duplicate detection.
+    // CANONICAL FIELD
+    // `address` is source-of-truth.
+    // DERIVED FIELD (duplicate detection only)
+    // `addressNormalized` is persisted to stabilize duplicate checks across formatting variants.
     const address = data.address ? normalizeAddress(data.address) : null;
-    const addressNormalized = address ? normalizeAddressForCompare(address) : null;
+    const addressNormalized = deriveAddressNormalized(address);
 
-    // Step 3: normalize geo payload and compute map/search derivatives (cityNormalized/geohash).
-    const geo = data.geo ? buildGeo(data.geo) : null;
-    const brandsNormalized = normalizeBrands(data.brands ?? []);
-    const brandsMap = buildBrandsMap(data.brands ?? []);
+    // CANONICAL FIELD
+    // `geo.city` + `geo.coords` are source-of-truth for city/location in geo-aware flows.
+    // DERIVED FIELD (persisted for Firestore query/index performance)
+    // `geo.cityNormalized` + `geo.geohash` are recomputed server-side from canonical geo input.
+    const geo = deriveGeoFields(data.geo);
+
+    // CANONICAL FIELD
+    // `brands` is the source-of-truth list.
+    // DERIVED FIELD (persisted for Firestore query/index performance)
+    // `brandsNormalized` + `brandsMap` are recomputed from canonical `brands`.
+    const { brandsNormalized, brandsMap } = deriveBrandsFields(data.brands ?? []);
     const { categoryGroup, subcategories } = applyCategoryPayload(data);
 
     const contacts = {

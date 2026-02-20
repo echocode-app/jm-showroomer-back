@@ -74,7 +74,14 @@ export async function rejectShowroomService(id, reason, user) {
     // =========================
     // SECTION: Atomic Moderation
     // =========================
-    // Reason: reject transition and audit history must be committed together.
+    // Transaction boundary:
+    // reject transition and audit history must be committed together.
+    // No push inside tx:
+    // notification side effects are emitted only after commit.
+    // Derived fields assumed already normalized:
+    // reject flow does not mutate derived showroom identity/search fields.
+    // Snapshot immutable after pending:
+    // pendingSnapshot is only cleared during moderation.
     await db.runTransaction(async tx => {
         const snap = await tx.get(ref);
         if (!snap.exists) throw notFound("SHOWROOM_NOT_FOUND");
