@@ -79,6 +79,7 @@ export async function approveShowroomService(id, user) {
 
     const db = getFirestoreInstance();
     const ref = db.collection("showrooms").doc(id);
+    let notificationDraft = null;
     await db.runTransaction(async tx => {
         const snap = await tx.get(ref);
         if (!snap.exists) throw notFound("SHOWROOM_NOT_FOUND");
@@ -125,28 +126,29 @@ export async function approveShowroomService(id, user) {
         tx.update(ref, updates);
         const targetUid = showroom.ownerUid ?? null;
         const dedupeKey = `showroom:${id}:approved`;
-        const notificationRefPath = targetUid
-            ? dbNotificationPath(targetUid, dedupeKey)
-            : "invalid-target-uid";
-        try {
-            await createNotification({
-                targetUid,
-                actorUid: user.uid,
-                type: NOTIFICATION_TYPES.SHOWROOM_APPROVED,
-                resourceType: "showroom",
-                resourceId: id,
-                payload: {
-                    showroomName: updates.name ?? showroom.name ?? null,
-                },
-                dedupeKey,
-                tx,
-            });
-        } catch (err) {
-            log.error(
-                `Notification write skipped (approve ${id}) targetUid=${targetUid} dedupeKey=${dedupeKey} path=${notificationRefPath}: ${err?.message || err}`
-            );
-        }
+        notificationDraft = {
+            targetUid,
+            actorUid: user.uid,
+            type: NOTIFICATION_TYPES.SHOWROOM_APPROVED,
+            resourceType: "showroom",
+            resourceId: id,
+            payload: {
+                showroomName: updates.name ?? showroom.name ?? null,
+            },
+            dedupeKey,
+        };
     });
+
+    const notificationRefPath = notificationDraft?.targetUid
+        ? dbNotificationPath(notificationDraft.targetUid, notificationDraft.dedupeKey)
+        : "invalid-target-uid";
+    try {
+        await createNotification(notificationDraft);
+    } catch (err) {
+        log.error(
+            `Notification write skipped (approve ${id}) targetUid=${notificationDraft?.targetUid} dedupeKey=${notificationDraft?.dedupeKey} path=${notificationRefPath}: ${err?.message || err}`
+        );
+    }
 
     return { statusChanged: true };
 }

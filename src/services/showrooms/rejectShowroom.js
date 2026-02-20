@@ -69,6 +69,7 @@ export async function rejectShowroomService(id, reason, user) {
 
     const db = getFirestoreInstance();
     const ref = db.collection("showrooms").doc(id);
+    let notificationDraft = null;
     await db.runTransaction(async tx => {
         const snap = await tx.get(ref);
         if (!snap.exists) throw notFound("SHOWROOM_NOT_FOUND");
@@ -81,24 +82,25 @@ export async function rejectShowroomService(id, reason, user) {
         const statusBefore = showroom.status;
         const updates = buildRejectUpdates(showroom, reason, user, statusBefore);
         tx.update(ref, updates);
-        try {
-            await createNotification({
-                targetUid: showroom.ownerUid,
-                actorUid: user.uid,
-                type: NOTIFICATION_TYPES.SHOWROOM_REJECTED,
-                resourceType: "showroom",
-                resourceId: id,
-                payload: {
-                    showroomName: showroom.name ?? null,
-                    reason,
-                },
-                dedupeKey: `showroom:${id}:rejected`,
-                tx,
-            });
-        } catch (err) {
-            log.error(`Notification write skipped (reject ${id}): ${err?.message || err}`);
-        }
+        notificationDraft = {
+            targetUid: showroom.ownerUid,
+            actorUid: user.uid,
+            type: NOTIFICATION_TYPES.SHOWROOM_REJECTED,
+            resourceType: "showroom",
+            resourceId: id,
+            payload: {
+                showroomName: showroom.name ?? null,
+                reason,
+            },
+            dedupeKey: `showroom:${id}:rejected`,
+        };
     });
+
+    try {
+        await createNotification(notificationDraft);
+    } catch (err) {
+        log.error(`Notification write skipped (reject ${id}): ${err?.message || err}`);
+    }
 
     return { statusChanged: true };
 }

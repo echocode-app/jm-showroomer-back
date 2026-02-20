@@ -17,3 +17,8 @@ export {
     markMyNotificationRead,
     getMyUnreadNotificationsCount,
 } from "./users/notificationsController.js";
+
+export {
+    registerMyDevice,
+    deleteMyDevice,
+} from "./users/devicesController.js";

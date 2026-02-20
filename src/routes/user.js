@@ -6,6 +6,10 @@ import { schemaValidate } from "../middlewares/schemaValidate.js";
 import { ROLES } from "../constants/roles.js";
 import { completeOwnerProfileSchema } from "../schemas/user.complete-owner-profile.schema.js";
 import { userProfileUpdateSchema } from "../schemas/user.profile.schema.js";
+import {
+  userDeviceParamsSchema,
+  userDeviceRegisterSchema,
+} from "../schemas/user.device.schema.js";
 
 import {
   getMyProfile,
@@ -17,6 +21,8 @@ import {
   listMyNotifications,
   markMyNotificationRead,
   getMyUnreadNotificationsCount,
+  registerMyDevice,
+  deleteMyDevice,
 } from "../controllers/userController.js";
 
 import { registerTestUser } from "../controllers/testUserController.js";
@@ -70,6 +76,28 @@ router.patch(
   authMiddleware,
   loadUser,
   markMyNotificationRead
+);
+
+/**
+ * POST /users/me/devices
+ */
+router.post(
+  "/me/devices",
+  authMiddleware,
+  loadUser,
+  schemaValidate({ body: userDeviceRegisterSchema }),
+  registerMyDevice
+);
+
+/**
+ * DELETE /users/me/devices/:deviceId
+ */
+router.delete(
+  "/me/devices/:deviceId",
+  authMiddleware,
+  loadUser,
+  schemaValidate({ params: userDeviceParamsSchema }),
+  deleteMyDevice
 );
 
 /**

@@ -52,6 +52,7 @@ Required base keys:
 - `FIREBASE_CLIENT_EMAIL`
 - `FIREBASE_PRIVATE_KEY`
 - `FIREBASE_STORAGE_BUCKET`
+- `PUSH_ENABLED` (`true` to enable FCM sends; defaults to disabled)
 
 For integration tests:
 - `TEST_USER_TOKEN`

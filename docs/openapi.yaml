@@ -23,6 +23,10 @@ paths:
     $ref: './users.yaml#/paths/~1users~1me~1notifications~1unread-count'
   /users/me/notifications/{notificationId}/read:
     $ref: './users.yaml#/paths/~1users~1me~1notifications~1{notificationId}~1read'
+  /users/me/devices:
+    $ref: './users.yaml#/paths/~1users~1me~1devices'
+  /users/me/devices/{deviceId}:
+    $ref: './users.yaml#/paths/~1users~1me~1devices~1{deviceId}'
   /users/complete-onboarding:
     $ref: './users.yaml#/paths/~1users~1complete-onboarding'
   /users/complete-owner-profile:
@@ -117,6 +121,10 @@ components:
       $ref: './users.yaml#/components/schemas/CompleteOnboardingInput'
     CompleteOwnerProfileInput:
       $ref: './users.yaml#/components/schemas/CompleteOwnerProfileInput'
+    DeviceRegisterRequest:
+      $ref: './users.yaml#/components/schemas/DeviceRegisterRequest'
+    DeviceResponse:
+      $ref: './users.yaml#/components/schemas/DeviceResponse'
     Contacts:
       $ref: './showrooms.yaml#/components/schemas/Contacts'
     Location:

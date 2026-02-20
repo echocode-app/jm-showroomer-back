@@ -1,10 +1,11 @@
 import { initializeApp, cert, getApps } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
+import { getMessaging } from "firebase-admin/messaging";
 import { getStorage } from "firebase-admin/storage";
 import { log } from "./logger.js";
 
-let auth, db, storage;
+let auth, db, storage, messaging;
 
 // initFirebase
 export function initFirebase() {
@@ -24,6 +25,7 @@ export function initFirebase() {
     auth = getAuth();
     db = getFirestore();
     storage = getStorage();
+    messaging = getMessaging();
 }
 
 // getAuthInstance
@@ -42,4 +44,10 @@ export const getFirestoreInstance = () => {
 export const getStorageInstance = () => {
     if (!storage) initFirebase();
     return storage;
+};
+
+// getMessagingInstance
+export const getMessagingInstance = () => {
+    if (!messaging) initFirebase();
+    return messaging;
 };

@@ -128,6 +128,31 @@ components:
           type: string
         notificationsEnabled:
           type: boolean
+    DeviceRegisterRequest:
+      type: object
+      required: [deviceId, fcmToken, platform]
+      additionalProperties: false
+      properties:
+        deviceId:
+          type: string
+        fcmToken:
+          type: string
+        platform:
+          type: string
+          enum: [ios, android]
+        appVersion:
+          type: string
+          nullable: true
+        locale:
+          type: string
+          nullable: true
+    DeviceResponse:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+          example: true
     NotificationReadResult:
       type: object
       required: [id, isRead]
@@ -438,6 +463,80 @@ paths:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "503":
           description: Index not ready (if required in specific Firestore env)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
+  /users/me/devices:
+    post:
+      tags: [Users]
+      summary: Register or update current user device for push
+      operationId: registerMyDevice
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceRegisterRequest'
+      responses:
+        "200":
+          description: Device upserted
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/DeviceResponse'
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
+  /users/me/devices/{deviceId}:
+    delete:
+      tags: [Users]
+      summary: Delete current user device
+      operationId: deleteMyDevice
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: deviceId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Device removed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/DeviceResponse'
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Unauthorized
           content:
             application/json:
               schema:
