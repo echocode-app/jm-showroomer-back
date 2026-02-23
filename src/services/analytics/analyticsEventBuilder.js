@@ -1,3 +1,5 @@
+// Builds the canonical analytics envelope and applies stable defaults.
+// Contract note: eventId/timestamps are server-generated; schema versions are pinned for MVP1.
 import { randomUUID } from "node:crypto";
 import { validateEventName } from "./analyticsValidator.js";
 
@@ -69,7 +71,7 @@ function normalizeActor(actor) {
         userId: userId || null,
         anonymousId: anonymousId || null,
         isAuthenticated,
-        accountState: normalizeAccountState(actor?.accountState),
+        accountState: normalizeAccountState(actor),
         linkedAnonymousId: isAuthenticated ? (linkedAnonymousId || null) : null,
     };
 }
@@ -99,10 +101,26 @@ function normalizeString(value) {
     return trimmed || null;
 }
 
-function normalizeAccountState(value) {
-    const normalized = normalizeString(value);
-    if (!normalized) return "unknown";
-    return normalized;
+function normalizeAccountState(actor) {
+    const explicit = normalizeString(actor?.accountState);
+    if (explicit) return explicit;
+
+    if (!actor?.userId) {
+        return "unknown";
+    }
+
+    let accountState = "unknown";
+    if (actor?.userId) {
+        if (actor?.isDeleted === true) {
+            accountState = "soft_deleted";
+        } else if (actor?.deleteLock === true) {
+            accountState = "delete_locked";
+        } else {
+            accountState = "active";
+        }
+    }
+
+    return accountState;
 }
 
 function normalizeSampleRate(value) {

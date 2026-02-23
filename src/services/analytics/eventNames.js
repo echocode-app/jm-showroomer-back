@@ -1,3 +1,5 @@
+// Canonical analytics event registry.
+// All server emits must reference this map to prevent schema drift and string-literal event names.
 export const ANALYTICS_EVENTS = {
     AUTH_COMPLETED: "auth_completed",
     AUTH_FAILED: "auth_failed",

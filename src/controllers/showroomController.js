@@ -92,22 +92,24 @@ export async function getShowroomById(req, res, next) {
             req.user ?? null
         );
         if (shouldEmitView(actor.actorId, "showroom", showroom.id)) {
-            record(buildAnalyticsEvent({
-                eventName: ANALYTICS_EVENTS.SHOWROOM_VIEW,
-                source: "server",
-                actor,
-                context: {
-                    surface: "showroom_detail",
-                },
-                resource: {
-                    type: "showroom",
-                    id: showroom.id,
-                    ownerUserId: showroom.ownerUid ?? null,
-                },
-                meta: {
-                    producer: "backend_api",
-                },
-            })).catch(e => {
+            Promise.resolve().then(() =>
+                record(buildAnalyticsEvent({
+                    eventName: ANALYTICS_EVENTS.SHOWROOM_VIEW,
+                    source: "server",
+                    actor,
+                    context: {
+                        surface: "showroom_detail",
+                    },
+                    resource: {
+                        type: "showroom",
+                        id: showroom.id,
+                        ownerUserId: showroom.ownerUid ?? null,
+                    },
+                    meta: {
+                        producer: "backend_api",
+                    },
+                }))
+            ).catch(e => {
                 log.error(`View analytics emit failed (showroom_view ${showroom.id}): ${e?.message || e}`);
             });
         }

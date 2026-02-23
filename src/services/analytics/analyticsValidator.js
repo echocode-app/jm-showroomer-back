@@ -1,7 +1,11 @@
+// Validates client analytics ingest payloads and enforces event-name whitelist.
+// Drift protection: eventName must be snake_case and present in ANALYTICS_EVENTS.
 import { badRequest } from "../../core/error.js";
+import { ANALYTICS_EVENTS } from "./eventNames.js";
 
 const EVENT_NAME_RE = /^[a-z0-9]+(?:_[a-z0-9]+)*$/;
 const MAX_EVENT_NAME_LENGTH = 64;
+const ALLOWED_EVENTS = new Set(Object.values(ANALYTICS_EVENTS));
 
 export function validateAnalyticsIngestPayload(payload) {
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
@@ -46,6 +50,9 @@ export function validateEventName(eventName) {
     ) {
         throw badRequest("QUERY_INVALID");
     }
+    if (!ALLOWED_EVENTS.has(normalized)) {
+        throw badRequest("EVENT_NAME_INVALID");
+    }
 
     return normalized;
 }
@@ -56,4 +63,3 @@ function assertOptionalObject(value) {
         throw badRequest("QUERY_INVALID");
     }
 }
-

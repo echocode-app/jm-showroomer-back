@@ -53,22 +53,24 @@ export async function getLookbookById(req, res, next) {
         const actor = resolveActorIdentity(req);
         const lookbook = await getLookbookByIdCrudService(req.params.id, actor);
         if (shouldEmitView(actor.actorId, "lookbook", lookbook.id)) {
-            record(buildAnalyticsEvent({
-                eventName: ANALYTICS_EVENTS.LOOKBOOK_VIEW,
-                source: "server",
-                actor,
-                context: {
-                    surface: "lookbook_detail",
-                },
-                resource: {
-                    type: "lookbook",
-                    id: lookbook.id,
-                    ownerUserId: lookbook.authorId ?? null,
-                },
-                meta: {
-                    producer: "backend_api",
-                },
-            })).catch(e => {
+            Promise.resolve().then(() =>
+                record(buildAnalyticsEvent({
+                    eventName: ANALYTICS_EVENTS.LOOKBOOK_VIEW,
+                    source: "server",
+                    actor,
+                    context: {
+                        surface: "lookbook_detail",
+                    },
+                    resource: {
+                        type: "lookbook",
+                        id: lookbook.id,
+                        ownerUserId: lookbook.authorId ?? null,
+                    },
+                    meta: {
+                        producer: "backend_api",
+                    },
+                }))
+            ).catch(e => {
                 log.error(`View analytics emit failed (lookbook_view ${lookbook.id}): ${e?.message || e}`);
             });
         }
