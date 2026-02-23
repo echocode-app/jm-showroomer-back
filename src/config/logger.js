@@ -1,8 +1,32 @@
-// Config: logger setup.
+// Centralized structured logger (Pino) with backward-compatible `log.*` facade.
+import pino from "pino";
 
-export const log = {
-    info: (msg) => console.log(`ℹ️ ${msg}`),
-    success: (msg) => console.log(`✅ ${msg}`),
-    error: (msg) => console.log(`🔺 ${msg}`),
-    fatal: (msg) => console.log(`❌ ${msg}`)
+const isDev = process.env.NODE_ENV === "dev";
+
+const baseOptions = {
+  level: process.env.LOG_LEVEL || (isDev ? "debug" : "info"),
+  timestamp: pino.stdTimeFunctions.isoTime,
 };
+
+const devTransport = isDev
+  ? {
+      transport: {
+        target: "pino-pretty",
+        options: {
+          colorize: true,
+          singleLine: true,
+          translateTime: "SYS:standard",
+          ignore: "pid,hostname",
+        },
+      },
+    }
+  : {};
+
+export const logger = pino({
+  ...baseOptions,
+  ...devTransport,
+});
+
+// Keep existing imports working without touching business code.
+export const log = logger;
+log.success = (...args) => logger.info(...args);

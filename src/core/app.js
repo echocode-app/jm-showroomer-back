@@ -1,12 +1,14 @@
 import express from "express";
 import cors from "cors";
-import morgan from "morgan";
+import crypto from "node:crypto";
+import pinoHttp from "pino-http";
 
 import routes from "../routes/index.js";
 import { errorHandler } from "../middlewares/error.js";
-import { requestLogger } from "../middlewares/requestLogger.js";
+import { requestLogContextMiddleware } from "../middlewares/requestLogContext.js";
 import { rateLimiter, sanitizeInput } from "../middlewares/rateLimit.js";
 import { CONFIG } from "../config/index.js";
+import { log } from "../config/logger.js";
 
 import swaggerUi from "swagger-ui-express";
 import path from "path";
@@ -16,6 +18,45 @@ const app = express();
 
 // Render / any reverse proxy setup
 app.set("trust proxy", 1);
+
+// Structured HTTP lifecycle logging (single source of truth)
+app.use(
+  pinoHttp({
+    logger: log,
+    genReqId(req, res) {
+      const incoming = req.headers["x-request-id"];
+      const requestId =
+        typeof incoming === "string" && incoming.trim()
+          ? incoming
+          : crypto.randomUUID();
+      res.setHeader("x-request-id", requestId);
+      return requestId;
+    },
+    customLogLevel(req, res, err) {
+      if (err || res.statusCode >= 500) return "error";
+      if (res.statusCode >= 400) return "warn";
+      return "info";
+    },
+    customProps(req) {
+      return {
+        requestId: req.id,
+      };
+    },
+    redact: {
+      paths: [
+        "req.headers.authorization",
+        "req.headers.cookie",
+        "req.body",
+      ],
+      remove: true,
+    },
+    autoLogging: {
+      ignore(req) {
+        return req.url?.startsWith("/health") || req.url?.startsWith("/api/v1/health");
+      },
+    },
+  })
+);
 
 // Serve OpenAPI files for $ref resolution
 const docsPath = path.join(process.cwd(), "docs");
@@ -44,8 +85,7 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
-app.use(morgan("dev"));
-app.use(requestLogger);
+app.use(requestLogContextMiddleware);
 
 // API
 app.use("/api/v1", routes);

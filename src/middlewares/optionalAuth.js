@@ -1,4 +1,5 @@
 import { getAuthInstance } from "../config/firebase.js";
+import { attachActorLogContext } from "./requestLogContext.js";
 
 // optionalAuth
 export async function optionalAuth(req, res, next) {
@@ -14,6 +15,7 @@ export async function optionalAuth(req, res, next) {
         const auth = getAuthInstance();
         const decoded = await auth.verifyIdToken(token);
         req.auth = decoded;
+        attachActorLogContext(req);
     } catch (e) {
         // invalid token, proceed without auth
     }

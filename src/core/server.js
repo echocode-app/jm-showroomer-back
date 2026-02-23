@@ -3,8 +3,6 @@ import { CONFIG } from "../config/index.js";
 import { log } from "../config/logger.js";
 import { initFirebase, getFirestoreInstance } from "../config/firebase.js";
 
-// console.log("PORT used:", CONFIG.port);
-
 function isIndexNotReadyError(err) {
     const msg = String(err?.message || "");
     return err?.code === 9 && msg.includes("requires an index");

@@ -19,7 +19,6 @@ export function initFirebase() {
             storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
         });
         log.success("Firebase initialized");
-        console.log("⚙️ ", process.env.FIREBASE_PROJECT_ID);
     }
 
     auth = getAuth();

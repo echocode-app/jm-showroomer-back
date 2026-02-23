@@ -39,7 +39,9 @@ jobs:
       - name: Shellcheck
         uses: ludeeus/action-shellcheck@2.0.0
         with:
-          scandir: './src/test ./scripts'
+          scandir: |
+            ./src/test
+            ./scripts
 
       - name: npm audit (prod deps, critical only)
         run: npm audit --omit=dev --audit-level=critical

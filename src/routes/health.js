@@ -1,11 +1,9 @@
 import { Router } from "express";
-import { log } from "../config/logger.js";
 
 const router = Router();
 
 // ROUTE GET /
 router.get("/", (req, res) => {
-  log.success("Health check endpoint called ✅");
   res.json({
     status: "ok ✅",
     env: process.env.NODE_ENV,
