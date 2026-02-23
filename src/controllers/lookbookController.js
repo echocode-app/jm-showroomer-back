@@ -11,6 +11,11 @@ import {
 } from "../services/lookbooksService.js";
 import { attachCoverUrl, attachSignedImages } from "../services/lookbooks/response.js";
 import { attachAnonymousIdHeader, resolveActorIdentity } from "../utils/actorIdentity.js";
+import { shouldEmitView } from "../services/analytics/viewThrottleService.js";
+import { buildAnalyticsEvent } from "../services/analytics/analyticsEventBuilder.js";
+import { record } from "../services/analytics/analyticsEventService.js";
+import { ANALYTICS_EVENTS } from "../services/analytics/eventNames.js";
+import { log } from "../config/logger.js";
 
 export async function createLookbook(req, res, next) {
     try {
@@ -47,6 +52,26 @@ export async function getLookbookById(req, res, next) {
     try {
         const actor = resolveActorIdentity(req);
         const lookbook = await getLookbookByIdCrudService(req.params.id, actor);
+        if (shouldEmitView(actor.actorId, "lookbook", lookbook.id)) {
+            record(buildAnalyticsEvent({
+                eventName: ANALYTICS_EVENTS.LOOKBOOK_VIEW,
+                source: "server",
+                actor,
+                context: {
+                    surface: "lookbook_detail",
+                },
+                resource: {
+                    type: "lookbook",
+                    id: lookbook.id,
+                    ownerUserId: lookbook.authorId ?? null,
+                },
+                meta: {
+                    producer: "backend_api",
+                },
+            })).catch(e => {
+                log.error(`View analytics emit failed (lookbook_view ${lookbook.id}): ${e?.message || e}`);
+            });
+        }
         const signed = await attachSignedImages(lookbook);
         attachAnonymousIdHeader(res, actor);
         return ok(res, { lookbook: signed });

@@ -8,6 +8,7 @@ import lookbooksRouter from "./lookbooks.js";
 import eventsRouter from "./events.js";
 import adminRouter from "./admin.js";
 import collectionsRouter from "./collections.js";
+import analyticsRouter from "./analytics.js";
 
 const router = Router();
 
@@ -19,6 +20,7 @@ router.use("/showrooms", showroomsRouter);
 router.use("/lookbooks", lookbooksRouter);
 router.use("/events", eventsRouter);
 router.use("/collections", collectionsRouter);
+router.use("/analytics", analyticsRouter);
 router.use("/admin", adminRouter);
 
 export default router;

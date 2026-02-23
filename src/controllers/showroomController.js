@@ -12,6 +12,12 @@ import {
     deleteShowroomService,
 } from "../services/showroomService.js";
 import { ok } from "../utils/apiResponse.js";
+import { attachAnonymousIdHeader, resolveActorIdentity } from "../utils/actorIdentity.js";
+import { shouldEmitView } from "../services/analytics/viewThrottleService.js";
+import { buildAnalyticsEvent } from "../services/analytics/analyticsEventBuilder.js";
+import { record } from "../services/analytics/analyticsEventService.js";
+import { ANALYTICS_EVENTS } from "../services/analytics/eventNames.js";
+import { log } from "../config/logger.js";
 
 // CREATE
 export async function createShowroomController(req, res, next) {
@@ -80,10 +86,32 @@ export async function getShowroomCounters(req, res, next) {
 // GET BY ID
 export async function getShowroomById(req, res, next) {
     try {
+        const actor = resolveActorIdentity(req);
         const showroom = await getShowroomByIdService(
             req.params.id,
             req.user ?? null
         );
+        if (shouldEmitView(actor.actorId, "showroom", showroom.id)) {
+            record(buildAnalyticsEvent({
+                eventName: ANALYTICS_EVENTS.SHOWROOM_VIEW,
+                source: "server",
+                actor,
+                context: {
+                    surface: "showroom_detail",
+                },
+                resource: {
+                    type: "showroom",
+                    id: showroom.id,
+                    ownerUserId: showroom.ownerUid ?? null,
+                },
+                meta: {
+                    producer: "backend_api",
+                },
+            })).catch(e => {
+                log.error(`View analytics emit failed (showroom_view ${showroom.id}): ${e?.message || e}`);
+            });
+        }
+        attachAnonymousIdHeader(res, actor);
         return ok(res, { showroom });
     } catch (err) {
         next(err);

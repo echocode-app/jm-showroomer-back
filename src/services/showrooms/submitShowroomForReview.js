@@ -1,8 +1,12 @@
 import { getFirestoreInstance } from "../../config/firebase.js";
+import { log } from "../../config/logger.js";
 import { badRequest } from "../../core/error.js";
 import { assertUserWritableInTx } from "../users/writeGuardService.js";
 import { normalizeAddressForCompare, normalizeShowroomName } from "../../utils/showroomValidation.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
+import { buildAnalyticsEvent } from "../analytics/analyticsEventBuilder.js";
+import { record } from "../analytics/analyticsEventService.js";
+import { ANALYTICS_EVENTS } from "../analytics/eventNames.js";
 import {
     assertCountryAllowed,
     assertShowroomReady,
@@ -33,6 +37,7 @@ export async function submitShowroomForReviewService(id, user) {
         showroom.updatedAt = updates.updatedAt;
         showroom.pendingSnapshot = updates.pendingSnapshot;
         showroom.editHistory = updates.editHistory;
+        await emitShowroomSubmitForReviewAnalytics({ user, showroomId: id, ownerUid: showroom.ownerUid ?? user?.uid ?? null });
 
         return showroom;
     }
@@ -93,7 +98,39 @@ export async function submitShowroomForReviewService(id, user) {
         result = { id, ...showroom, ...updates };
     });
 
+    await emitShowroomSubmitForReviewAnalytics({
+        user,
+        showroomId: id,
+        ownerUid: result?.ownerUid ?? user?.uid ?? null,
+    });
+
     return result;
+}
+
+async function emitShowroomSubmitForReviewAnalytics({ user, showroomId, ownerUid }) {
+    try {
+        await record(buildAnalyticsEvent({
+            eventName: ANALYTICS_EVENTS.SHOWROOM_SUBMIT_FOR_REVIEW,
+            source: "server",
+            actor: {
+                userId: user?.uid ?? null,
+                isAnonymous: false,
+            },
+            context: {
+                surface: "showroom_submit",
+            },
+            resource: {
+                type: "showroom",
+                id: showroomId,
+                ownerUserId: ownerUid,
+            },
+            meta: {
+                producer: "backend_api",
+            },
+        }));
+    } catch (err) {
+        log.error(`Analytics emit failed (showroom_submit_for_review ${showroomId}): ${err?.message || err}`);
+    }
 }
 
 /**

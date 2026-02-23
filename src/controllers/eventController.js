@@ -7,6 +7,12 @@ import {
     removeEventWantToVisitService,
     undismissEventService,
 } from "../services/eventsService.js";
+import { attachAnonymousIdHeader, resolveActorIdentity } from "../utils/actorIdentity.js";
+import { shouldEmitView } from "../services/analytics/viewThrottleService.js";
+import { buildAnalyticsEvent } from "../services/analytics/analyticsEventBuilder.js";
+import { record } from "../services/analytics/analyticsEventService.js";
+import { ANALYTICS_EVENTS } from "../services/analytics/eventNames.js";
+import { log } from "../config/logger.js";
 
 export async function listEvents(req, res, next) {
     try {
@@ -21,9 +27,31 @@ export async function listEvents(req, res, next) {
 
 export async function getEventById(req, res, next) {
     try {
+        const actor = resolveActorIdentity(req);
         // Optional auth adds isWantToVisit/isDismissed fields for the current user.
         const user = req.user ? { uid: req.auth?.uid ?? req.user?.uid } : null;
         const event = await getEventByIdService(req.params.id, user);
+        if (shouldEmitView(actor.actorId, "event", event.id)) {
+            record(buildAnalyticsEvent({
+                eventName: ANALYTICS_EVENTS.EVENT_VIEW,
+                source: "server",
+                actor,
+                context: {
+                    surface: "event_detail",
+                },
+                resource: {
+                    type: "event",
+                    id: event.id,
+                    ownerUserId: event.ownerUid ?? null,
+                },
+                meta: {
+                    producer: "backend_api",
+                },
+            })).catch(e => {
+                log.error(`View analytics emit failed (event_view ${event.id}): ${e?.message || e}`);
+            });
+        }
+        attachAnonymousIdHeader(res, actor);
         return ok(res, { event });
     } catch (err) {
         next(err);

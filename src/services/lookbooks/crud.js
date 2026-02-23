@@ -24,6 +24,9 @@ import {
     userFavoritesCollection,
 } from "./crudHelpers.js";
 import { assertUserWritable, assertUserWritableInTx } from "../users/writeGuardService.js";
+import { buildAnalyticsEvent } from "../analytics/analyticsEventBuilder.js";
+import { record } from "../analytics/analyticsEventService.js";
+import { ANALYTICS_EVENTS } from "../analytics/eventNames.js";
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
@@ -266,6 +269,32 @@ export async function likeLookbookService(id, actor) {
         }
     }
 
+    if (applied) {
+        try {
+            await record(buildAnalyticsEvent({
+                eventName: ANALYTICS_EVENTS.LOOKBOOK_FAVORITE,
+                source: "server",
+                actor,
+                context: {
+                    surface: "lookbook_detail",
+                },
+                resource: {
+                    type: "lookbook",
+                    id,
+                    ownerUserId: targetUid,
+                    attributes: {
+                        likedByAnonymous: actor?.isAnonymous === true,
+                    },
+                },
+                meta: {
+                    producer: "backend_api",
+                },
+            }));
+        } catch (err) {
+            log.error(`Analytics emit failed (lookbook_favorite ${id}): ${err?.message || err}`);
+        }
+    }
+
     return { status: "favorited" };
 }
 
@@ -308,6 +337,31 @@ export async function unlikeLookbookService(id, actor) {
         }
         removed = true;
     });
+
+    if (removed) {
+        try {
+            await record(buildAnalyticsEvent({
+                eventName: ANALYTICS_EVENTS.LOOKBOOK_UNFAVORITE,
+                source: "server",
+                actor,
+                context: {
+                    surface: "lookbook_detail",
+                },
+                resource: {
+                    type: "lookbook",
+                    id,
+                    attributes: {
+                        likedByAnonymous: actor?.isAnonymous === true,
+                    },
+                },
+                meta: {
+                    producer: "backend_api",
+                },
+            }));
+        } catch (err) {
+            log.error(`Analytics emit failed (lookbook_unfavorite ${id}): ${err?.message || err}`);
+        }
+    }
 
     return { status: "removed" };
 }

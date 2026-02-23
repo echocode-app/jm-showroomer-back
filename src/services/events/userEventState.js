@@ -10,6 +10,9 @@ import { assertUserWritableInTx } from "../users/writeGuardService.js";
 import { buildEventResponse, compareByStartsAtAsc, isEventPublished, isFutureEvent } from "./eventResponse.js";
 import { getEventsCollection } from "./firestoreQuery.js";
 import { parseCollectionFilters } from "./parse.js";
+import { buildAnalyticsEvent } from "../analytics/analyticsEventBuilder.js";
+import { record } from "../analytics/analyticsEventService.js";
+import { ANALYTICS_EVENTS } from "../analytics/eventNames.js";
 
 const IDS_CHUNK = 100;
 
@@ -62,6 +65,32 @@ export async function markEventWantToVisit(eventId, uid) {
         }
     }
 
+    if (applied) {
+        try {
+            await record(buildAnalyticsEvent({
+                eventName: ANALYTICS_EVENTS.EVENT_WANT_TO_VISIT,
+                source: "server",
+                actor: {
+                    userId: uid,
+                    isAnonymous: false,
+                },
+                context: {
+                    surface: "event_detail",
+                },
+                resource: {
+                    type: "event",
+                    id: eventId,
+                    ownerUserId: eventOwnerUid,
+                },
+                meta: {
+                    producer: "backend_api",
+                },
+            }));
+        } catch (err) {
+            log.error(`Analytics emit failed (event_want_to_visit ${eventId}): ${err?.message || err}`);
+        }
+    }
+
     return { applied };
 }
 
@@ -77,6 +106,31 @@ export async function removeEventWantToVisit(eventId, uid) {
         tx.delete(wantRef);
         removed = true;
     });
+
+    if (removed) {
+        try {
+            await record(buildAnalyticsEvent({
+                eventName: ANALYTICS_EVENTS.EVENT_REMOVE_WANT_TO_VISIT,
+                source: "server",
+                actor: {
+                    userId: uid,
+                    isAnonymous: false,
+                },
+                context: {
+                    surface: "event_detail",
+                },
+                resource: {
+                    type: "event",
+                    id: eventId,
+                },
+                meta: {
+                    producer: "backend_api",
+                },
+            }));
+        } catch (err) {
+            log.error(`Analytics emit failed (event_remove_want_to_visit ${eventId}): ${err?.message || err}`);
+        }
+    }
 
     return { removed };
 }

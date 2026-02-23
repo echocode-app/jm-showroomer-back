@@ -1,10 +1,14 @@
 import { getFirestoreInstance } from "../../config/firebase.js";
+import { log } from "../../config/logger.js";
 import { badRequest } from "../../core/error.js";
 import { assertUserWritableInTx } from "../users/writeGuardService.js";
 import { createDraftShowroom } from "./createDraftShowroom.js";
 import { normalizeCreatePayload } from "./create/normalizePayload.js";
 import { assertCreateAccess, assertCreatePayload } from "./create/validateAccess.js";
 import { DEV_STORE, generateId, useDevMock } from "./_store.js";
+import { buildAnalyticsEvent } from "../analytics/analyticsEventBuilder.js";
+import { record } from "../analytics/analyticsEventService.js";
+import { ANALYTICS_EVENTS } from "../analytics/eventNames.js";
 
 // createShowroom
 export async function createShowroom(data, ownerUid, options = {}) {
@@ -36,6 +40,7 @@ export async function createShowroom(data, ownerUid, options = {}) {
         };
 
         DEV_STORE.showrooms.push(showroom);
+        await emitShowroomCreateStartedAnalytics({ ownerUid, showroomId: id });
         return showroom;
     }
 
@@ -43,7 +48,7 @@ export async function createShowroom(data, ownerUid, options = {}) {
     const ref = db.collection("showrooms");
     const docRef = ref.doc();
 
-    return db.runTransaction(async tx => {
+    const createdShowroom = await db.runTransaction(async tx => {
         await assertUserWritableInTx(tx, ownerUid);
 
         const existingSnapshot = await tx.get(
@@ -102,4 +107,33 @@ export async function createShowroom(data, ownerUid, options = {}) {
         tx.set(docRef, showroom);
         return { id: docRef.id, ...showroom };
     });
+
+    await emitShowroomCreateStartedAnalytics({ ownerUid, showroomId: createdShowroom.id });
+    return createdShowroom;
+}
+
+async function emitShowroomCreateStartedAnalytics({ ownerUid, showroomId }) {
+    try {
+        await record(buildAnalyticsEvent({
+            eventName: ANALYTICS_EVENTS.SHOWROOM_CREATE_STARTED,
+            source: "server",
+            actor: {
+                userId: ownerUid,
+                isAnonymous: false,
+            },
+            context: {
+                surface: "showroom_create",
+            },
+            resource: {
+                type: "showroom",
+                id: showroomId,
+                ownerUserId: ownerUid,
+            },
+            meta: {
+                producer: "backend_api",
+            },
+        }));
+    } catch (err) {
+        log.error(`Analytics emit failed (showroom_create_started ${showroomId}): ${err?.message || err}`);
+    }
 }

@@ -8,6 +8,9 @@ import { shouldNotifyActorAction } from "../notifications/selfAction.js";
 import { assertUserWritable, assertUserWritableInTx } from "../users/writeGuardService.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 import { parseStrictLimit } from "../../utils/pagination.js";
+import { buildAnalyticsEvent } from "../analytics/analyticsEventBuilder.js";
+import { record } from "../analytics/analyticsEventService.js";
+import { ANALYTICS_EVENTS } from "../analytics/eventNames.js";
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
@@ -88,6 +91,29 @@ export async function favoriteShowroom(uid, showroomId) {
             showroomId,
             actorUid: uid,
         });
+        try {
+            await record(buildAnalyticsEvent({
+                eventName: ANALYTICS_EVENTS.SHOWROOM_FAVORITE,
+                source: "server",
+                actor: {
+                    userId: uid,
+                    isAnonymous: false,
+                },
+                context: {
+                    surface: "showroom_detail",
+                },
+                resource: {
+                    type: "showroom",
+                    id: showroomId,
+                    ownerUserId: showroomForNotification?.ownerUid ?? null,
+                },
+                meta: {
+                    producer: "backend_api",
+                },
+            }));
+        } catch (err) {
+            log.error(`Analytics emit failed (showroom_favorite ${showroomId}): ${err?.message || err}`);
+        }
     }
 
     return { applied };
@@ -115,6 +141,31 @@ export async function unfavoriteShowroom(uid, showroomId) {
         tx.delete(favoriteRef);
         removed = true;
     });
+
+    if (removed) {
+        try {
+            await record(buildAnalyticsEvent({
+                eventName: ANALYTICS_EVENTS.SHOWROOM_UNFAVORITE,
+                source: "server",
+                actor: {
+                    userId: uid,
+                    isAnonymous: false,
+                },
+                context: {
+                    surface: "showroom_detail",
+                },
+                resource: {
+                    type: "showroom",
+                    id: showroomId,
+                },
+                meta: {
+                    producer: "backend_api",
+                },
+            }));
+        } catch (err) {
+            log.error(`Analytics emit failed (showroom_unfavorite ${showroomId}): ${err?.message || err}`);
+        }
+    }
 
     return { removed };
 }
