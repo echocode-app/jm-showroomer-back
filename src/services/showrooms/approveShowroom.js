@@ -6,10 +6,14 @@ import { EDITABLE_FIELDS } from "./_constants.js";
 import { appendHistory, buildDiff, makeHistoryEntry } from "./_helpers.js";
 import { createNotification } from "../notifications/notificationService.js";
 import { NOTIFICATION_TYPES } from "../notifications/types.js";
+import { assertUserWritable, assertUserWritableInTx } from "../users/writeGuardService.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 
 // approveShowroomService
 export async function approveShowroomService(id, user) {
+    if (user?.uid) {
+        await assertUserWritable(user.uid);
+    }
     if (user?.role !== "admin") {
         throw forbidden("ACCESS_DENIED");
     }
@@ -93,6 +97,7 @@ export async function approveShowroomService(id, user) {
     // Snapshot immutable after pending:
     // moderation applies stored snapshot as-is to avoid post-submit drift.
     await db.runTransaction(async tx => {
+        await assertUserWritableInTx(tx, user.uid);
         const snap = await tx.get(ref);
         if (!snap.exists) throw notFound("SHOWROOM_NOT_FOUND");
 

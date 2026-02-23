@@ -16,6 +16,9 @@ export async function resolveUserPushTargets(uid) {
     }
 
     const user = userSnap.data() || {};
+    if (user.isDeleted === true) {
+        return { skipped: true, reason: "user_deleted", tokens: [], tokenToDeviceIds: {} };
+    }
     if (user.notificationsEnabled === false) {
         return {
             skipped: true,

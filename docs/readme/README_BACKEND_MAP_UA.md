@@ -206,6 +206,35 @@ Compatibility wrapper:
 Compatibility wrapper:
 - `services/users/deviceService.js`.
 
+## 6.3.1 User Deletion & Writability Invariant
+
+Канонічний інваріант запису (service-level):
+
+```text
+User writable only if:
+  !user.isDeleted && !user.deleteLock
+```
+
+Що це означає:
+- `isDeleted=true` — профіль soft-deleted, будь-які user-scoped write заборонені.
+- `deleteLock=true` — йде видалення акаунта, тимчасово блокуємо всі write під user context.
+
+Delete flow (`DELETE /users/me`):
+- `accountController.deleteMyProfile` -> `users/profileService.deleteUserAccountWithBlockGuard`
+- крок 1: tx acquire `deleteLock`
+- крок 2: fan-out read ownership blockers (showrooms/lookbooks/events)
+- крок 3: якщо blockers відсутні -> tx finalize soft delete (перевіряє, що lock ще утримується)
+- крок 4: якщо blocker/error -> release lock
+
+Race-safety strategy:
+- write-сервіси використовують `assertUserWritableInTx(tx, uid)` всередині Firestore transaction;
+- non-transactional destructive writes переведені в transaction, щоб `deleteLock` не можна було обійти між pre-check і commit.
+
+Патерн guard:
+- `assertUserWritable(uid)` — лише для safe pre-check/read compatibility сценаріїв;
+- `assertUserWritableInTx(tx, uid)` — канонічний guard для мутацій;
+- `runUserWriteTransaction(...)` (якщо використовується) — helper wrapper над tx + guard.
+
 ## 6.4 Showrooms
 
 Ключові файли:

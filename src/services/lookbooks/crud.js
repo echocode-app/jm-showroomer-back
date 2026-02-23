@@ -23,14 +23,19 @@ import {
     toTimestamp,
     userFavoritesCollection,
 } from "./crudHelpers.js";
+import { assertUserWritable, assertUserWritableInTx } from "../users/writeGuardService.js";
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
 
 // Creates a lookbook owned either by authenticated user or guest actor.
 export async function createLookbookService(payload, actor) {
+    if (!actor.isAnonymous && actor.userId) {
+        await assertUserWritable(actor.userId);
+    }
     await assertShowroomExists(payload.showroomId);
 
+    const db = getFirestoreInstance();
     const now = Timestamp.fromDate(new Date());
     const ref = getLookbooksCollection().doc();
 
@@ -49,7 +54,12 @@ export async function createLookbookService(payload, actor) {
         updatedAt: now,
     };
 
-    await ref.set(doc);
+    await db.runTransaction(async tx => {
+        if (!actor.isAnonymous && actor.userId) {
+            await assertUserWritableInTx(tx, actor.userId);
+        }
+        tx.set(ref, doc);
+    });
     return normalizeLookbook({ id: ref.id, ...doc });
 }
 
@@ -132,6 +142,9 @@ export async function updateLookbookService(id, payload, actor) {
     const ref = getLookbooksCollection().doc(id);
 
     await db.runTransaction(async tx => {
+        if (!actor.isAnonymous && actor.userId) {
+            await assertUserWritableInTx(tx, actor.userId);
+        }
         const snap = await tx.get(ref);
         if (!snap.exists) throw notFound("LOOKBOOK_NOT_FOUND");
 
@@ -161,16 +174,19 @@ export async function updateLookbookService(id, payload, actor) {
 export async function deleteLookbookService(id, actor) {
     const db = getFirestoreInstance();
     const ref = getLookbooksCollection().doc(id);
-    const snap = await ref.get();
-    if (!snap.exists) {
-        throw notFound("LOOKBOOK_NOT_FOUND");
-    }
-
-    const lookbook = normalizeLookbook({ id: snap.id, ...snap.data() });
-    assertCanManageLookbook(lookbook, actor);
-
+    await db.runTransaction(async tx => {
+        if (!actor.isAnonymous && actor.userId) {
+            await assertUserWritableInTx(tx, actor.userId);
+        }
+        const snap = await tx.get(ref);
+        if (!snap.exists) {
+            throw notFound("LOOKBOOK_NOT_FOUND");
+        }
+        const lookbook = normalizeLookbook({ id: snap.id, ...snap.data() });
+        assertCanManageLookbook(lookbook, actor);
+        tx.delete(ref);
+    });
     await deleteLikesSubcollection(ref, db);
-    await ref.delete();
 
     return { id, status: "deleted" };
 }
@@ -188,6 +204,9 @@ export async function likeLookbookService(id, actor) {
     let lookbookLabel = null;
 
     await db.runTransaction(async tx => {
+        if (!actor.isAnonymous && actor.userId) {
+            await assertUserWritableInTx(tx, actor.userId);
+        }
         const snap = await tx.get(ref);
         if (!snap.exists) throw notFound("LOOKBOOK_NOT_FOUND");
 
@@ -221,11 +240,13 @@ export async function likeLookbookService(id, actor) {
             likesCount: FieldValue.increment(1),
             updatedAt: now,
         }, { merge: true });
+        if (!actor.isAnonymous && actor.userId) {
+            tx.set(userFavoritesCollection(actor.userId).doc(id), { createdAt: now }, { merge: true });
+        }
         applied = true;
     });
 
     if (applied && !actor.isAnonymous && actor.userId) {
-        await userFavoritesCollection(actor.userId).doc(id).set({ createdAt: now }, { merge: true });
         if (shouldNotifyActorAction(targetUid, actor.userId)) {
             try {
                 await createNotification({
@@ -259,6 +280,9 @@ export async function unlikeLookbookService(id, actor) {
     let removed = false;
 
     await db.runTransaction(async tx => {
+        if (!actor.isAnonymous && actor.userId) {
+            await assertUserWritableInTx(tx, actor.userId);
+        }
         const snap = await tx.get(ref);
         if (!snap.exists) throw notFound("LOOKBOOK_NOT_FOUND");
 
@@ -279,12 +303,11 @@ export async function unlikeLookbookService(id, actor) {
             likesCount: Math.max(0, current - 1),
             updatedAt: now,
         }, { merge: true });
+        if (!actor.isAnonymous && actor.userId) {
+            tx.delete(userFavoritesCollection(actor.userId).doc(id));
+        }
         removed = true;
     });
-
-    if (removed && !actor.isAnonymous && actor.userId) {
-        await userFavoritesCollection(actor.userId).doc(id).delete();
-    }
 
     return { status: "removed" };
 }

@@ -5,6 +5,7 @@ import { notFound, badRequest } from "../../core/error.js";
 import { createNotification } from "../notifications/notificationService.js";
 import { NOTIFICATION_TYPES } from "../notifications/types.js";
 import { shouldNotifyActorAction } from "../notifications/selfAction.js";
+import { assertUserWritable, assertUserWritableInTx } from "../users/writeGuardService.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 import { parseStrictLimit } from "../../utils/pagination.js";
 
@@ -63,6 +64,7 @@ export async function favoriteShowroom(uid, showroomId) {
     let showroomForNotification = null;
 
     await db.runTransaction(async tx => {
+        await assertUserWritableInTx(tx, uid);
         const showroomSnap = await tx.get(showroomRef);
         const showroom = showroomSnap.exists ? showroomSnap.data() : null;
         // Anti-leak rule: all non-favoritable states map to the same 404 response.
@@ -107,6 +109,7 @@ export async function unfavoriteShowroom(uid, showroomId) {
     let removed = false;
 
     await db.runTransaction(async tx => {
+        await assertUserWritableInTx(tx, uid);
         const favoriteSnap = await tx.get(favoriteRef);
         if (!favoriteSnap.exists) return;
         tx.delete(favoriteRef);
@@ -117,6 +120,7 @@ export async function unfavoriteShowroom(uid, showroomId) {
 }
 
 export async function syncGuestShowroomFavorites(uid, payload = {}) {
+    await assertUserWritable(uid);
     const { favoriteIds } = parseSyncPayload(payload);
 
     if (favoriteIds.length === 0) {
@@ -247,16 +251,15 @@ async function applyFavoritesBatch(uid, favoriteIds) {
     if (favoriteIds.length === 0) return;
 
     const db = getFirestoreInstance();
-    const batch = db.batch();
     const createdAt = Timestamp.fromDate(new Date());
-
-    // Upsert keeps guest-sync idempotent across repeated client retries.
-    for (const showroomId of favoriteIds) {
-        const ref = userFavoritesCollection(uid).doc(showroomId);
-        batch.set(ref, { createdAt }, { merge: true });
-    }
-
-    await batch.commit();
+    await db.runTransaction(async tx => {
+        await assertUserWritableInTx(tx, uid);
+        // Upsert keeps guest-sync idempotent across repeated client retries.
+        for (const showroomId of favoriteIds) {
+            const ref = userFavoritesCollection(uid).doc(showroomId);
+            tx.set(ref, { createdAt }, { merge: true });
+        }
+    });
 }
 
 function userFavoritesCollection(uid) {

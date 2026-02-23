@@ -1,6 +1,7 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { getFirestoreInstance } from "../../../config/firebase.js";
 import { runFirestoreTransaction } from "../../../utils/firestoreTransaction.js";
+import { assertUserWritableInTx } from "../writeGuardService.js";
 import { normalizeDevicePayload } from "./validation.js";
 
 // Purpose: Register/update one user device document.
@@ -13,6 +14,7 @@ export async function registerUserDevice(uid, payload) {
     const ref = db.collection("users").doc(uid).collection("devices").doc(normalized.deviceId);
 
     await runFirestoreTransaction(db, async tx => {
+        await assertUserWritableInTx(tx, uid);
         const snap = await tx.get(ref);
         const existing = snap.exists ? snap.data() : null;
 

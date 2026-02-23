@@ -2,6 +2,9 @@ import { getFirestoreInstance } from "../config/firebase.js";
 import { fail } from "../utils/apiResponse.js";
 
 // loadUser
+// Read-path/profile bootstrap middleware.
+// Canonical writability invariant is enforced in service-layer write guards
+// (`assertUserWritable*`) so write handlers must not rely on this middleware alone.
 export async function loadUser(req, res, next) {
     try {
         if (!req.auth) {
@@ -18,6 +21,10 @@ export async function loadUser(req, res, next) {
 
         const user = snap.data();
         if (user?.isDeleted) {
+            return fail(res, "USER_NOT_FOUND", "User profile not found", 404);
+        }
+        const isMutation = !["GET", "HEAD", "OPTIONS"].includes(String(req.method || "GET"));
+        if (isMutation && user?.deleteLock === true) {
             return fail(res, "USER_NOT_FOUND", "User profile not found", 404);
         }
 

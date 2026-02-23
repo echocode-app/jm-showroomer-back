@@ -1,5 +1,6 @@
 import { getFirestoreInstance } from "../../config/firebase.js";
 import { badRequest } from "../../core/error.js";
+import { assertUserWritableInTx } from "../users/writeGuardService.js";
 import { createDraftShowroom } from "./createDraftShowroom.js";
 import { normalizeCreatePayload } from "./create/normalizePayload.js";
 import { assertCreateAccess, assertCreatePayload } from "./create/validateAccess.js";
@@ -17,6 +18,8 @@ export async function createShowroom(data, ownerUid, options = {}) {
     const normalized = normalizeCreatePayload(data, options);
 
     if (useDevMock) {
+        // DEV mock mode keeps showrooms in memory and may run without Firestore user docs.
+        // Writability invariant is enforced in real Firestore-backed flows.
         const id = generateId();
         const now = new Date().toISOString();
 
@@ -38,59 +41,65 @@ export async function createShowroom(data, ownerUid, options = {}) {
 
     const db = getFirestoreInstance();
     const ref = db.collection("showrooms");
+    const docRef = ref.doc();
 
-    const existingSnapshot = await ref
-        .where("ownerUid", "==", ownerUid)
-        .where("name", "==", data.name)
-        .get();
+    return db.runTransaction(async tx => {
+        await assertUserWritableInTx(tx, ownerUid);
 
-    // Keep owner-level uniqueness among non-deleted showrooms.
-    const existing = existingSnapshot.docs.filter(
-        d => d.data().status !== "deleted"
-    );
+        const existingSnapshot = await tx.get(
+            ref
+                .where("ownerUid", "==", ownerUid)
+                .where("name", "==", data.name)
+        );
 
-    if (existing.length > 0) {
-        throw badRequest("SHOWROOM_NAME_ALREADY_EXISTS");
-    }
+        // Keep owner-level uniqueness among non-deleted showrooms.
+        const existing = existingSnapshot.docs.filter(
+            d => d.data().status !== "deleted"
+        );
 
-    const now = new Date().toISOString();
+        if (existing.length > 0) {
+            throw badRequest("SHOWROOM_NAME_ALREADY_EXISTS");
+        }
 
-    const showroom = {
-        ownerUid,
-        // CANONICAL FIELD
-        name: data.name,
-        // DERIVED FIELD (persisted for Firestore query/index performance)
-        nameNormalized: normalized.nameNormalized,
-        type: data.type,
-        availability: data.availability ?? null,
-        category: data.category ?? null,
-        categoryGroup: normalized.categoryGroup,
-        subcategories: normalized.subcategories,
-        // CANONICAL FIELD
-        brands: data.brands ?? [],
-        // DERIVED FIELD (persisted for Firestore query/index performance)
-        brandsNormalized: normalized.brandsNormalized,
-        // DERIVED FIELD (persisted for Firestore query/index performance)
-        brandsMap: normalized.brandsMap,
-        // CANONICAL FIELD
-        address: normalized.address,
-        // DERIVED FIELD (duplicate detection only)
-        addressNormalized: normalized.addressNormalized,
-        country: data.country,
-        // COMPATIBILITY FIELD (kept for API stability; canonical source is `geo.city`)
-        city: data.city ?? null,
-        // CANONICAL FIELD
-        geo: normalized.geo,
-        contacts: normalized.contacts,
-        // COMPATIBILITY FIELD (kept for API stability; canonical source is `geo.coords`)
-        location: data.location ?? null,
-        status: "draft",
-        editCount: 0,
-        editHistory: [],
-        createdAt: now,
-        updatedAt: now,
-    };
+        const now = new Date().toISOString();
 
-    const doc = await ref.add(showroom);
-    return { id: doc.id, ...showroom };
+        const showroom = {
+            ownerUid,
+            // CANONICAL FIELD
+            name: data.name,
+            // DERIVED FIELD (persisted for Firestore query/index performance)
+            nameNormalized: normalized.nameNormalized,
+            type: data.type,
+            availability: data.availability ?? null,
+            category: data.category ?? null,
+            categoryGroup: normalized.categoryGroup,
+            subcategories: normalized.subcategories,
+            // CANONICAL FIELD
+            brands: data.brands ?? [],
+            // DERIVED FIELD (persisted for Firestore query/index performance)
+            brandsNormalized: normalized.brandsNormalized,
+            // DERIVED FIELD (persisted for Firestore query/index performance)
+            brandsMap: normalized.brandsMap,
+            // CANONICAL FIELD
+            address: normalized.address,
+            // DERIVED FIELD (duplicate detection only)
+            addressNormalized: normalized.addressNormalized,
+            country: data.country,
+            // COMPATIBILITY FIELD (kept for API stability; canonical source is `geo.city`)
+            city: data.city ?? null,
+            // CANONICAL FIELD
+            geo: normalized.geo,
+            contacts: normalized.contacts,
+            // COMPATIBILITY FIELD (kept for API stability; canonical source is `geo.coords`)
+            location: data.location ?? null,
+            status: "draft",
+            editCount: 0,
+            editHistory: [],
+            createdAt: now,
+            updatedAt: now,
+        };
+
+        tx.set(docRef, showroom);
+        return { id: docRef.id, ...showroom };
+    });
 }

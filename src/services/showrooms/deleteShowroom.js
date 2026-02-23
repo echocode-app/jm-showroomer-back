@@ -1,5 +1,6 @@
 import { getFirestoreInstance } from "../../config/firebase.js";
 import { badRequest, forbidden, notFound } from "../../core/error.js";
+import { assertUserWritableInTx } from "../users/writeGuardService.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 import { appendHistory, makeHistoryEntry } from "./_helpers.js";
 
@@ -53,37 +54,43 @@ export async function deleteShowroomService(id, user) {
 
     const db = getFirestoreInstance();
     const ref = db.collection("showrooms").doc(id);
-    const snap = await ref.get();
+    let result = null;
+    await db.runTransaction(async tx => {
+        if (user?.uid) {
+            await assertUserWritableInTx(tx, user.uid);
+        }
+        const snap = await tx.get(ref);
+        if (!snap.exists) throw notFound("SHOWROOM_NOT_FOUND");
 
-    if (!snap.exists) throw notFound("SHOWROOM_NOT_FOUND");
+        const showroom = snap.data();
+        assertCanDelete(showroom, user, isAdmin);
 
-    const showroom = snap.data();
-    assertCanDelete(showroom, user, isAdmin);
+        const statusBefore = showroom.status;
+        const updatedAt = new Date().toISOString();
 
-    const statusBefore = showroom.status;
-    const updatedAt = new Date().toISOString();
+        const updates = {
+            status: "deleted",
+            deletedAt: updatedAt,
+            deletedBy: { uid: user.uid, role: user.role },
+            updatedAt,
+            editHistory: appendHistory(
+                showroom.editHistory || [],
+                makeHistoryEntry({
+                    action: "delete",
+                    actor: user,
+                    statusBefore,
+                    statusAfter: "deleted",
+                    changedFields: ["status"],
+                    diff: {
+                        status: { from: statusBefore, to: "deleted" },
+                    },
+                    at: updatedAt,
+                })
+            ),
+        };
 
-    const updates = {
-        status: "deleted",
-        deletedAt: updatedAt,
-        deletedBy: { uid: user.uid, role: user.role },
-        updatedAt,
-        editHistory: appendHistory(
-            showroom.editHistory || [],
-            makeHistoryEntry({
-                action: "delete",
-                actor: user,
-                statusBefore,
-                statusAfter: "deleted",
-                changedFields: ["status"],
-                diff: {
-                    status: { from: statusBefore, to: "deleted" },
-                },
-                at: updatedAt,
-            })
-        ),
-    };
-
-    await ref.update(updates);
-    return { id, ...showroom, ...updates };
+        tx.update(ref, updates);
+        result = { id, ...showroom, ...updates };
+    });
+    return result;
 }

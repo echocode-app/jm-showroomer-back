@@ -14,6 +14,7 @@ import { isNotificationAlreadyExistsError } from "./dedupe.js";
 // - dedupeKey is the notification document id
 // - push must never break business flow
 // - push is emitted only for non-transactional writes
+// - deleted targets are skipped in both tx and non-tx modes
 
 const RESOURCE_TYPES = new Set(["showroom", "lookbook", "event"]);
 
@@ -38,6 +39,16 @@ export async function createNotification({
     }
 
     const db = getFirestoreInstance();
+    const userRef = db.collection("users").doc(targetUid);
+    const userSnap = tx ? await tx.get(userRef) : await userRef.get();
+    const targetUser = userSnap.exists ? (userSnap.data() || {}) : null;
+    if (!targetUser || targetUser.isDeleted === true) {
+        return {
+            skippedByTargetState: true,
+            created: false,
+            pushed: false,
+        };
+    }
     const ref = db
         .collection("users")
         .doc(targetUid)

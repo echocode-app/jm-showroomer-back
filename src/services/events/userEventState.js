@@ -6,6 +6,7 @@ import { notFound } from "../../core/error.js";
 import { createNotification } from "../notifications/notificationService.js";
 import { NOTIFICATION_TYPES } from "../notifications/types.js";
 import { shouldNotifyActorAction } from "../notifications/selfAction.js";
+import { assertUserWritableInTx } from "../users/writeGuardService.js";
 import { buildEventResponse, compareByStartsAtAsc, isEventPublished, isFutureEvent } from "./eventResponse.js";
 import { getEventsCollection } from "./firestoreQuery.js";
 import { parseCollectionFilters } from "./parse.js";
@@ -23,6 +24,7 @@ export async function markEventWantToVisit(eventId, uid) {
 
     // Deterministic apply semantics + mutual exclusion with dismissed.
     await db.runTransaction(async tx => {
+        await assertUserWritableInTx(tx, uid);
         const eventSnap = await tx.get(eventRef);
         const event = eventSnap.exists ? eventSnap.data() : null;
         if (!event || !isEventPublished(event) || isCountryBlocked(event.country)) {
@@ -69,6 +71,7 @@ export async function removeEventWantToVisit(eventId, uid) {
     let removed = false;
 
     await db.runTransaction(async tx => {
+        await assertUserWritableInTx(tx, uid);
         const wantSnap = await tx.get(wantRef);
         if (!wantSnap.exists) return;
         tx.delete(wantRef);
@@ -79,22 +82,32 @@ export async function removeEventWantToVisit(eventId, uid) {
 }
 
 export async function dismissEvent(eventId, uid) {
-    await assertEventExistsAndPublished(eventId);
+    const db = getFirestoreInstance();
+    const eventRef = getEventsCollection().doc(eventId);
     const now = new Date().toISOString();
     const dismissedRef = userEventCollection(uid, "events_dismissed").doc(eventId);
     const wantRef = userEventCollection(uid, "events_want_to_visit").doc(eventId);
 
-    // Idempotent upsert + mutual exclusion with want-to-visit.
-    await Promise.all([
-        dismissedRef.set({ createdAt: now }, { merge: true }),
-        wantRef.delete(),
-    ]);
+    await db.runTransaction(async tx => {
+        await assertUserWritableInTx(tx, uid);
+        const eventSnap = await tx.get(eventRef);
+        const event = eventSnap.exists ? eventSnap.data() : null;
+        if (!event || !isEventPublished(event) || isCountryBlocked(event.country)) {
+            throw notFound("EVENT_NOT_FOUND");
+        }
+        // Idempotent upsert + mutual exclusion with want-to-visit.
+        tx.set(dismissedRef, { createdAt: now }, { merge: true });
+        tx.delete(wantRef);
+    });
 }
 
 export async function undismissEvent(eventId, uid) {
-    await userEventCollection(uid, "events_dismissed")
-        .doc(eventId)
-        .delete();
+    const db = getFirestoreInstance();
+    const dismissedRef = userEventCollection(uid, "events_dismissed").doc(eventId);
+    await db.runTransaction(async tx => {
+        await assertUserWritableInTx(tx, uid);
+        tx.delete(dismissedRef);
+    });
 }
 
 export async function listWantToVisitEvents(uid, filters = {}) {
@@ -160,14 +173,6 @@ async function getEventsByIds(ids) {
     }
 
     return events;
-}
-
-async function assertEventExistsAndPublished(eventId) {
-    const snap = await getEventsCollection().doc(eventId).get();
-    const event = snap.exists ? snap.data() : null;
-    if (!event || !isEventPublished(event) || isCountryBlocked(event.country)) {
-        throw notFound("EVENT_NOT_FOUND");
-    }
 }
 
 function timestampNow() {

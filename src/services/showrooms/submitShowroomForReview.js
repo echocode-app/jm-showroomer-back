@@ -1,5 +1,6 @@
 import { getFirestoreInstance } from "../../config/firebase.js";
 import { badRequest } from "../../core/error.js";
+import { assertUserWritableInTx } from "../users/writeGuardService.js";
 import { normalizeAddressForCompare, normalizeShowroomName } from "../../utils/showroomValidation.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 import {
@@ -37,58 +38,62 @@ export async function submitShowroomForReviewService(id, user) {
     }
 
     // Transaction boundary:
-    // submit flow intentionally uses ordered reads + one final update (no tx side effects here).
+    // duplicate checks + pending transition execute in one tx to keep deleteLock/user writability
+    // invariant and submit state transition atomic.
     // No push inside tx:
     // submit flow does not emit push/notification writes.
-    // Derived fields assumed already normalized:
-    // duplicate checks rely on server-managed `nameNormalized` and `addressNormalized`.
-    // Snapshot immutable after pending:
-    // `pendingSnapshot` becomes the moderation source-of-truth after status flips to pending.
     const db = getFirestoreInstance();
     const ref = db.collection("showrooms").doc(id);
-    const snap = await ref.get();
+    let result = null;
 
-    const showroom = snap.exists ? snap.data() : null;
-    const normalized = validateAndNormalizeSubmittable(showroom, user);
+    await db.runTransaction(async tx => {
+        if (user?.uid) {
+            await assertUserWritableInTx(tx, user.uid);
+        }
+        const snap = await tx.get(ref);
+        const showroom = snap.exists ? snap.data() : null;
+        const normalized = validateAndNormalizeSubmittable(showroom, user);
 
-    const ownerSnapshot = await db
-        .collection("showrooms")
-        .where("ownerUid", "==", user.uid)
-        .get();
-
-    assertNoOwnerNameDuplicates(
-        ownerSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-        id,
-        normalized.nameNormalized
-    );
-
-    const duplicateSnapshot = await db
-        .collection("showrooms")
-        .where("nameNormalized", "==", normalized.nameNormalized)
-        // Derived-field invariant:
-        // `addressNormalized` is used only for duplicate detection.
-        .where("addressNormalized", "==", normalized.addressNormalized)
-        .get();
-
-    const globalDuplicates = duplicateSnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(
-            s =>
-                s.id !== id &&
-                ["pending", "approved"].includes(s.status)
+        const ownerSnapshot = await tx.get(
+            db.collection("showrooms").where("ownerUid", "==", user.uid)
         );
 
-    if (globalDuplicates.length > 0) {
-        throw badRequest("SHOWROOM_DUPLICATE");
-    }
+        assertNoOwnerNameDuplicates(
+            ownerSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+            id,
+            normalized.nameNormalized
+        );
 
-    const updatedAt = new Date().toISOString();
-    // Snapshot invariant:
-    // once pendingSnapshot is built on submit, moderation must treat it as immutable source.
-    const updates = buildSubmitUpdates(showroom, user, normalized, updatedAt);
+        const duplicateSnapshot = await tx.get(
+            db
+                .collection("showrooms")
+                .where("nameNormalized", "==", normalized.nameNormalized)
+                // Derived-field invariant:
+                // `addressNormalized` is used only for duplicate detection.
+                .where("addressNormalized", "==", normalized.addressNormalized)
+        );
 
-    await ref.update(updates);
-    return { id, ...showroom, ...updates };
+        const globalDuplicates = duplicateSnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() }))
+            .filter(
+                s =>
+                    s.id !== id &&
+                    ["pending", "approved"].includes(s.status)
+            );
+
+        if (globalDuplicates.length > 0) {
+            throw badRequest("SHOWROOM_DUPLICATE");
+        }
+
+        const updatedAt = new Date().toISOString();
+        // Snapshot invariant:
+        // once pendingSnapshot is built on submit, moderation must treat it as immutable source.
+        const updates = buildSubmitUpdates(showroom, user, normalized, updatedAt);
+        tx.update(ref, updates);
+        result = { id, ...showroom, ...updates };
+    });
+
+    return result;
 }
 
 /**

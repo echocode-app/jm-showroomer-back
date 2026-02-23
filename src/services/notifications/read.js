@@ -1,6 +1,7 @@
 import { FieldPath, FieldValue } from "firebase-admin/firestore";
 import { getFirestoreInstance } from "../../config/firebase.js";
 import { notFound } from "../../core/error.js";
+import { assertUserWritableInTx } from "../users/writeGuardService.js";
 import { decodeCursor, encodeCursor, parseLimit, toISO } from "./utils.js";
 
 // Purpose: Read/update user notifications state.
@@ -40,24 +41,29 @@ export async function listUserNotifications(uid, filters = {}) {
 }
 
 export async function markNotificationRead(uid, notificationId) {
+    const db = getFirestoreInstance();
     const ref = notificationsCollection(uid).doc(notificationId);
-    const snap = await ref.get();
-    if (!snap.exists) {
-        throw notFound("NOTIFICATION_NOT_FOUND");
-    }
+    await db.runTransaction(async tx => {
+        await assertUserWritableInTx(tx, uid);
+        const snap = await tx.get(ref);
+        if (!snap.exists) {
+            throw notFound("NOTIFICATION_NOT_FOUND");
+        }
 
-    const data = snap.data() || {};
-    if (data.isRead === true) {
-        return { id: notificationId, isRead: true };
-    }
+        const data = snap.data() || {};
+        if (data.isRead === true) {
+            return;
+        }
 
-    await ref.set(
-        {
-            isRead: true,
-            readAt: FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-    );
+        tx.set(
+            ref,
+            {
+                isRead: true,
+                readAt: FieldValue.serverTimestamp(),
+            },
+            { merge: true }
+        );
+    });
 
     return { id: notificationId, isRead: true };
 }

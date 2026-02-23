@@ -2,6 +2,7 @@ import { Timestamp } from "firebase-admin/firestore";
 import { getFirestoreInstance } from "../../config/firebase.js";
 import { isCountryBlocked } from "../../constants/countries.js";
 import { badRequest } from "../../core/error.js";
+import { assertUserWritable, assertUserWritableInTx } from "../users/writeGuardService.js";
 import { isEventPublished, isFutureEvent } from "./eventResponse.js";
 import { getEventsCollection } from "./firestoreQuery.js";
 
@@ -9,6 +10,7 @@ const MAX_SYNC_IDS_PER_LIST = 100;
 const IDS_CHUNK = 100;
 
 export async function syncGuestEventsState(uid, payload = {}) {
+    await assertUserWritable(uid);
     const { wantToVisitIds, dismissedIds } = parseSyncPayload(payload);
     const nowTs = Timestamp.fromDate(new Date());
     const nowIso = nowTs.toDate().toISOString();
@@ -130,26 +132,25 @@ async function getEventsByIds(ids) {
 
 async function applyUserStateBatch(uid, { wantToVisitIds, dismissedIds, createdAt }) {
     const db = getFirestoreInstance();
-    const batch = db.batch();
     const hasWrites = wantToVisitIds.length > 0 || dismissedIds.length > 0;
 
     if (!hasWrites) return;
+    await db.runTransaction(async tx => {
+        await assertUserWritableInTx(tx, uid);
+        for (const eventId of wantToVisitIds) {
+            const wantRef = userEventCollection(uid, "events_want_to_visit").doc(eventId);
+            const dismissedRef = userEventCollection(uid, "events_dismissed").doc(eventId);
+            tx.set(wantRef, { createdAt }, { merge: true });
+            tx.delete(dismissedRef);
+        }
 
-    for (const eventId of wantToVisitIds) {
-        const wantRef = userEventCollection(uid, "events_want_to_visit").doc(eventId);
-        const dismissedRef = userEventCollection(uid, "events_dismissed").doc(eventId);
-        batch.set(wantRef, { createdAt }, { merge: true });
-        batch.delete(dismissedRef);
-    }
-
-    for (const eventId of dismissedIds) {
-        const dismissedRef = userEventCollection(uid, "events_dismissed").doc(eventId);
-        const wantRef = userEventCollection(uid, "events_want_to_visit").doc(eventId);
-        batch.set(dismissedRef, { createdAt }, { merge: true });
-        batch.delete(wantRef);
-    }
-
-    await batch.commit();
+        for (const eventId of dismissedIds) {
+            const dismissedRef = userEventCollection(uid, "events_dismissed").doc(eventId);
+            const wantRef = userEventCollection(uid, "events_want_to_visit").doc(eventId);
+            tx.set(dismissedRef, { createdAt }, { merge: true });
+            tx.delete(wantRef);
+        }
+    });
 }
 
 function userEventCollection(uid, collectionName) {

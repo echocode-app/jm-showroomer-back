@@ -313,12 +313,17 @@ paths:
     delete:
       tags: [Users]
       summary: Delete current user (soft-delete)
+      description: |
+        Ownership-based BLOCK DELETE semantics.
+        Deletion is blocked when the user still owns active business entities.
+        Endpoint is idempotent and may return `Account already deleted` or
+        `Account deletion in progress` under concurrent repeated calls.
       operationId: deleteMyProfile
       security:
         - bearerAuth: []
       responses:
         "200":
-          description: User deleted (idempotent)
+          description: User deleted / already deleted / deletion in progress (idempotent)
           content:
             application/json:
               schema:
@@ -343,7 +348,7 @@ paths:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "409":
-          description: Delete blocked (active assets, USER_DELETE_BLOCKED)
+          description: Delete blocked by owned business entities (USER_DELETE_BLOCKED)
           content:
             application/json:
               schema:

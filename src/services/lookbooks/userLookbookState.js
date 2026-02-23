@@ -1,6 +1,7 @@
 import { Timestamp } from "firebase-admin/firestore";
 import { getFirestoreInstance } from "../../config/firebase.js";
 import { notFound } from "../../core/error.js";
+import { assertUserWritableInTx } from "../users/writeGuardService.js";
 import { getLookbooksCollection } from "./firestoreQuery.js";
 import { parseCollectionLimit } from "./parse.js";
 import { normalizeLookbook } from "./response.js";
@@ -8,15 +9,29 @@ import { normalizeLookbook } from "./response.js";
 const IDS_CHUNK = 100;
 
 export async function favoriteLookbook(lookbookId, uid) {
-    await assertLookbookPublished(lookbookId);
-
-    await userFavoritesCollection(uid)
-        .doc(lookbookId)
-        .set({ createdAt: Timestamp.fromDate(new Date()) }, { merge: true });
+    const db = getFirestoreInstance();
+    const now = Timestamp.fromDate(new Date());
+    const ref = userFavoritesCollection(uid).doc(lookbookId);
+    await db.runTransaction(async tx => {
+        await assertUserWritableInTx(tx, uid);
+        const lookbookSnap = await tx.get(getLookbooksCollection().doc(lookbookId));
+        const lookbook = lookbookSnap.exists
+            ? normalizeLookbook({ id: lookbookSnap.id, ...lookbookSnap.data() })
+            : null;
+        if (!lookbook || lookbook.published !== true) {
+            throw notFound("LOOKBOOK_NOT_FOUND");
+        }
+        tx.set(ref, { createdAt: now }, { merge: true });
+    });
 }
 
 export async function unfavoriteLookbook(lookbookId, uid) {
-    await userFavoritesCollection(uid).doc(lookbookId).delete();
+    const db = getFirestoreInstance();
+    const ref = userFavoritesCollection(uid).doc(lookbookId);
+    await db.runTransaction(async tx => {
+        await assertUserWritableInTx(tx, uid);
+        tx.delete(ref);
+    });
 }
 
 export async function listFavoriteLookbooks(uid, filters = {}) {

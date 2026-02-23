@@ -1,5 +1,6 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getFirestoreInstance } from "../../config/firebase.js";
+import { assertUserWritable, assertUserWritableInTx } from "../users/writeGuardService.js";
 import { getLookbooksCollection } from "./firestoreQuery.js";
 import { parseSyncPayload } from "./parse.js";
 import { normalizeLookbook } from "./response.js";
@@ -7,6 +8,7 @@ import { normalizeLookbook } from "./response.js";
 const IDS_CHUNK = 100;
 
 export async function syncGuestLookbookFavorites(uid, payload = {}) {
+    await assertUserWritable(uid);
     const { favoriteIds } = parseSyncPayload(payload);
 
     if (favoriteIds.length === 0) {
@@ -61,7 +63,6 @@ async function applyFavoritesBatch(uid, favoriteIds) {
     if (favoriteIds.length === 0) return;
 
     const db = getFirestoreInstance();
-    const batch = db.batch();
     const createdAt = Timestamp.fromDate(new Date());
     const actorKeys = [`u:${uid}`, uid];
 
@@ -72,6 +73,7 @@ async function applyFavoritesBatch(uid, favoriteIds) {
         const legacyLikeRef = lookbookRef.collection("likes").doc(actorKeys[1]);
 
         await db.runTransaction(async tx => {
+            await assertUserWritableInTx(tx, uid);
             const lookbookSnap = await tx.get(lookbookRef);
             if (!lookbookSnap.exists) return;
 
@@ -100,13 +102,14 @@ async function applyFavoritesBatch(uid, favoriteIds) {
         });
     }
 
-    // Upsert keeps sync idempotent across repeated client retries.
-    for (const lookbookId of favoriteIds) {
-        const ref = userFavoritesCollection(uid).doc(lookbookId);
-        batch.set(ref, { createdAt }, { merge: true });
-    }
-
-    await batch.commit();
+    await db.runTransaction(async tx => {
+        await assertUserWritableInTx(tx, uid);
+        // Upsert keeps sync idempotent across repeated client retries.
+        for (const lookbookId of favoriteIds) {
+            const ref = userFavoritesCollection(uid).doc(lookbookId);
+            tx.set(ref, { createdAt }, { merge: true });
+        }
+    });
 }
 
 function userFavoritesCollection(uid) {

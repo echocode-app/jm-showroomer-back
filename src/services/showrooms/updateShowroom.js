@@ -1,6 +1,7 @@
 import { getFirestoreInstance } from "../../config/firebase.js";
 import { badRequest, forbidden } from "../../core/error.js";
 import { isCountryBlocked } from "../../constants/countries.js";
+import { assertUserWritableInTx } from "../users/writeGuardService.js";
 import { buildDiff, isSameCountry } from "./_helpers.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 import { normalizePatchData } from "./update/normalizePatch.js";
@@ -34,15 +35,21 @@ export async function updateShowroomService(id, data, user) {
 
     const db = getFirestoreInstance();
     const ref = db.collection("showrooms").doc(id);
-    const snap = await ref.get();
+    let result = null;
 
-    const showroom = snap.exists ? snap.data() : null;
-    const { diff, changedFields, historyUpdate } = buildPatchPayload(showroom, data, user);
+    await db.runTransaction(async tx => {
+        if (user?.uid) {
+            await assertUserWritableInTx(tx, user.uid);
+        }
+        const snap = await tx.get(ref);
+        const showroom = snap.exists ? snap.data() : null;
+        const { diff, changedFields, historyUpdate } = buildPatchPayload(showroom, data, user);
+        const updates = buildPersistedUpdates(diff, changedFields, historyUpdate);
+        tx.update(ref, updates);
+        result = { id, ...showroom, ...updates };
+    });
 
-    const updates = buildPersistedUpdates(diff, changedFields, historyUpdate);
-
-    await ref.update(updates);
-    return { id, ...showroom, ...updates };
+    return result;
 }
 
 /**

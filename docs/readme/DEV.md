@@ -40,11 +40,20 @@ NODE_ENV=test ./src/test/integrations/test_media.sh
 ```bash
 npm run test:prod-smoke
 ```
+```bash
+NODE_ENV=prod bash ./src/test/prod/test_prod_readonly.sh
+```
 
 ## Cleanup
 ```bash
 npm run test:cleanup:dry
 npm run test:cleanup
+
+# if DELETE /users/me is blocked by old owned entities for a reused test account:
+NODE_ENV=test node scripts/cleanup_user_blockers.js --uid <firebase-uid> --dry-run
+# NODE_ENV=test node scripts/cleanup_user_blockers.js --uid KY3vRhLtvDfwX7ijXADVjKCjqpH2 --dry-run
+NODE_ENV=test node scripts/cleanup_user_blockers.js --uid <firebase-uid>
+# NODE_ENV=test node scripts/cleanup_user_blockers.js --uid KY3vRhLtvDfwX7ijXADVjKCjqpH2
 ```
 
 ## Pre-commit checklist

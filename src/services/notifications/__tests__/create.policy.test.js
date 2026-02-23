@@ -13,7 +13,7 @@ jest.unstable_mockModule("../../push/send.js", () => ({
 
 const { createNotification } = await import("../create.js");
 
-function buildDb() {
+function buildDb({ user = { isDeleted: false } } = {}) {
     const docRef = {
         create: jest.fn().mockResolvedValue(undefined),
         set: jest.fn().mockResolvedValue(undefined),
@@ -21,9 +21,13 @@ function buildDb() {
     };
     const db = {
         collection: jest.fn(() => ({
-            doc: jest.fn(() => ({
-                collection: jest.fn(() => ({
-                    doc: jest.fn(() => docRef),
+                doc: jest.fn(() => ({
+                    get: jest.fn().mockResolvedValue({
+                        exists: Boolean(user),
+                        data: () => user,
+                    }),
+                    collection: jest.fn(() => ({
+                        doc: jest.fn(() => docRef),
                 })),
             })),
         })),
@@ -111,5 +115,33 @@ describe("notification policy gating", () => {
         });
         expect(docRef.create).toHaveBeenCalledTimes(1);
         expect(sendPushToUserMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("skips deleted target in tx mode (future tx callers safe)", async () => {
+        const { db, docRef } = buildDb({ user: { isDeleted: true } });
+        getFirestoreInstanceMock.mockReturnValue(db);
+        const tx = {
+            get: jest.fn(async ref => ref.get()),
+            set: jest.fn(),
+        };
+
+        const result = await createNotification({
+            targetUid: "owner-3",
+            actorUid: "user-3",
+            type: "SHOWROOM_FAVORITED",
+            resourceType: "showroom",
+            resourceId: "sr-3",
+            dedupeKey: "showroom:sr-3:favorited:user-3",
+            tx,
+        });
+
+        expect(result).toEqual({
+            skippedByTargetState: true,
+            created: false,
+            pushed: false,
+        });
+        expect(tx.set).not.toHaveBeenCalled();
+        expect(docRef.create).not.toHaveBeenCalled();
+        expect(sendPushToUserMock).not.toHaveBeenCalled();
     });
 });

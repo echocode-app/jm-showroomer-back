@@ -5,12 +5,16 @@ import { badRequest, forbidden, notFound } from "../../core/error.js";
 import { appendHistory, makeHistoryEntry } from "./_helpers.js";
 import { createNotification } from "../notifications/notificationService.js";
 import { NOTIFICATION_TYPES } from "../notifications/types.js";
+import { assertUserWritable, assertUserWritableInTx } from "../users/writeGuardService.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 
 /**
  * Rejects a pending showroom and stores moderation reason + audit trace.
  */
 export async function rejectShowroomService(id, reason, user) {
+    if (user?.uid) {
+        await assertUserWritable(user.uid);
+    }
     if (user?.role !== "admin") {
         throw forbidden("ACCESS_DENIED");
     }
@@ -83,6 +87,7 @@ export async function rejectShowroomService(id, reason, user) {
     // Snapshot immutable after pending:
     // pendingSnapshot is only cleared during moderation.
     await db.runTransaction(async tx => {
+        await assertUserWritableInTx(tx, user.uid);
         const snap = await tx.get(ref);
         if (!snap.exists) throw notFound("SHOWROOM_NOT_FOUND");
 

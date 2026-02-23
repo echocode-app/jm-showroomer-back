@@ -1,11 +1,10 @@
 import { ok, fail } from "../../utils/apiResponse.js";
+import { getAuthInstance } from "../../config/firebase.js";
+import { log } from "../../config/logger.js";
 import {
     makeOwnerDevUser,
-    ownerHasActiveShowrooms,
-    ownerHasLookbooks,
-    ownerHasEvents,
     getUserById,
-    softDeleteUserProfile,
+    deleteUserAccountWithBlockGuard,
 } from "../../services/users/profileService.js";
 
 /**
@@ -22,7 +21,7 @@ export async function makeOwnerDev(req, res) {
 }
 
 /**
- * Soft-deletes current account if there are no blocking owner assets.
+ * Soft-deletes current account if there are no blocking owned business entities.
  */
 export async function deleteMyProfile(req, res) {
     const userId = req.auth?.uid;
@@ -39,24 +38,30 @@ export async function deleteMyProfile(req, res) {
         return ok(res, { message: "Account already deleted" });
     }
 
-    if (user.role === "owner") {
-        const [hasShowrooms, hasLookbooks, hasEvents] = await Promise.all([
-            ownerHasActiveShowrooms(userId),
-            ownerHasLookbooks(userId),
-            ownerHasEvents(userId),
-        ]);
-
-        if (hasShowrooms || hasLookbooks || hasEvents) {
-            return fail(
-                res,
-                "USER_DELETE_BLOCKED",
-                "Delete your showrooms before deleting your account.",
-                409
-            );
-        }
+    const result = await deleteUserAccountWithBlockGuard(userId);
+    if (result.status === "not_found") {
+        return fail(res, "USER_NOT_FOUND", "User profile not found", 404);
+    }
+    if (result.status === "already_deleted") {
+        return ok(res, { message: "Account already deleted" });
+    }
+    if (result.status === "delete_in_progress") {
+        return ok(res, { message: "Account deletion in progress" });
+    }
+    if (result.status === "blocked") {
+        return fail(
+            res,
+            "USER_DELETE_BLOCKED",
+            "Resolve owned business entities before deleting your account.",
+            409
+        );
     }
 
-    await softDeleteUserProfile(userId);
+    try {
+        await getAuthInstance().revokeRefreshTokens(userId);
+    } catch (err) {
+        log.error(`USER_DELETE_REVOKE_FAILED uid=${userId}: ${err?.message || err}`);
+    }
 
     return ok(res, { message: "Account deleted" });
 }

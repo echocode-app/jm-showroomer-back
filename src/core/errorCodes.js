@@ -80,7 +80,8 @@ export const ERROR_MESSAGE = {
     SHOWROOM_SUBCATEGORY_GROUP_MISMATCH: "Subcategories require clothing group",
     USER_COUNTRY_CHANGE_BLOCKED:
         "To change country, delete your showrooms and lookbooks or create a new account",
-    USER_DELETE_BLOCKED: "Delete your showrooms before deleting your account.",
+    USER_DELETE_BLOCKED:
+        "Resolve your owned business entities before deleting your account.",
 };
 
 // getStatusForCode

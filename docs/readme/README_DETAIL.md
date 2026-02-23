@@ -49,6 +49,27 @@ Prod Swagger: https://jm-showroomer-back.onrender.com/docs/
 - country change для owner може бути заблокований якщо є активні showrooms/lookbooks/events;
 - `notificationsEnabled` — user-level opt-out для push eligibility.
 
+## `DELETE /users/me`
+
+Що робить:
+
+- запускає soft-delete поточного профілю;
+- блокує видалення, якщо користувач володіє активними бізнес-сутностями (showrooms/lookbooks/events);
+- операція ідемпотентна (`Account already deleted` при повторному виклику).
+
+Ключові інваріанти:
+
+- backend використовує delete-lock (`user.deleteLock`) на час delete flow;
+- writability інваріант для мутацій: `!isDeleted && !deleteLock`;
+- write-сервіси перевіряють інваріант у Firestore transaction (`assertUserWritableInTx`).
+
+Сценарії відповіді:
+
+- `200` — `Account deleted`
+- `200` — `Account already deleted` (idempotent)
+- `200` — `Account deletion in progress` (конкурентний повторний delete)
+- `409 USER_DELETE_BLOCKED` — є ownership blockers
+
 ---
 
 ## 3) Devices та push prerequisites
@@ -512,7 +533,7 @@ Notification policy (`MVP_MODE`):
 | `SHOWROOM_LOCKED_PENDING`             | 409  | showroom locked у pending                              |
 | `SHOWROOM_PENDING_SNAPSHOT_MISSING`   | 409  | немає snapshot для approve                             |
 | `USER_COUNTRY_CHANGE_BLOCKED`         | 409  | зміну country заборонено через активні сутності        |
-| `USER_DELETE_BLOCKED`                 | 409  | delete user заблоковано до очищення даних              |
+| `USER_DELETE_BLOCKED`                 | 409  | delete user заблоковано через owned business entities  |
 | `RATE_LIMIT_EXCEEDED`                 | 429  | перевищено rate-limit middleware                       |
 | `EVENTS_WRITE_MVP2_ONLY`              | 501  | write-endpoint події недоступний у MVP1                |
 | `NOT_IMPLEMENTED`                     | 501  | не реалізовано                                         |
