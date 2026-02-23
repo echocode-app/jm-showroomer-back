@@ -24,6 +24,11 @@ info:
       Detailed backend map: modules, dependencies, layers, responsibilities, key invariants.  
       Value: fast navigation across the codebase during development and review.  
       <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/README_BACKEND_MAP_UA.md" target="_blank" rel="noopener noreferrer">Open document</a>
+
+    - **ANALYTICS_CONTRACT.md**  
+      For Flutter + Backend: analytics ingest contract, event origins, anti-duplication rules, session/anonymous identity responsibilities.  
+      Value: safe client analytics integration without duplicating backend-generated events.  
+      <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/ANALYTICS_CONTRACT.md" target="_blank" rel="noopener noreferrer">Open document</a>
   license:
     name: UNLICENSED
     url: https://unlicense.org/
@@ -119,6 +124,8 @@ paths:
     $ref: './events.yaml#/paths/~1events~1{id}~1dismiss'
   /events/{id}/rsvp:
     $ref: './events.yaml#/paths/~1events~1{id}~1rsvp'
+  /analytics/ingest:
+    $ref: './analytics.yaml#/paths/~1analytics~1ingest'
 
 tags:
   - name: Health
@@ -158,6 +165,11 @@ tags:
     externalDocs:
       description: Backend map (UA)
       url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/README_BACKEND_MAP_UA.md
+  - name: Analytics
+    description: Client analytics ingest endpoint and backend analytics contract references.
+    externalDocs:
+      description: Analytics contract (Flutter + Backend)
+      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/ANALYTICS_CONTRACT.md
 
 components:
   securitySchemes:
@@ -180,6 +192,12 @@ components:
       $ref: './common.yaml#/components/schemas/HealthResponse'
     OAuthLoginInput:
       $ref: './auth.yaml#/components/schemas/OAuthLoginInput'
+    AnalyticsClientEventInput:
+      $ref: './analytics.yaml#/components/schemas/AnalyticsClientEventInput'
+    AnalyticsIngestInput:
+      $ref: './analytics.yaml#/components/schemas/AnalyticsIngestInput'
+    AnalyticsIngestResult:
+      $ref: './analytics.yaml#/components/schemas/AnalyticsIngestResult'
     User:
       $ref: './users.yaml#/components/schemas/User'
     CompleteOnboardingInput:

@@ -1,0 +1,137 @@
+components:
+  schemas:
+    AnalyticsClientEventInput:
+      type: object
+      required: [eventName]
+      properties:
+        eventName:
+          type: string
+          description: |
+            Analytics event name. Must be snake_case and present in backend `ANALYTICS_EVENTS` registry.
+            Unknown names are rejected with `EVENT_NAME_INVALID`.
+          example: screen_view
+        context:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: Client event context. `sessionId` should be passed here for client-originated events.
+        resource:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: Resource context for the event (e.g. type/id).
+        meta:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: Optional client metadata (for example `clientEventId`).
+    AnalyticsIngestInput:
+      type: object
+      required: [events]
+      additionalProperties: false
+      properties:
+        events:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/AnalyticsClientEventInput'
+      description: |
+        Client analytics batch payload.
+        Backend validates, canonicalizes, and stores events in `analytics_events`.
+    AnalyticsIngestResult:
+      type: object
+      required: [accepted, stored, failed]
+      properties:
+        accepted:
+          type: integer
+          minimum: 0
+          example: 3
+        stored:
+          type: integer
+          minimum: 0
+          example: 3
+        failed:
+          type: integer
+          minimum: 0
+          example: 0
+
+paths:
+  /analytics/ingest:
+    post:
+      tags: [Analytics]
+      summary: Ingest client analytics events (MVP)
+      description: |
+        Accepts a batch of client-originated analytics events.
+        Backend applies whitelist validation and builds a canonical analytics envelope before Firestore storage.
+
+        For event origin rules and client responsibilities, see `ANALYTICS_CONTRACT.md`.
+      operationId: ingestAnalyticsEvents
+      security: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: false
+          schema:
+            type: string
+          description: Optional Bearer token. If valid, backend enriches actor as authenticated user.
+        - in: header
+          name: x-anonymous-id
+          required: false
+          schema:
+            type: string
+          description: Stable anonymous id for guest analytics continuity.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyticsIngestInput'
+            examples:
+              basic:
+                value:
+                  events:
+                    - eventName: screen_view
+                      context:
+                        surface: onboarding
+                        sessionId: sess_123
+                      resource:
+                        type: screen
+                        id: onboarding_step_1
+                      meta:
+                        clientEventId: ce_1
+      responses:
+        "200":
+          description: Batch processed (best-effort storage)
+          headers:
+            x-anonymous-id:
+              description: Returned for guest flows to preserve anonymous continuity.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/AnalyticsIngestResult'
+        "400":
+          description: Invalid payload, batch size, or disallowed event name (`EVENT_NAME_INVALID`)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "500":
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+

@@ -54,6 +54,12 @@ NODE_ENV=test node scripts/cleanup_user_blockers.js --uid <firebase-uid> --dry-r
 # NODE_ENV=test node scripts/cleanup_user_blockers.js --uid KY3vRhLtvDfwX7ijXADVjKCjqpH2 --dry-run
 NODE_ENV=test node scripts/cleanup_user_blockers.js --uid <firebase-uid>
 # NODE_ENV=test node scripts/cleanup_user_blockers.js --uid KY3vRhLtvDfwX7ijXADVjKCjqpH2
+
+# users/KY3vRhLtvDfwX7ijXADVjKCjqpH2:
+# isDeleted = false
+# deletedAt = null
+# deleteLock = null
+# deleteLockAt = null
 ```
 
 ## Pre-commit checklist
