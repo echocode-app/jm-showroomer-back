@@ -4,6 +4,7 @@ import { log } from "../config/logger.js";
 import { buildAnalyticsEvent } from "../services/analytics/analyticsEventBuilder.js";
 import { record } from "../services/analytics/analyticsEventService.js";
 import { ANALYTICS_EVENTS } from "../services/analytics/eventNames.js";
+import { logDomainEvent } from "../utils/logDomainEvent.js";
 
 // oauthLogin
 export async function oauthLogin(req, res, next) {
@@ -39,6 +40,12 @@ export async function oauthLogin(req, res, next) {
             log.error(`Analytics emit failed (auth_completed): ${e?.message || e}`);
         }
 
+        logDomainEvent.info(req, {
+            domain: "auth",
+            event: "login",
+            status: "success",
+        });
+
         return ok(res, { user });
     } catch (err) {
         try {
@@ -69,6 +76,16 @@ export async function oauthLogin(req, res, next) {
         } catch (e) {
             log.error(`Analytics emit failed (auth_failed): ${e?.message || e}`);
         }
+
+        logDomainEvent.warn(req, {
+            domain: "auth",
+            event: "login",
+            status: "failed",
+            meta: {
+                code: err?.code || "AUTH_ERROR",
+            },
+        });
+
         return fail(res, err.code || "AUTH_ERROR", err.message, err.status);
     }
 }

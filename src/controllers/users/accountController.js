@@ -1,6 +1,7 @@
 import { ok, fail } from "../../utils/apiResponse.js";
 import { getAuthInstance } from "../../config/firebase.js";
 import { log } from "../../config/logger.js";
+import { logDomainEvent } from "../../utils/logDomainEvent.js";
 import {
     makeOwnerDevUser,
     getUserById,
@@ -62,6 +63,14 @@ export async function deleteMyProfile(req, res) {
     } catch (err) {
         log.error(`USER_DELETE_REVOKE_FAILED uid=${userId}: ${err?.message || err}`);
     }
+
+    logDomainEvent.info(req, {
+        domain: "user",
+        event: "delete",
+        resourceType: "user",
+        resourceId: userId,
+        status: "success",
+    });
 
     return ok(res, { message: "Account deleted" });
 }

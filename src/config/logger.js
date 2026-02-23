@@ -14,7 +14,7 @@ const devTransport = isDev
         target: "pino-pretty",
         options: {
           colorize: true,
-          singleLine: true,
+          singleLine: false,
           translateTime: "SYS:standard",
           ignore: "pid,hostname",
         },
