@@ -2,6 +2,11 @@ import { log as baseLogger } from "../config/logger.js";
 import { isCatalogEvent } from "./domainEventCatalog.js";
 import { isDomainStatus } from "./domainStatusEnum.js";
 
+// Canonical domain log helper used by controllers/middleware.
+// Required fields: domain + event.
+// Governance: catalog/status validation + meta sanitization.
+// Dev throws on taxonomy/schema drift; prod emits safe fallback logs.
+// `errorRef.__domainLogged` is marked to prevent duplicate domain logs in error middleware.
 const META_MAX_BYTES = 1024;
 const META_MAX_DEPTH = 2;
 const REDACTED_META_KEYS = new Set([
@@ -172,6 +177,7 @@ export function logDomainEvent(req, eventData, level = "info", errorRef) {
 
   const invalidFields = getInvalidSchemaFields({ domain, event });
   if (invalidFields.length > 0) {
+    // Dev should fail fast so event taxonomy drift is fixed at code review time.
     if (process.env.NODE_ENV === "dev") {
       throw new Error("Invalid domain log schema");
     }
@@ -190,6 +196,7 @@ export function logDomainEvent(req, eventData, level = "info", errorRef) {
   }
 
   if (!isDomainStatus(status)) {
+    // Status is optional, but when present it must be from the controlled enum.
     if (process.env.NODE_ENV === "dev") {
       throw new Error("Invalid domain status");
     }
@@ -210,6 +217,7 @@ export function logDomainEvent(req, eventData, level = "info", errorRef) {
   });
 
   if (process.env.NODE_ENV === "dev") {
+    // Cosmetic message is dev-only; production keeps structured payload-only emission.
     targetLogger[logLevel](payload, buildDomainLogMessage(domain, event, status));
   } else {
     targetLogger[logLevel](payload);

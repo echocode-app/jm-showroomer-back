@@ -710,3 +710,85 @@ Notification policy (`MVP_MODE`):
 | POST   | `/admin/showrooms/{id}/approve`                 | approve showroom           |
 | POST   | `/admin/showrooms/{id}/reject`                  | reject showroom            |
 | DELETE | `/admin/showrooms/{id}`                         | admin soft delete showroom |
+
+---
+
+## 17) Logging Architecture
+
+### Domain log schema (canonical)
+
+Backend uses a structured domain-log helper (`src/utils/logDomainEvent.js`) with canonical fields:
+
+- `requestId` (auto from pino-http request context)
+- `actorId` (auto if auth user or anonymous header is available)
+- `domain` (required)
+- `event` (required)
+- `resourceType` / `resourceId` (optional)
+- `status` (optional, but enforced if present)
+- `meta` (optional, sanitized)
+
+### Domains / events / statuses governance
+
+- Domain-event taxonomy is centralized in `src/utils/domainEventCatalog.js`.
+- Allowed statuses are centralized in `src/utils/domainStatusEnum.js`.
+- In `NODE_ENV=dev` invalid schema/catalog/status throws immediately.
+- In production invalid schema/catalog/status emits a safe fallback error log (`invalid_schema/*`) instead of crashing request flow.
+
+### Error classification and log levels
+
+- `src/utils/errorClassifier.js` maps errors into:
+  - `domain_validation` -> `warn`
+  - `business_blocked` -> `warn`
+  - `infra` -> `error`
+  - `unknown` -> `error`
+- Controllers use this mapping for domain failure logs (e.g. auth/showroom failures).
+
+### System-level logging behavior
+
+- `rate limit` is logged in rate-limit middleware as `system.rate_limit` (`blocked`).
+- `INDEX_NOT_READY` is logged centrally in error middleware as `system.index_not_ready` (`infra`).
+- Error middleware respects `err.__domainLogged` to avoid duplicate domain logs.
+
+### Meta governance / privacy
+
+- `meta` removes PII keys (`email`, `phone`, `token`, `idToken`, `authorization`, `cookie`, `fcmToken`)
+- Arrays are removed from `meta`
+- Nested depth is capped
+- Serialized `meta` size is capped (~1KB) with truncation fallback
+- Sync logs store counts only (no ID arrays)
+
+### Dev vs Prod differences (logging only)
+
+- Dev: pino-pretty output is human-readable; domain logs include a cosmetic `msg` (e.g. `auth.login (failed)`).
+- Prod: structured JSON remains the source of truth; domain helper emits payload-only structured fields.
+
+### Favorite toggle debounce (logging-only)
+
+- Rapid favorite/unfavorite toggles for the same `actor + entity` within `<300ms` suppress only domain log emission.
+- Business logic and API responses are not affected.
+
+---
+
+## 18) Observability Guarantees
+
+- Single domain log per state transition in covered flows (duplicate guard via `__domainLogged`)
+- No domain logs emitted inside Firestore transaction callbacks (controllers/middleware emit post-service)
+- No PII in domain-log `meta`
+- Sync domain logs contain counts only
+- Read flows (list/detail/suggestions/counters) do not emit domain logs
+- Error severity mapping is semantic (`warn` for validation/blocked, `error` for infra)
+- API responses, error codes, analytics, middleware order, and pino config are unchanged by logging layers
+
+---
+
+## 19) Flutter Integration Guarantees (Logging)
+
+Logging changes are non-contractual and must not require Flutter-side changes.
+
+- Response payload shapes are unchanged
+- Error codes/messages remain backend-owned and unchanged
+- No additional request headers are required for logging
+- Cursor behavior and paging rules are unchanged
+- Rate-limit response behavior is unchanged
+- `INDEX_NOT_READY` remains a stable backend error (503 path) and should still be handled as retry-friendly UX
+- Nearby search contract (`nearLat/nearLng/nearRadiusKm`) is unchanged by logging work

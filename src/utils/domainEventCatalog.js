@@ -1,3 +1,6 @@
+// Centralized domain-event taxonomy for structured logs.
+// Extend this list before emitting a new domain/event pair.
+// `logDomainEvent` enforces membership (dev throw / prod fallback log).
 export const DOMAIN_EVENTS = {
   auth: ["login"],
   user: ["delete"],
@@ -14,4 +17,3 @@ export function isCatalogEvent(domain, event) {
   const allowed = DOMAIN_EVENTS[domain];
   return Array.isArray(allowed) && allowed.includes(event);
 }
-

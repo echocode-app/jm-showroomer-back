@@ -72,6 +72,13 @@ export async function rejectShowroom(req, res, next) {
 export async function deleteShowroomAdmin(req, res, next) {
     try {
         const showroom = await deleteShowroomService(req.params.id, req.user);
+        logDomainEvent.info(req, {
+            domain: "showroom",
+            event: "delete",
+            resourceType: "showroom",
+            resourceId: showroom?.id ?? req.params.id,
+            status: "success",
+        });
         return ok(res, { showroom });
     } catch (err) {
         next(err);

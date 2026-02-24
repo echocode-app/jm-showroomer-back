@@ -23,6 +23,13 @@ export async function createLookbook(req, res, next) {
     try {
         const actor = resolveActorIdentity(req);
         const lookbook = await createLookbookService(req.body ?? {}, actor);
+        logDomainEvent.info(req, {
+            domain: "lookbook",
+            event: "create",
+            resourceType: "lookbook",
+            resourceId: lookbook?.id,
+            status: "success",
+        });
         attachAnonymousIdHeader(res, actor);
         return created(res, { lookbook: { ...lookbook, likedByMe: false } });
     } catch (err) {

@@ -1,3 +1,5 @@
+// Logging-only debounce for rapid favorite/unfavorite toggles.
+// This never blocks business writes; it only suppresses noisy duplicate log emissions.
 const TOGGLE_DEBOUNCE_MS = 300;
 const toggleCache = new Map();
 

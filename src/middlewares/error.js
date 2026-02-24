@@ -3,6 +3,8 @@ import { getMessageForCode, getStatusForCode } from "../core/errorCodes.js";
 import { logDomainEvent } from "../utils/logDomainEvent.js";
 import { classifyError } from "../utils/errorClassifier.js";
 
+// `INDEX_NOT_READY` is logged centrally here to keep service errors response-focused.
+// Duplicate guard uses `err.__domainLogged` so a controller/helper-emitted domain log wins.
 function inferIndexCollection(req, err) {
   const explicit = err?.meta?.collection;
   if (typeof explicit === "string" && explicit.trim()) return explicit;
