@@ -9,22 +9,28 @@ components:
           description: |
             Analytics event name. Must be snake_case and present in backend `ANALYTICS_EVENTS` registry.
             Unknown names are rejected with `EVENT_NAME_INVALID`.
-          example: screen_view
+          example: showroom_view
         context:
           type: object
           nullable: true
           additionalProperties: true
-          description: Client event context. `sessionId` should be passed here for client-originated events.
+          description: |
+            Client event context. `sessionId` should be passed here for client-originated events.
+            Backend sanitizes this object (PII key removal, depth/size guardrails, array cap).
         resource:
           type: object
           nullable: true
           additionalProperties: true
-          description: Resource context for the event (e.g. type/id).
+          description: |
+            Resource context for the event (e.g. type/id).
+            Backend sanitizes `resource.attributes` if present.
         meta:
           type: object
           nullable: true
           additionalProperties: true
-          description: Optional client metadata (for example `clientEventId`).
+          description: |
+            Optional client metadata (for example `clientEventId`).
+            Backend sanitizes this object (PII key removal, depth/size guardrails, array cap).
     AnalyticsIngestInput:
       type: object
       required: [events]
@@ -39,6 +45,10 @@ components:
       description: |
         Client analytics batch payload.
         Backend validates, canonicalizes, and stores events in `analytics_events`.
+        Batch is non-breaking hardened:
+        - per-event client payload objects are sanitized
+        - arrays are capped (max 20 items)
+        - combined client payload budget is capped (~4KB per event) via truncation fallback
     AnalyticsIngestResult:
       type: object
       required: [accepted, stored, failed]
@@ -63,7 +73,13 @@ paths:
       summary: Ingest client analytics events (MVP)
       description: |
         Accepts a batch of client-originated analytics events.
-        Backend applies whitelist validation and builds a canonical analytics envelope before Firestore storage.
+        Backend applies whitelist validation, payload sanitization, and builds a canonical analytics envelope before Firestore storage.
+
+        Hardening guarantees (non-breaking):
+        - ingest does not emit domain logs (request/system logs only)
+        - analytics ingest uses a separate rate-limiter bucket (does not consume business endpoint quota)
+        - soft shape warnings may be logged for `*_view`, `*_favorite`, `*_want_to_visit` when `resource.type/id` are missing, but events are still accepted
+        - payload sanitization removes blocked PII-like keys and truncates oversized client payload sections
 
         For event origin rules and client responsibilities, see `ANALYTICS_CONTRACT.md`.
       operationId: ingestAnalyticsEvents
@@ -81,6 +97,26 @@ paths:
           schema:
             type: string
           description: Stable anonymous id for guest analytics continuity.
+      x-governance:
+        payloadSanitizer:
+          maxDepth: 2
+          maxArrayLength: 20
+          maxClientPayloadBytesPerEvent: 4096
+          blockedKeys:
+            - email
+            - phone
+            - password
+            - token
+            - idToken
+            - authorization
+            - cookie
+            - fcmToken
+            - refreshToken
+        softWarnings:
+          missingResourceIdentityForEventSuffixes:
+            - _view
+            - _favorite
+            - _want_to_visit
       requestBody:
         required: true
         content:
@@ -91,13 +127,13 @@ paths:
               basic:
                 value:
                   events:
-                    - eventName: screen_view
+                    - eventName: showroom_view
                       context:
-                        surface: onboarding
+                        surface: showroom_detail
                         sessionId: sess_123
                       resource:
-                        type: screen
-                        id: onboarding_step_1
+                        type: showroom
+                        id: sr_123
                       meta:
                         clientEventId: ce_1
       responses:
@@ -123,7 +159,7 @@ paths:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "429":
-          description: Rate limit exceeded
+          description: Rate limit exceeded (analytics-specific limiter bucket)
           content:
             application/json:
               schema:
@@ -134,4 +170,3 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
-

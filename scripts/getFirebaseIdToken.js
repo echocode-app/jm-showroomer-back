@@ -29,7 +29,3 @@ async function login() {
 }
 
 login().catch(console.error);
-
-
-// curl https://jm-showroomer-back.onrender.com/api/v1/users/me \
-//   -H "Authorization: Bearer <TOKEN>"

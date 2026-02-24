@@ -2,78 +2,90 @@
 
 [![CI](https://github.com/echocode-app/jm-showroomer-back/actions/workflows/ci.yml/badge.svg)](https://github.com/echocode-app/jm-showroomer-back/actions/workflows/ci.yml)
 
-Backend API for JM Showroomer mobile clients.
+## Project Overview
 
-## What This Service Does
-- Firebase-based authentication and role-aware access (`guest`, `user`, `owner`, `admin`)
-- Showroom lifecycle: draft -> moderation -> approved/rejected -> soft delete
-- Public catalogs: showrooms, lookbooks, events
-- Favorites/collections flows (including guest-to-auth sync where supported)
-- Validation, moderation rules, and Firestore-backed search/pagination
+Backend API for JM Showroomer mobile clients (Flutter), covering authentication, catalog browsing, showroom moderation lifecycle, collections/favorites sync, notifications, and analytics ingest.
 
-Base API path: `/api/v1`  
-API docs: `/docs` and `docs/openapi.yaml`
+Base API path: `/api/v1`
+
+## Architecture Overview
+
+- `src/core` — app bootstrap, config, error handling
+- `src/routes` — HTTP route composition
+- `src/controllers` — request/response layer
+- `src/services` — business logic and Firestore access
+- `src/middlewares` — auth, validation, rate limit, logging context
+- `src/schemas` — request validation schemas
+- `src/utils` — shared helpers (logging governance, response helpers, normalization)
+- `docs/` — modular OpenAPI + integration docs
 
 ## Tech Stack
-- Node.js (ESM), Express
-- Firebase Admin SDK (Auth, Firestore, Storage)
+
+- Node.js (ESM) + Express
+- Firebase Admin SDK (Auth / Firestore / Storage)
 - Joi validation
+- Pino / pino-http logging
 - OpenAPI 3.0 (modular YAML)
-- Bash tests (curl + jq)
+- Jest (unit) + Bash/curl integration suites
 
-## Minimal Project Map
-```
-src/
-  core/         app bootstrap + global error handling
-  routes/       endpoints
-  middlewares/  auth/roles/validation
-  controllers/  HTTP layer
-  services/     business logic + Firestore access
-  schemas/      request validation
-  test/         integration bash suites
-docs/           OpenAPI specs
-docs/readme/    integration and dev runbooks
-```
+## API Overview
 
-## Run Locally
+Main domains:
+
+- Auth (`/auth/oauth`)
+- Users / onboarding / notifications / devices (`/users/*`)
+- Showrooms (`/showrooms*`)
+- Lookbooks (`/lookbooks*`)
+- Events (`/events*`)
+- Collections sync (`/collections/*`)
+- Admin moderation (`/admin/showrooms/*`)
+- Analytics ingest (`/analytics/ingest`)
+
+Canonical OpenAPI entrypoint: `docs/openapi.yaml`
+
+## Logging & Observability (Short)
+
+- Structured request logging via `pino-http`
+- Structured domain logs with governance (`domain/event/status`, catalog + enum enforcement)
+- Duplicate protection for error flows (`err.__domainLogged`)
+- System logs for rate limit and `INDEX_NOT_READY`
+- Logging is contract-safe (does not change API responses)
+
+See: `docs/readme/README_DETAIL.md`
+
+## Analytics (Short)
+
+- Backend-generated analytics for key state transitions and views
+- Client analytics ingest via `/analytics/ingest`
+- Ingest hardening includes whitelist validation and payload sanitization
+- Analytics is best-effort and must not block business flows
+
+See: `docs/readme/ANALYTICS_CONTRACT.md`
+
+## Getting Started
+
 ```bash
-npm i
+npm install
 npm run dev
 ```
 
-## Environment Variables
-Use `.env.dev`, `.env.test`, `.env.prod` (see `.env.example`).
+Environment files:
 
-Required base keys:
-- `NODE_ENV`
-- `BASE_URL`
-- `FIREBASE_PROJECT_ID`
-- `FIREBASE_CLIENT_EMAIL`
-- `FIREBASE_PRIVATE_KEY`
-- `FIREBASE_STORAGE_BUCKET`
-- `PUSH_ENABLED` (`true` to enable FCM sends; defaults to disabled)
+- `.env.dev`
+- `.env.test`
+- `.env.prod`
 
-For integration tests:
-- `TEST_USER_TOKEN`
-- `TEST_ADMIN_TOKEN`
-- `TEST_OWNER_TOKEN_2`
+## Documentation Links
 
-## Useful Commands
-```bash
-# unit
-npm run test:unit -- --watchman=false
+- `docs/openapi.yaml` — OpenAPI spec (modular entrypoint)
+- `docs/readme/README_DETAIL.md` — detailed backend + Flutter contract
+- `docs/readme/ANALYTICS_CONTRACT.md` — analytics contract and client responsibilities
+- `docs/readme/SHOWROOMS_MVP1_SEARCH.md` — showroom search / geo / cursor rules
+- `docs/readme/DEV.md` — developer runbook (tests / release)
+- `docs/readme/DEV_POSTMAN_TESTS.md` — manual API verification scenarios
+- `docs/readme/README_UA.md` — business logic overview (UA)
+- `docs/readme/README_BACKEND_MAP_UA.md` — backend module map (UA)
 
-# core integration suites
-npm run test:smoke
-npm run test:showrooms
-npm run test:lookbooks
-npm run test:all
-```
+## License / Internal Use
 
-## Documentation Index
-- `docs/readme/README_UA.md` — simple business-level overview (UA)
-- `docs/readme/README_DETAIL.md` — Flutter integration contract
-- `docs/readme/SHOWROOMS_MVP1_SEARCH.md` — showroom search integration
-- `docs/readme/DEV.md` — developer runbook (tests/release)
-- `docs/readme/DEV_POSTMAN_TESTS.md` — manual API checks in Postman
-- `docs/readme/README_BACKEND_MAP_UA.md` — technical backend map (UA)
+UNLICENSED. Internal project use only unless explicitly approved by the repository owner.

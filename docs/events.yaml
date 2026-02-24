@@ -61,10 +61,12 @@ components:
           type: string
           format: date-time
           nullable: true
+          description: Returned as ISO string or null (never Firestore Timestamp object).
         updatedAt:
           type: string
           format: date-time
           nullable: true
+          description: Returned as ISO string or null (never Firestore Timestamp object).
     EventListItem:
       allOf:
         - $ref: '#/components/schemas/EventBase'
@@ -92,6 +94,8 @@ paths:
         Returns only published events with startsAt >= now.
         Past events are excluded from list.
         Events from blocked countries are silently excluded.
+        All event timestamps in response payloads are normalized to ISO 8601 strings
+        (or null where applicable), including `startsAt`, `endsAt`, `createdAt`, `updatedAt`.
         Authorization header is optional. If provided and valid, response includes user flag `isWantToVisit`
         and excludes dismissed events from the list.
         Guest users can keep local likes/dismiss state in app and sync after login via
@@ -169,6 +173,8 @@ paths:
                           externalUrl: https://example.com/events/evt_001
                           startsAt: "2026-03-20T10:00:00.000Z"
                           endsAt: "2026-03-20T18:00:00.000Z"
+                          createdAt: "2026-03-01T12:00:00.000Z"
+                          updatedAt: "2026-03-10T09:30:00.000Z"
                           published: true
                           coverPath: events/evt_001/cover/cover.webp
                           isWantToVisit: false
@@ -202,6 +208,7 @@ paths:
       description: |
         Public endpoint for published events.
         Past events can be opened by direct link, but are excluded from list endpoints.
+        All event timestamps are normalized to ISO 8601 strings (or null).
       operationId: getEventById
       security: []
       responses:
@@ -218,6 +225,25 @@ paths:
                         properties:
                           event:
                             $ref: '#/components/schemas/EventDetail'
+              examples:
+                detail:
+                  value:
+                    success: true
+                    data:
+                      event:
+                        id: evt_001
+                        name: Kyiv Pop-up Weekend
+                        type: pop_up
+                        country: Ukraine
+                        city: Kyiv
+                        address: Kyiv, Khreshchatyk 10
+                        cityNormalized: kyiv
+                        externalUrl: https://example.com/events/evt_001
+                        startsAt: "2026-03-20T10:00:00.000Z"
+                        endsAt: "2026-03-20T18:00:00.000Z"
+                        createdAt: "2026-03-01T12:00:00.000Z"
+                        updatedAt: "2026-03-10T09:30:00.000Z"
+                        published: true
         "404":
           description: Event not found or unpublished
           content:

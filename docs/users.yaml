@@ -808,7 +808,7 @@ paths:
                           items:
                             type: array
                             items:
-                              $ref: './showrooms.yaml#/components/schemas/Showroom'
+                              $ref: './showrooms.yaml#/components/schemas/ShowroomPublic'
                       meta:
                         type: object
                         properties:
@@ -840,6 +840,8 @@ paths:
         Max 100 ids.
         Unknown/non-approved ids are returned in `skipped`.
         Endpoint is idempotent.
+        Returning ID arrays in sync response is intentional (client merge reconciliation contract).
+        IDs are not emitted in domain logs (sync logs store counts only).
       operationId: syncGuestShowrooms
       security:
         - bearerAuth: []

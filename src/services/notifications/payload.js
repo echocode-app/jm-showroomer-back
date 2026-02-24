@@ -26,32 +26,32 @@ function resolvePushText(type, payload = {}) {
     switch (type) {
         case "SHOWROOM_APPROVED":
             return {
-                title: "Ваш шоурум схвалено",
+                title: "Your showroom was approved",
                 body: payload.showroomName || "",
             };
         case "SHOWROOM_REJECTED":
             return {
-                title: "Ваш шоурум відхилено",
+                title: "Your showroom was rejected",
                 body: payload.showroomName || "",
             };
         case "SHOWROOM_FAVORITED":
             return {
-                title: "Новий підписник шоуруму",
+                title: "New showroom follower",
                 body: payload.showroomName || "",
             };
         case "LOOKBOOK_FAVORITED":
             return {
-                title: "Ваш лукбук сподобався",
+                title: "Your lookbook was liked",
                 body: payload.lookbookName || "",
             };
         case "EVENT_WANT_TO_VISIT":
             return {
-                title: "Хтось зацікавився івентом",
+                title: "Someone is interested in your event",
                 body: payload.eventName || "",
             };
         default:
             return {
-                title: "Нове сповіщення",
+                title: "New notification",
                 body: "",
             };
     }

@@ -132,6 +132,55 @@ Backend phase note:
 - Analytics failures must not block UI flows.
 - Malformed payloads / disallowed event names are rejected by backend with `4xx`.
 - Storage writes are best-effort; analytics persistence failures must not block business behavior.
+- `/analytics/ingest` uses a separate rate-limiter bucket and does not consume business endpoint quota.
+
+## Client Payload Governance (Backend Sanitizer)
+
+Backend applies a non-breaking sanitizer to client-provided analytics objects:
+
+- `context`
+- `meta`
+- `resource.attributes`
+
+Rules:
+
+- Max depth: `2`
+- Max array length: `20`
+- Per-event combined client payload budget (`context + meta + resource.attributes`): ~`4KB`
+- Oversized payload sections are truncated (event is not rejected for this reason alone)
+
+Blocked keys (case-insensitive, removed at any nested level):
+
+- `email`
+- `phone`
+- `password`
+- `token`
+- `idToken`
+- `authorization`
+- `cookie`
+- `fcmToken`
+- `refreshToken`
+
+## Soft Shape Warnings (Non-blocking)
+
+For event names ending with:
+
+- `_view`
+- `_favorite`
+- `_want_to_visit`
+
+backend expects `resource.type` and `resource.id`.
+
+If missing:
+
+- backend logs a warning (`analytics_invalid_shape`)
+- event is still accepted and stored (non-breaking behavior)
+
+## Logging / Observability Guarantees (Analytics Ingest)
+
+- `/analytics/ingest` does **not** emit domain logs
+- request-level logs still apply (pino/pino-http)
+- analytics storage failures are logged with request correlation when ingest is called over HTTP
 
 ## 4. Anti-Storm Policy
 

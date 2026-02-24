@@ -3,6 +3,14 @@ import { forbidden, notFound } from "../../core/error.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 import { normalizeShowroomForResponse } from "./response.js";
 
+function isPrivilegedViewer(showroom, user) {
+    return Boolean(
+        showroom &&
+        user &&
+        (user.role === "admin" || user.uid === showroom.ownerUid)
+    );
+}
+
 // getShowroomByIdService
 export async function getShowroomByIdService(id, user = null) {
     if (useDevMock) {
@@ -23,7 +31,11 @@ export async function getShowroomByIdService(id, user = null) {
             throw forbidden("ACCESS_DENIED");
         }
 
-        return normalizeShowroomForResponse(showroom);
+        return normalizeShowroomForResponse(showroom, {
+            includeInternal: isPrivilegedViewer(showroom, user),
+            includeGeoCoords: isPrivilegedViewer(showroom, user),
+            includePhone: isPrivilegedViewer(showroom, user),
+        });
     }
 
     const db = getFirestoreInstance();
@@ -46,5 +58,11 @@ export async function getShowroomByIdService(id, user = null) {
         throw forbidden("ACCESS_DENIED");
     }
 
-    return normalizeShowroomForResponse({ id: doc.id, ...showroom });
+    const payload = { id: doc.id, ...showroom };
+    const privileged = isPrivilegedViewer(payload, user);
+    return normalizeShowroomForResponse(payload, {
+        includeInternal: privileged,
+        includeGeoCoords: privileged,
+        includePhone: privileged,
+    });
 }

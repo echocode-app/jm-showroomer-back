@@ -30,6 +30,9 @@
 - `subcategories`
 - `geohashPrefix`
 - `geohashPrefixes`
+- `nearLat`
+- `nearLng`
+- `nearRadiusKm`
 
 ---
 
@@ -51,6 +54,12 @@
 ## 3.4 Geohash mode
 - `geohashPrefix` або `geohashPrefixes`.
 - Для multi-prefix режиму backend може вимикати cursor paging (`paging=disabled`).
+
+## 3.5 Nearby mode (approximate)
+- `nearLat + nearLng (+ nearRadiusKm)`.
+- Backend перетворює nearby params у geohash prefixes (approximate area search).
+- Це не distance-sorted search.
+- Працюють ті самі map-mode обмеження, що і для `geohashPrefix(es)`.
 
 ---
 
@@ -90,6 +99,8 @@ Flutter не повинен припускати однаковий список
 - Пошук по `geohash` використовує prefix логіку.
 - Multi-prefix режим = злиття кількох гілок, cursor може бути вимкнений.
 - `geo.cityNormalized` використовується для city filtering.
+- У базовому `fields=card` payload точні координати (`geo.coords`) не повертаються.
+- Для мапи використовуйте `fields=marker` (мінімальний payload з `geo.coords`).
 
 ---
 
@@ -142,6 +153,16 @@ GET /showrooms?geohashPrefixes=u9,ua&limit=20
 ## 10.6 Next page
 ```http
 GET /showrooms?limit=20&cursor=<opaque_cursor>
+```
+
+## 10.7 Nearby search (approx)
+```http
+GET /showrooms?nearLat=50.4501&nearLng=30.5234&nearRadiusKm=5
+```
+
+## 10.8 Marker mode (map payload)
+```http
+GET /showrooms?nearLat=50.4501&nearLng=30.5234&nearRadiusKm=5&fields=marker
 ```
 
 ---

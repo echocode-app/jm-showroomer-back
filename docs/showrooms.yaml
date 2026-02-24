@@ -52,13 +52,47 @@ components:
         placeId:
           type: string
           description: Optional place ID (non-empty when provided).
-    Showroom:
+
+    PublicContacts:
       type: object
-      required: [id, ownerUid, name, type, country, status]
+      description: Public-safe contact channels (phone is intentionally excluded).
+      properties:
+        instagram:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        website:
+          type: string
+          nullable: true
+
+    PublicGeoLocation:
+      type: object
+      description: Public geo block (no exact coordinates in baseline list/detail DTO).
+      properties:
+        city:
+          type: string
+        cityNormalized:
+          type: string
+          nullable: true
+          readOnly: true
+        country:
+          type: string
+        geohash:
+          type: string
+          nullable: true
+          readOnly: true
+
+    ShowroomPublic:
+      type: object
+      description: |
+        Public showroom DTO (whitelist-based).
+        Internal moderation/audit metadata and owner identifiers are intentionally excluded.
+        Exact coordinates are not returned in baseline public payloads.
+      required: [id, name, type, country, status]
       properties:
         id:
-          type: string
-        ownerUid:
           type: string
         name:
           type: string
@@ -88,6 +122,12 @@ components:
           type: array
           items:
             type: string
+        brandsNormalized:
+          type: array
+          items:
+            type: string
+          readOnly: true
+          description: Derived normalized brand tokens used for search/filter internals and compatibility.
         brandsMap:
           type: object
           additionalProperties:
@@ -109,78 +149,15 @@ components:
           nullable: true
           description: Compatibility field kept for API stability. Canonical source is geo.city.
         geo:
-          $ref: '#/components/schemas/GeoLocation'
+          $ref: '#/components/schemas/PublicGeoLocation'
         contacts:
-          $ref: '#/components/schemas/Contacts'
-        location:
-          $ref: '#/components/schemas/Location'
-          description: Compatibility field kept for API stability. Canonical source is geo.coords.
+          $ref: '#/components/schemas/PublicContacts'
         status:
           type: string
           enum: [draft, pending, approved, rejected, deleted]
           description: Draft → Pending → Approved/Rejected/Deleted
         editCount:
           type: integer
-        editHistory:
-          type: array
-          items:
-            type: object
-            properties:
-              action:
-                type: string
-              at:
-                type: string
-                format: date-time
-              actor:
-                type: object
-                properties:
-                  uid:
-                    type: string
-                  role:
-                    type: string
-              statusBefore:
-                type: string
-              statusAfter:
-                type: string
-              changedFields:
-                type: array
-                items:
-                  type: string
-              diff:
-                type: object
-                additionalProperties: true
-        pendingSnapshot:
-          type: object
-          nullable: true
-          description: Immutable snapshot for pending review
-          additionalProperties: true
-        deletedAt:
-          type: string
-          format: date-time
-          nullable: true
-        deletedBy:
-          type: object
-          nullable: true
-          properties:
-            uid:
-              type: string
-            role:
-              type: string
-        reviewedAt:
-          type: string
-          format: date-time
-          nullable: true
-        reviewedBy:
-          type: object
-          nullable: true
-          properties:
-            uid:
-              type: string
-            role:
-              type: string
-        reviewReason:
-          type: string
-          nullable: true
         createdAt:
           type: string
           format: date-time
@@ -190,7 +167,114 @@ components:
         submittedAt:
           type: string
           format: date-time
+          nullable: true
           readOnly: true
+
+    ShowroomPrivileged:
+      allOf:
+        - $ref: '#/components/schemas/ShowroomPublic'
+        - type: object
+          description: |
+            Owner/admin showroom DTO. Extends public showroom with internal moderation/audit fields,
+            owner identifiers, exact coordinates, and phone contact.
+          required: [ownerUid]
+          properties:
+            ownerUid:
+              type: string
+            geo:
+              $ref: '#/components/schemas/GeoLocation'
+            contacts:
+              $ref: '#/components/schemas/Contacts'
+            location:
+              $ref: '#/components/schemas/Location'
+              description: Compatibility field for owner/admin contexts. Canonical source is geo.coords.
+            editHistory:
+              type: array
+              items:
+                type: object
+                properties:
+                  action:
+                    type: string
+                  at:
+                    type: string
+                    format: date-time
+                  actor:
+                    type: object
+                    properties:
+                      uid:
+                        type: string
+                      role:
+                        type: string
+                  statusBefore:
+                    type: string
+                  statusAfter:
+                    type: string
+                  changedFields:
+                    type: array
+                    items:
+                      type: string
+                  diff:
+                    type: object
+                    additionalProperties: true
+            pendingSnapshot:
+              type: object
+              nullable: true
+              description: Immutable snapshot for pending review
+              additionalProperties: true
+            deletedAt:
+              type: string
+              format: date-time
+              nullable: true
+            deletedBy:
+              type: object
+              nullable: true
+              properties:
+                uid:
+                  type: string
+                role:
+                  type: string
+            reviewedAt:
+              type: string
+              format: date-time
+              nullable: true
+            reviewedBy:
+              type: object
+              nullable: true
+              properties:
+                uid:
+                  type: string
+                role:
+                  type: string
+            reviewReason:
+              type: string
+              nullable: true
+
+    ShowroomMarker:
+      type: object
+      description: Minimal map marker payload returned by `GET /showrooms?fields=marker`.
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          nullable: true
+        type:
+          type: string
+          nullable: true
+        category:
+          type: string
+          nullable: true
+        geo:
+          type: object
+          nullable: true
+          properties:
+            coords:
+              $ref: '#/components/schemas/GeoCoords'
+
+    Showroom:
+      allOf:
+        - $ref: '#/components/schemas/ShowroomPublic'
+      description: Backward-compatible alias to public showroom DTO.
 
     ShowroomSuggestion:
       oneOf:
@@ -426,6 +510,9 @@ paths:
         Nearby search is approximate (geohash buckets) and is not distance-sorted.
         Showrooms from blocked countries are silently excluded.
         For MVP1 clients, follow response `meta.paging` and `meta.nextCursor` as the source of truth.
+        Public baseline (`fields=card`) uses a whitelist DTO and excludes internal moderation metadata,
+        owner identifiers, exact geo coordinates, and phone contact.
+        `fields=marker` returns a minimal map payload and may include `geo.coords`.
       operationId: listShowrooms
       security: []
       parameters:
@@ -571,7 +658,9 @@ paths:
                           showrooms:
                             type: array
                             items:
-                              $ref: '#/components/schemas/Showroom'
+                              oneOf:
+                                - $ref: '#/components/schemas/ShowroomPublic'
+                                - $ref: '#/components/schemas/ShowroomMarker'
                       meta:
                         type: object
                         properties:
@@ -594,15 +683,10 @@ paths:
                     data:
                       showrooms:
                         - id: "abc123"
-                          ownerUid: "owner_001"
                           name: "Atelier Nova"
                           type: "multibrand"
                           category: "womenswear"
-                          country: "Ukraine"
-                          status: "approved"
                           geo:
-                            city: "Kyiv"
-                            country: "Ukraine"
                             coords:
                               lat: 50.4501
                               lng: 30.5234
@@ -617,7 +701,6 @@ paths:
                     data:
                       showrooms:
                         - id: "abc123"
-                          ownerUid: "owner_001"
                           name: "Atelier Nova"
                           nameNormalized: "atelier nova"
                           type: "multibrand"
@@ -633,11 +716,9 @@ paths:
                             city: "Kyiv"
                             cityNormalized: "kyiv"
                             country: "Ukraine"
-                            coords:
-                              lat: 50.4501
-                              lng: 30.5234
                             geohash: "u9yx8f7f3"
-                            placeId: "ChIJBUVa4U7P1EAR_kYBF9IxSXY"
+                          contacts:
+                            instagram: "https://instagram.com/ateliernova"
                           status: "approved"
                           createdAt: "2024-01-01T12:00:00.000Z"
                           updatedAt: "2024-01-01T12:00:00.000Z"
@@ -923,7 +1004,7 @@ paths:
                         type: object
                         properties:
                           showroom:
-                            $ref: '#/components/schemas/Showroom'
+                            $ref: '#/components/schemas/ShowroomPrivileged'
         "400":
           description: Validation error
           content:
@@ -965,7 +1046,7 @@ paths:
                         type: object
                         properties:
                           showroom:
-                            $ref: '#/components/schemas/Showroom'
+                            $ref: '#/components/schemas/ShowroomPrivileged'
         "403":
           description: Forbidden
           content:
@@ -993,6 +1074,8 @@ paths:
       description: |
         Public for approved showrooms. For non-approved, owner/admin only.
         Authorization header is optional.
+        Public viewers receive the minimized public DTO.
+        Owner/admin viewers receive a privileged DTO with moderation/audit fields and exact coordinates.
       operationId: getShowroomById
       security: []
       responses:
@@ -1008,7 +1091,9 @@ paths:
                         type: object
                         properties:
                           showroom:
-                            $ref: '#/components/schemas/Showroom'
+                            oneOf:
+                              - $ref: '#/components/schemas/ShowroomPublic'
+                              - $ref: '#/components/schemas/ShowroomPrivileged'
         "403":
           description: Access denied
           content:
@@ -1051,7 +1136,7 @@ paths:
                         type: object
                         properties:
                           showroom:
-                            $ref: '#/components/schemas/Showroom'
+                            $ref: '#/components/schemas/ShowroomPrivileged'
         "400":
           description: Validation error or not editable
           content:
@@ -1106,7 +1191,7 @@ paths:
                         type: object
                         properties:
                           showroom:
-                            $ref: '#/components/schemas/Showroom'
+                            $ref: '#/components/schemas/ShowroomPrivileged'
         "400":
           description: Not editable
           content:
@@ -1171,7 +1256,7 @@ paths:
                         type: object
                         properties:
                           showroom:
-                            $ref: '#/components/schemas/Showroom'
+                            $ref: '#/components/schemas/ShowroomPrivileged'
         "400":
           description: Validation error, incomplete, or not editable
           content:

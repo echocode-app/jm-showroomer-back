@@ -340,6 +340,8 @@ Sync behavior:
 - max IDs enforcement;
 - order-preserving dedupe;
 - `skipped` для неприйнятих ids.
+- applied/skipped ID arrays in API response are intentional (client merge reconciliation contract).
+- sync domain logs store counts only (IDs are not emitted in logs).
 
 ---
 
@@ -792,3 +794,53 @@ Logging changes are non-contractual and must not require Flutter-side changes.
 - Rate-limit response behavior is unchanged
 - `INDEX_NOT_READY` remains a stable backend error (503 path) and should still be handled as retry-friendly UX
 - Nearby search contract (`nearLat/nearLng/nearRadiusKm`) is unchanged by logging work
+
+---
+
+## 20) Analytics Ingest Hardening (Non-breaking)
+
+`POST /analytics/ingest` keeps the same response contract, but backend now applies payload governance to client-supplied objects:
+
+- sanitizer applies to `context`, `meta`, and `resource.attributes`
+- PII-like keys are removed (for example `email`, `phone`, `token`, `authorization`, `cookie`, `fcmToken`)
+- max nested depth = `2`
+- arrays are allowed but capped to `20` items
+- per-event client payload budget (`context + meta + resource.attributes`) is capped at ~`4KB`
+- oversized client sections are truncated instead of rejecting the request
+
+Additional ingest guarantees:
+
+- `/analytics/ingest` uses a dedicated rate-limiter bucket (separate from business endpoints)
+- ingest does **not** emit domain logs (request/system logs only)
+- for `*_view`, `*_favorite`, `*_want_to_visit`, missing `resource.type/id` only emits a soft warning log (`analytics_invalid_shape`) and remains non-breaking
+
+---
+
+## 21) Contract Freeze Hardening Notes
+
+### Events timestamps
+
+Public events responses normalize all event timestamps to ISO strings (or `null`):
+
+- `startsAt`
+- `endsAt`
+- `createdAt`
+- `updatedAt`
+
+Firestore timestamp objects (`{ _seconds, _nanoseconds }`) are not part of the public API contract.
+
+### Showrooms public DTO minimization
+
+Public showroom payloads are whitelist-based and intentionally exclude internal fields:
+
+- no `ownerUid`
+- no `editHistory`
+- no `pendingSnapshot`
+- no moderation actor metadata (`reviewedBy`, `deletedBy`, etc.)
+- no exact `geo.coords` in baseline public card/detail payloads
+- no `contacts.phone` in public baseline payloads
+
+Intentional exceptions:
+
+- `GET /showrooms?fields=marker` returns minimal marker DTO with `geo.coords` for map rendering
+- owner/admin showroom detail responses include privileged fields

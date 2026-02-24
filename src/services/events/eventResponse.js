@@ -22,6 +22,18 @@ export function compareByStartsAtAsc(a, b) {
     return String(a.id).localeCompare(String(b.id));
 }
 
+function normalizeTimestamp(value) {
+    if (!value) return null;
+    if (typeof value === "string") return toIsoString(value);
+    if (value instanceof Date) return value.toISOString();
+    if (value instanceof Timestamp) return value.toDate().toISOString();
+    if (typeof value?.toDate === "function") return value.toDate().toISOString();
+    if (typeof value?._seconds === "number") {
+        return new Date(value._seconds * 1000).toISOString();
+    }
+    return null;
+}
+
 export function buildEventResponse(event, options = {}) {
     const wantIds = options.wantIds ?? null;
     const dismissedIds = options.dismissedIds ?? null;
@@ -30,8 +42,10 @@ export function buildEventResponse(event, options = {}) {
     const response = {
         ...event,
         // Normalize temporal fields to a stable API shape.
-        startsAt: toIsoString(event.startsAt),
-        endsAt: toIsoString(event.endsAt),
+        startsAt: normalizeTimestamp(event.startsAt),
+        endsAt: normalizeTimestamp(event.endsAt),
+        createdAt: normalizeTimestamp(event.createdAt),
+        updatedAt: normalizeTimestamp(event.updatedAt),
     };
 
     if (wantIds) {
