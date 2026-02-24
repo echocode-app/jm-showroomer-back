@@ -43,15 +43,14 @@ app.use(
 app.use("/api/v1/analytics/ingest", analyticsLimiter);
 app.use(rateLimiter);
 
-// Input sanitization
-app.use(sanitizeInput);
-
 // middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(sanitizeInput);
 app.use(cors({
   origin: CONFIG.allowedOrigins || "*",
   credentials: true,
 }));
-app.use(express.json());
 app.use(requestLogContextMiddleware);
 
 // API
