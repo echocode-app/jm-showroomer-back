@@ -2,6 +2,10 @@
 // Contract note: eventId/timestamps are server-generated; schema versions are pinned for MVP1.
 import { randomUUID } from "node:crypto";
 import { validateEventName } from "./analyticsValidator.js";
+import {
+    applyAnalyticsEventPayloadBudget,
+    sanitizeAnalyticsClientObject,
+} from "./analyticsPayloadSanitizer.js";
 
 export function buildAnalyticsEvent({
     eventName,
@@ -15,9 +19,20 @@ export function buildAnalyticsEvent({
     const normalizedSource = source === "server" ? "server" : "client";
     const normalizedEventName = validateEventName(eventName);
     const actorFields = normalizeActor(actor);
-    const normalizedContext = normalizeObject(context);
-    const normalizedMeta = normalizeObject(meta);
+    let normalizedContext = sanitizeAnalyticsClientObject(normalizeObject(context));
+    let normalizedMeta = sanitizeAnalyticsClientObject(normalizeObject(meta));
     const normalizedResource = normalizeResource(resource);
+    normalizedResource.attributes = sanitizeAnalyticsClientObject(normalizedResource.attributes);
+
+    ({
+        context: normalizedContext,
+        meta: normalizedMeta,
+        resourceAttributes: normalizedResource.attributes,
+    } = applyAnalyticsEventPayloadBudget({
+        context: normalizedContext,
+        meta: normalizedMeta,
+        resourceAttributes: normalizedResource.attributes,
+    }));
 
     const sessionId = normalizeString(normalizedContext.sessionId)
         ?? normalizeString(normalizedMeta.sessionId);

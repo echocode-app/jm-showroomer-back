@@ -7,7 +7,8 @@ import { validateAnalyticsIngestPayload } from "../services/analytics/analyticsV
 export async function ingestAnalyticsEvents(req, res, next) {
     try {
         const actor = resolveActorIdentity(req);
-        const { events } = validateAnalyticsIngestPayload(req.body ?? {});
+        const requestLogger = req?.log;
+        const { events } = validateAnalyticsIngestPayload(req.body ?? {}, { logger: requestLogger });
 
         const accountState = resolveAccountState(req.user);
         const eventDrafts = events.map(item =>
@@ -24,7 +25,7 @@ export async function ingestAnalyticsEvents(req, res, next) {
             })
         );
 
-        const result = await recordBatch(eventDrafts);
+        const result = await recordBatch(eventDrafts, { logger: requestLogger });
         attachAnonymousIdHeader(res, actor);
         return ok(res, result);
     } catch (err) {
@@ -38,4 +39,3 @@ function resolveAccountState(user) {
     if (user.deleteLock === true) return "delete_locked";
     return "active";
 }
-

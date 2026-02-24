@@ -31,5 +31,31 @@ describe("analyticsEventBuilder", () => {
 
         expect(event.user.actorId.startsWith("a:")).toBe(true);
     });
-});
 
+    it("sanitizes client-provided payload objects", () => {
+        const event = buildAnalyticsEvent({
+            eventName: ANALYTICS_EVENTS.SHOWROOM_VIEW,
+            source: "client",
+            context: {
+                email: "pii@example.com",
+                nested: { authorization: "secret", keep: true },
+            },
+            resource: {
+                type: "showroom",
+                id: "s1",
+                attributes: {
+                    items: Array.from({ length: 25 }, (_, i) => i),
+                },
+            },
+            meta: {
+                idToken: "secret",
+                producer: "mobile_app",
+            },
+        });
+
+        expect(event.context.email).toBeUndefined();
+        expect(event.context.nested).toEqual({ keep: true });
+        expect(event.resource.attributes.items).toHaveLength(20);
+        expect(event.meta.idToken).toBeUndefined();
+    });
+});

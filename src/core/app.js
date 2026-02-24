@@ -5,7 +5,7 @@ import pinoHttp from "pino-http";
 import routes from "../routes/index.js";
 import { errorHandler } from "../middlewares/error.js";
 import { requestLogContextMiddleware } from "../middlewares/requestLogContext.js";
-import { rateLimiter, sanitizeInput } from "../middlewares/rateLimit.js";
+import { analyticsLimiter, rateLimiter, sanitizeInput } from "../middlewares/rateLimit.js";
 import { CONFIG } from "../config/index.js";
 import { log } from "../config/logger.js";
 import { buildPinoHttpConfig } from "../config/pinoHttp.js";
@@ -40,6 +40,7 @@ app.use(
 );
 
 // Rate limiting (100 requests per 15 minutes)
+app.use("/api/v1/analytics/ingest", analyticsLimiter);
 app.use(rateLimiter);
 
 // Input sanitization

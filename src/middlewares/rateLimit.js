@@ -11,41 +11,69 @@ const RATE_LIMITS = {
     test: { windowMs: 5 * 60 * 1000, max: 2000 },
     prod: { windowMs: DEFAULT_WINDOW_MS, max: 300 },
 };
+const ANALYTICS_RATE_LIMITS = {
+    dev: { windowMs: 5 * 60 * 1000, max: 5000 },
+    test: { windowMs: 5 * 60 * 1000, max: 5000 },
+    prod: { windowMs: 5 * 60 * 1000, max: 2000 },
+};
 
 const { windowMs, max } = RATE_LIMITS[ENV] || {
     windowMs: DEFAULT_WINDOW_MS,
     max: DEFAULT_MAX,
 };
+const analyticsLimits = ANALYTICS_RATE_LIMITS[ENV] || {
+    windowMs: 5 * 60 * 1000,
+    max: 2000,
+};
 
-const rateLimiter = rateLimit({
+function isAnalyticsIngestPath(req) {
+    const path = String(req?.originalUrl || req?.url || "");
+    return path.startsWith("/api/v1/analytics/ingest");
+}
+
+function buildLimiter({ windowMs, max, skip }) {
+    return rateLimit({
+        windowMs,
+        max,
+        skip,
+        message: {
+            success: false,
+            error: {
+                code: "RATE_LIMIT_EXCEEDED",
+                message: "Too many requests, please try again later",
+            },
+        },
+        standardHeaders: true,
+        legacyHeaders: false,
+        handler: (req, res, next, options) => {
+            const { level } = classifyError({ code: "RATE_LIMIT_EXCEEDED", status: 429 });
+            logDomainEvent(req, {
+                domain: "system",
+                event: "rate_limit",
+                status: "blocked",
+                meta: {
+                    route: req.baseUrl ? `${req.baseUrl}${req.path || ""}` : (req.path || req.url),
+                    limit: `${max}/${windowMs}ms`,
+                },
+            }, level);
+            res.status(429).json(options.message);
+        },
+    });
+}
+
+const analyticsLimiter = buildLimiter({
+    windowMs: analyticsLimits.windowMs,
+    max: analyticsLimits.max,
+});
+
+const rateLimiter = buildLimiter({
     windowMs,
     max,
-    message: {
-        success: false,
-        error: {
-            code: "RATE_LIMIT_EXCEEDED",
-            message: "Too many requests, please try again later",
-        },
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
-    handler: (req, res, next, options) => {
-        const { level } = classifyError({ code: "RATE_LIMIT_EXCEEDED", status: 429 });
-        logDomainEvent(req, {
-            domain: "system",
-            event: "rate_limit",
-            status: "blocked",
-            meta: {
-                route: req.baseUrl ? `${req.baseUrl}${req.path || ""}` : (req.path || req.url),
-                limit: `${max}/${windowMs}ms`,
-            },
-        }, level);
-        res.status(429).json(options.message);
-    },
+    skip: isAnalyticsIngestPath,
 });
 
 // Export rateLimiter for direct use
-export { rateLimiter };
+export { analyticsLimiter, rateLimiter };
 
 // Keep old function signature for backwards compatibility
 export function createRateLimiter() {

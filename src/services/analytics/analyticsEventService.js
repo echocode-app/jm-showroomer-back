@@ -3,7 +3,8 @@ import { log } from "../../config/logger.js";
 
 const COLLECTION_NAME = "analytics_events";
 
-export async function record(eventDraft) {
+export async function record(eventDraft, options = {}) {
+    const logger = options?.logger ?? log;
     try {
         if (!eventDraft || typeof eventDraft !== "object") return { ok: false };
 
@@ -31,20 +32,23 @@ export async function record(eventDraft) {
 
         return { ok: true, eventId };
     } catch (err) {
-        log.error(`analytics.record failed: ${err?.message || err}`);
+        logger.error(`analytics.record failed: ${err?.message || err}`);
         return { ok: false };
     }
 }
 
-export async function recordBatch(eventDrafts = []) {
+export async function recordBatch(eventDrafts = [], options = {}) {
+    const logger = options?.logger ?? log;
     try {
         const drafts = Array.isArray(eventDrafts) ? eventDrafts : [];
-        log.info(`analytics.ingest batch_size=${drafts.length}`);
+        logger.info(`analytics.ingest batch_size=${drafts.length}`);
         if (drafts.length === 0) {
             return { accepted: 0, stored: 0, failed: 0 };
         }
 
-        const results = await Promise.allSettled(drafts.map(record));
+        const results = await Promise.allSettled(
+            drafts.map(draft => record(draft, { logger }))
+        );
         let stored = 0;
         let failed = 0;
 
@@ -55,7 +59,7 @@ export async function recordBatch(eventDrafts = []) {
             }
             failed += 1;
             if (result.status === "rejected") {
-                log.error(`analytics.recordBatch item failed: ${result.reason?.message || result.reason}`);
+                logger.error(`analytics.recordBatch item failed: ${result.reason?.message || result.reason}`);
             }
         });
 
@@ -65,7 +69,7 @@ export async function recordBatch(eventDrafts = []) {
             failed,
         };
     } catch (err) {
-        log.error(`analytics.recordBatch failed: ${err?.message || err}`);
+        logger.error(`analytics.recordBatch failed: ${err?.message || err}`);
         return {
             accepted: Array.isArray(eventDrafts) ? eventDrafts.length : 0,
             stored: 0,
@@ -73,4 +77,3 @@ export async function recordBatch(eventDrafts = []) {
         };
     }
 }
-
