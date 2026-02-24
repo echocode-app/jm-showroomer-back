@@ -19,8 +19,8 @@ npm run test:full
 ```bash
 NODE_ENV=test ./src/test/integrations/test_geo_paging_checks.sh
 NODE_ENV=test ./src/test/integrations/test_events_guest_sync.sh
-NODE_ENV=test ./src/test/integrations/test_media.sh
 NODE_ENV=test ./src/test/integrations/test_suggestions_and_counters.sh
+# NODE_ENV=test ./src/test/integrations/test_media.sh
 NODE_ENV=test ./src/test/integrations/test_user_delete.sh
 ```
 

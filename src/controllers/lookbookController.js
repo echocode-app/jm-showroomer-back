@@ -16,6 +16,8 @@ import { buildAnalyticsEvent } from "../services/analytics/analyticsEventBuilder
 import { record } from "../services/analytics/analyticsEventService.js";
 import { ANALYTICS_EVENTS } from "../services/analytics/eventNames.js";
 import { log } from "../config/logger.js";
+import { logDomainEvent } from "../utils/logDomainEvent.js";
+import { shouldEmitFavoriteToggleLog } from "../utils/favoriteToggleLogGuard.js";
 
 export async function createLookbook(req, res, next) {
     try {
@@ -86,6 +88,15 @@ export async function favoriteLookbook(req, res, next) {
     try {
         const actor = resolveActorIdentity(req);
         await likeLookbookService(req.params.id, actor);
+        if (shouldEmitFavoriteToggleLog(actor.actorKey, "lookbook", req.params.id)) {
+            logDomainEvent.info(req, {
+                domain: "lookbook",
+                event: "favorite",
+                resourceType: "lookbook",
+                resourceId: req.params.id,
+                status: "added",
+            });
+        }
         attachAnonymousIdHeader(res, actor);
         return ok(res, { lookbookId: req.params.id, status: "favorited" });
     } catch (err) {
@@ -97,6 +108,15 @@ export async function unfavoriteLookbook(req, res, next) {
     try {
         const actor = resolveActorIdentity(req);
         await unlikeLookbookService(req.params.id, actor);
+        if (shouldEmitFavoriteToggleLog(actor.actorKey, "lookbook", req.params.id)) {
+            logDomainEvent.info(req, {
+                domain: "lookbook",
+                event: "favorite",
+                resourceType: "lookbook",
+                resourceId: req.params.id,
+                status: "removed",
+            });
+        }
         attachAnonymousIdHeader(res, actor);
         return ok(res, { lookbookId: req.params.id, status: "removed" });
     } catch (err) {
@@ -119,6 +139,13 @@ export async function deleteLookbook(req, res, next) {
     try {
         const actor = resolveActorIdentity(req);
         const result = await deleteLookbookService(req.params.id, actor);
+        logDomainEvent.info(req, {
+            domain: "lookbook",
+            event: "delete",
+            resourceType: "lookbook",
+            resourceId: result?.id ?? req.params.id,
+            status: "success",
+        });
         attachAnonymousIdHeader(res, actor);
         return ok(res, { lookbook: result });
     } catch (err) {

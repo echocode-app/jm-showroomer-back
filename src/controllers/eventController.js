@@ -13,6 +13,7 @@ import { buildAnalyticsEvent } from "../services/analytics/analyticsEventBuilder
 import { record } from "../services/analytics/analyticsEventService.js";
 import { ANALYTICS_EVENTS } from "../services/analytics/eventNames.js";
 import { log } from "../config/logger.js";
+import { logDomainEvent } from "../utils/logDomainEvent.js";
 
 export async function listEvents(req, res, next) {
     try {
@@ -63,6 +64,13 @@ export async function getEventById(req, res, next) {
 export async function markWantToVisit(req, res, next) {
     try {
         await markEventWantToVisitService(req.params.id, req.auth.uid);
+        logDomainEvent.info(req, {
+            domain: "event",
+            event: "want_to_visit",
+            resourceType: "event",
+            resourceId: req.params.id,
+            status: "added",
+        });
         return ok(res, { eventId: req.params.id, status: "want_to_visit" });
     } catch (err) {
         next(err);
@@ -72,6 +80,13 @@ export async function markWantToVisit(req, res, next) {
 export async function removeWantToVisit(req, res, next) {
     try {
         await removeEventWantToVisitService(req.params.id, req.auth.uid);
+        logDomainEvent.info(req, {
+            domain: "event",
+            event: "want_to_visit",
+            resourceType: "event",
+            resourceId: req.params.id,
+            status: "removed",
+        });
         return ok(res, { eventId: req.params.id, status: "removed" });
     } catch (err) {
         next(err);
@@ -81,6 +96,13 @@ export async function removeWantToVisit(req, res, next) {
 export async function dismissEvent(req, res, next) {
     try {
         await dismissEventService(req.params.id, req.auth.uid);
+        logDomainEvent.info(req, {
+            domain: "event",
+            event: "dismiss",
+            resourceType: "event",
+            resourceId: req.params.id,
+            status: "added",
+        });
         return ok(res, { eventId: req.params.id, status: "dismissed" });
     } catch (err) {
         next(err);
@@ -90,6 +112,13 @@ export async function dismissEvent(req, res, next) {
 export async function undismissEvent(req, res, next) {
     try {
         await undismissEventService(req.params.id, req.auth.uid);
+        logDomainEvent.info(req, {
+            domain: "event",
+            event: "dismiss",
+            resourceType: "event",
+            resourceId: req.params.id,
+            status: "removed",
+        });
         return ok(res, { eventId: req.params.id, status: "restored" });
     } catch (err) {
         next(err);

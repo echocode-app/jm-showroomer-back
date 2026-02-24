@@ -20,6 +20,7 @@ import { ANALYTICS_EVENTS } from "../services/analytics/eventNames.js";
 import { log } from "../config/logger.js";
 import { logDomainEvent } from "../utils/logDomainEvent.js";
 import { classifyError } from "../utils/errorClassifier.js";
+import { shouldEmitFavoriteToggleLog } from "../utils/favoriteToggleLogGuard.js";
 
 function logShowroomCreateFailure(req, err) {
     const { level } = classifyError(err);
@@ -30,7 +31,7 @@ function logShowroomCreateFailure(req, err) {
         meta: {
             code: err?.code || "INTERNAL_ERROR",
         },
-    }, level);
+    }, level, err);
 }
 
 function logShowroomSubmitFailure(req, err) {
@@ -44,7 +45,21 @@ function logShowroomSubmitFailure(req, err) {
         meta: {
             code: err?.code || "INTERNAL_ERROR",
         },
-    }, level);
+    }, level, err);
+}
+
+function logShowroomDeleteFailure(req, err) {
+    const { level, category } = classifyError(err);
+    logDomainEvent(req, {
+        domain: "showroom",
+        event: "delete",
+        resourceType: "showroom",
+        resourceId: req.params?.id,
+        status: category === "business_blocked" ? "blocked" : "failed",
+        meta: {
+            code: err?.code || "INTERNAL_ERROR",
+        },
+    }, level, err);
 }
 
 // CREATE
@@ -168,6 +183,16 @@ export async function getShowroomById(req, res, next) {
 export async function favoriteShowroom(req, res, next) {
     try {
         await favoriteShowroomService(req.auth.uid, req.params.id);
+        const actorId = req.auth?.uid ? `u:${req.auth.uid}` : undefined;
+        if (shouldEmitFavoriteToggleLog(actorId, "showroom", req.params.id)) {
+            logDomainEvent.info(req, {
+                domain: "showroom",
+                event: "favorite",
+                resourceType: "showroom",
+                resourceId: req.params.id,
+                status: "added",
+            });
+        }
         return ok(res, { showroomId: req.params.id, status: "favorited" });
     } catch (err) {
         next(err);
@@ -177,6 +202,16 @@ export async function favoriteShowroom(req, res, next) {
 export async function unfavoriteShowroom(req, res, next) {
     try {
         await unfavoriteShowroomService(req.auth.uid, req.params.id);
+        const actorId = req.auth?.uid ? `u:${req.auth.uid}` : undefined;
+        if (shouldEmitFavoriteToggleLog(actorId, "showroom", req.params.id)) {
+            logDomainEvent.info(req, {
+                domain: "showroom",
+                event: "favorite",
+                resourceType: "showroom",
+                resourceId: req.params.id,
+                status: "removed",
+            });
+        }
         return ok(res, { showroomId: req.params.id, status: "removed" });
     } catch (err) {
         next(err);
@@ -197,8 +232,16 @@ export async function updateShowroom(req, res, next) {
 export async function deleteShowroom(req, res, next) {
     try {
         const showroom = await deleteShowroomService(req.params.id, req.user);
+        logDomainEvent.info(req, {
+            domain: "showroom",
+            event: "delete",
+            resourceType: "showroom",
+            resourceId: showroom?.id ?? req.params.id,
+            status: "success",
+        });
         return ok(res, { showroom });
     } catch (err) {
+        logShowroomDeleteFailure(req, err);
         next(err);
     }
 }

@@ -26,7 +26,7 @@ export const errorHandler = (err, req, res, next) => {
   const requestLog = req?.log ?? log;
   const isDev = process.env.NODE_ENV === "dev";
 
-  if (code === "INDEX_NOT_READY") {
+  if (code === "INDEX_NOT_READY" && !err?.__domainLogged) {
     const { level } = classifyError({ code, status });
     logDomainEvent(req, {
       domain: "system",
@@ -35,7 +35,7 @@ export const errorHandler = (err, req, res, next) => {
       meta: {
         collection: inferIndexCollection(req, err),
       },
-    }, level);
+    }, level, err);
   }
 
   if (status >= 500) {

@@ -88,7 +88,7 @@ export async function oauthLogin(req, res, next) {
                 code: err?.code || "AUTH_ERROR",
                 category,
             },
-        }, level);
+        }, level, err);
 
         return fail(res, err.code || "AUTH_ERROR", err.message, err.status);
     }

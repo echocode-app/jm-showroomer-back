@@ -1,7 +1,6 @@
 # JM Showroomer Backend
 
 [![CI](https://github.com/echocode-app/jm-showroomer-back/actions/workflows/ci.yml/badge.svg)](https://github.com/echocode-app/jm-showroomer-back/actions/workflows/ci.yml)
-[![Smoke Tests (Manual)](https://github.com/echocode-app/jm-showroomer-back/actions/workflows/smoke.yml/badge.svg)](https://github.com/echocode-app/jm-showroomer-back/actions/workflows/smoke.yml)
 
 Backend API for JM Showroomer mobile clients.
 

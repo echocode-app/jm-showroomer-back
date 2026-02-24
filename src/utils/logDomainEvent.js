@@ -1,4 +1,6 @@
 import { log as baseLogger } from "../config/logger.js";
+import { isCatalogEvent } from "./domainEventCatalog.js";
+import { isDomainStatus } from "./domainStatusEnum.js";
 
 const META_MAX_BYTES = 1024;
 const META_MAX_DEPTH = 2;
@@ -40,6 +42,11 @@ function isPlainObject(value) {
 
 function isNonEmptyString(value) {
   return typeof value === "string" && value.trim() !== "";
+}
+
+function markDomainLogged(errorRef) {
+  if (!errorRef || typeof errorRef !== "object") return;
+  errorRef.__domainLogged = true;
 }
 
 function getInvalidSchemaFields(payload) {
@@ -103,7 +110,53 @@ function logInvalidSchema(targetLogger, req, eventData, invalidFields) {
   );
 }
 
-export function logDomainEvent(req, eventData, level = "info") {
+function logInvalidCatalog(targetLogger, req, eventData) {
+  // Direct logger call avoids recursive fallback if catalog validation itself fails.
+  targetLogger.error(
+    compactObject({
+      requestId: req?.id,
+      actorId: deriveActorId(req),
+      domain: "invalid_schema",
+      event: "invalid_event_catalog",
+      status: "failed",
+      meta: {
+        originalPayloadPresent: !!eventData,
+        originalDomain:
+          typeof eventData?.domain === "string" ? eventData.domain : undefined,
+        originalEvent:
+          typeof eventData?.event === "string" ? eventData.event : undefined,
+      },
+    })
+  );
+}
+
+function logInvalidStatus(targetLogger, req, eventData) {
+  targetLogger.error(
+    compactObject({
+      requestId: req?.id,
+      actorId: deriveActorId(req),
+      domain: "invalid_schema",
+      event: "invalid_status",
+      status: "failed",
+      meta: {
+        originalPayloadPresent: !!eventData,
+        originalDomain:
+          typeof eventData?.domain === "string" ? eventData.domain : undefined,
+        originalEvent:
+          typeof eventData?.event === "string" ? eventData.event : undefined,
+        originalStatus:
+          typeof eventData?.status === "string" ? eventData.status : undefined,
+      },
+    })
+  );
+}
+
+function buildDomainLogMessage(domain, event, status) {
+  if (!domain || !event) return "domain event";
+  return status ? `${domain}.${event} (${status})` : `${domain}.${event}`;
+}
+
+export function logDomainEvent(req, eventData, level = "info", errorRef) {
   const targetLogger = req?.log || baseLogger;
   const logLevel =
     typeof targetLogger?.[level] === "function" ? level : "info";
@@ -123,6 +176,25 @@ export function logDomainEvent(req, eventData, level = "info") {
       throw new Error("Invalid domain log schema");
     }
     logInvalidSchema(targetLogger, req, eventData, invalidFields);
+    markDomainLogged(errorRef);
+    return;
+  }
+
+  if (!isCatalogEvent(domain, event)) {
+    if (process.env.NODE_ENV === "dev") {
+      throw new Error("Invalid domain event catalog");
+    }
+    logInvalidCatalog(targetLogger, req, eventData);
+    markDomainLogged(errorRef);
+    return;
+  }
+
+  if (!isDomainStatus(status)) {
+    if (process.env.NODE_ENV === "dev") {
+      throw new Error("Invalid domain status");
+    }
+    logInvalidStatus(targetLogger, req, eventData);
+    markDomainLogged(errorRef);
     return;
   }
 
@@ -137,7 +209,12 @@ export function logDomainEvent(req, eventData, level = "info") {
     meta: sanitizeMeta(meta),
   });
 
-  targetLogger[logLevel](payload);
+  if (process.env.NODE_ENV === "dev") {
+    targetLogger[logLevel](payload, buildDomainLogMessage(domain, event, status));
+  } else {
+    targetLogger[logLevel](payload);
+  }
+  markDomainLogged(errorRef);
 }
 
 logDomainEvent.info = (req, eventData) => logDomainEvent(req, eventData, "info");
