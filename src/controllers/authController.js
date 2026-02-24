@@ -5,6 +5,7 @@ import { buildAnalyticsEvent } from "../services/analytics/analyticsEventBuilder
 import { record } from "../services/analytics/analyticsEventService.js";
 import { ANALYTICS_EVENTS } from "../services/analytics/eventNames.js";
 import { logDomainEvent } from "../utils/logDomainEvent.js";
+import { classifyError } from "../utils/errorClassifier.js";
 
 // oauthLogin
 export async function oauthLogin(req, res, next) {
@@ -77,14 +78,17 @@ export async function oauthLogin(req, res, next) {
             log.error(`Analytics emit failed (auth_failed): ${e?.message || e}`);
         }
 
-        logDomainEvent.warn(req, {
+        const { level, category } = classifyError(err);
+
+        logDomainEvent(req, {
             domain: "auth",
             event: "login",
             status: "failed",
             meta: {
                 code: err?.code || "AUTH_ERROR",
+                category,
             },
-        });
+        }, level);
 
         return fail(res, err.code || "AUTH_ERROR", err.message, err.status);
     }

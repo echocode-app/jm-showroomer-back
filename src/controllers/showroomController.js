@@ -18,6 +18,34 @@ import { buildAnalyticsEvent } from "../services/analytics/analyticsEventBuilder
 import { record } from "../services/analytics/analyticsEventService.js";
 import { ANALYTICS_EVENTS } from "../services/analytics/eventNames.js";
 import { log } from "../config/logger.js";
+import { logDomainEvent } from "../utils/logDomainEvent.js";
+import { classifyError } from "../utils/errorClassifier.js";
+
+function logShowroomCreateFailure(req, err) {
+    const { level } = classifyError(err);
+    logDomainEvent(req, {
+        domain: "showroom",
+        event: "create",
+        status: "failed",
+        meta: {
+            code: err?.code || "INTERNAL_ERROR",
+        },
+    }, level);
+}
+
+function logShowroomSubmitFailure(req, err) {
+    const { level, category } = classifyError(err);
+    logDomainEvent(req, {
+        domain: "showroom",
+        event: "submit",
+        resourceType: "showroom",
+        resourceId: req.params?.id,
+        status: category === "business_blocked" ? "blocked" : "failed",
+        meta: {
+            code: err?.code || "INTERNAL_ERROR",
+        },
+    }, level);
+}
 
 // CREATE
 export async function createShowroomController(req, res, next) {
@@ -28,8 +56,16 @@ export async function createShowroomController(req, res, next) {
             draft: draftMode,
             userCountry: req.user?.country ?? null,
         });
+        logDomainEvent.info(req, {
+            domain: "showroom",
+            event: "create",
+            resourceType: "showroom",
+            resourceId: showroom?.id,
+            status: "success",
+        });
         return ok(res, { showroom });
     } catch (err) {
+        logShowroomCreateFailure(req, err);
         next(err);
     }
 }
@@ -38,8 +74,16 @@ export async function createShowroomController(req, res, next) {
 export async function createDraftShowroomController(req, res, next) {
     try {
         const showroom = await createDraftShowroom(req.user.uid);
+        logDomainEvent.info(req, {
+            domain: "showroom",
+            event: "create",
+            resourceType: "showroom",
+            resourceId: showroom?.id,
+            status: "success",
+        });
         return ok(res, { showroom });
     } catch (err) {
+        logShowroomCreateFailure(req, err);
         next(err);
     }
 }
@@ -163,8 +207,16 @@ export async function deleteShowroom(req, res, next) {
 export async function submitShowroomForReview(req, res, next) {
     try {
         const showroom = await submitShowroomForReviewService(req.params.id, req.user);
+        logDomainEvent.info(req, {
+            domain: "showroom",
+            event: "submit",
+            resourceType: "showroom",
+            resourceId: showroom?.id ?? req.params.id,
+            status: "success",
+        });
         return ok(res, { showroom, message: "Submitted for review" });
     } catch (err) {
+        logShowroomSubmitFailure(req, err);
         next(err);
     }
 }
@@ -173,8 +225,16 @@ export async function submitShowroomForReview(req, res, next) {
 export async function submitShowroomForReviewController(req, res, next) {
     try {
         const showroom = await submitShowroomForReviewService(req.params.id, req.user);
+        logDomainEvent.info(req, {
+            domain: "showroom",
+            event: "submit",
+            resourceType: "showroom",
+            resourceId: showroom?.id ?? req.params.id,
+            status: "success",
+        });
         return ok(res, { showroom });
     } catch (err) {
+        logShowroomSubmitFailure(req, err);
         next(err);
     }
 }

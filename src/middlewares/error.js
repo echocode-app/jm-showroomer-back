@@ -1,5 +1,18 @@
 import { log } from "../config/logger.js";
 import { getMessageForCode, getStatusForCode } from "../core/errorCodes.js";
+import { logDomainEvent } from "../utils/logDomainEvent.js";
+import { classifyError } from "../utils/errorClassifier.js";
+
+function inferIndexCollection(req, err) {
+  const explicit = err?.meta?.collection;
+  if (typeof explicit === "string" && explicit.trim()) return explicit;
+
+  const url = String(req?.originalUrl || req?.url || "").toLowerCase();
+  if (url.includes("/showrooms")) return "showrooms";
+  if (url.includes("/lookbooks")) return "lookbooks";
+  if (url.includes("/events")) return "events";
+  return "unknown";
+}
 
 // errorHandler
 export const errorHandler = (err, req, res, next) => {
@@ -12,6 +25,18 @@ export const errorHandler = (err, req, res, next) => {
   const message = getMessageForCode(code, err.message || "Internal server error");
   const requestLog = req?.log ?? log;
   const isDev = process.env.NODE_ENV === "dev";
+
+  if (code === "INDEX_NOT_READY") {
+    const { level } = classifyError({ code, status });
+    logDomainEvent(req, {
+      domain: "system",
+      event: "index_not_ready",
+      status: "infra",
+      meta: {
+        collection: inferIndexCollection(req, err),
+      },
+    }, level);
+  }
 
   if (status >= 500) {
     if (isDev) {

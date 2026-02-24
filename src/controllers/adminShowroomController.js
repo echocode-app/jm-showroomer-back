@@ -6,6 +6,7 @@ import {
     getShowroomByIdService,
 } from "../services/showroomService.js";
 import { ok } from "../utils/apiResponse.js";
+import { logDomainEvent } from "../utils/logDomainEvent.js";
 
 // listShowroomsAdmin
 export async function listShowroomsAdmin(req, res, next) {
@@ -32,6 +33,13 @@ export async function approveShowroom(req, res, next) {
     try {
         await approveShowroomService(req.params.id, req.user);
         const showroom = await getShowroomByIdService(req.params.id, req.user);
+        logDomainEvent.info(req, {
+            domain: "moderation",
+            event: "approve",
+            resourceType: "showroom",
+            resourceId: req.params.id,
+            status: "success",
+        });
         return ok(res, { showroom });
     } catch (err) {
         next(err);
@@ -47,6 +55,13 @@ export async function rejectShowroom(req, res, next) {
             req.user
         );
         const showroom = await getShowroomByIdService(req.params.id, req.user);
+        logDomainEvent.info(req, {
+            domain: "moderation",
+            event: "reject",
+            resourceType: "showroom",
+            resourceId: req.params.id,
+            status: "success",
+        });
         return ok(res, { showroom });
     } catch (err) {
         next(err);

@@ -60,7 +60,7 @@ export async function suggestShowroomsService(filters = {}, user = null) {
         return { suggestions, meta: { limit: parsed.limit, q: parsed.q } };
     } catch (err) {
         if (isIndexNotReadyError(err)) {
-            throw buildDomainError("INDEX_NOT_READY");
+            throw buildDomainError("INDEX_NOT_READY", { collection: "showrooms" });
         }
         throw err;
     }

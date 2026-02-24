@@ -61,7 +61,7 @@ async function countQuery(query) {
         return snapshot.data().count ?? 0;
     } catch (err) {
         if (isIndexNotReadyError(err)) {
-            throw buildDomainError("INDEX_NOT_READY");
+            throw buildDomainError("INDEX_NOT_READY", { collection: "showrooms" });
         }
         throw err;
     }

@@ -32,7 +32,7 @@ export async function listShowroomsFirestore(parsed, user) {
         return await runDefaultMode(baseQuery, parsedWithUser, orderField, direction, applyOrdering);
     } catch (err) {
         if (isIndexNotReadyError(err)) {
-            throw buildDomainError("INDEX_NOT_READY");
+            throw buildDomainError("INDEX_NOT_READY", { collection: "showrooms" });
         }
         throw err;
     }

@@ -12,6 +12,7 @@ import {
     listFavoriteShowroomsService,
     syncGuestShowroomFavoritesService,
 } from "../services/showroomService.js";
+import { logDomainEvent } from "../utils/logDomainEvent.js";
 
 export async function listFavoriteShowrooms(req, res, next) {
     try {
@@ -53,6 +54,15 @@ export async function listFavoriteLookbooks(req, res, next) {
 export async function syncGuestShowrooms(req, res, next) {
     try {
         const result = await syncGuestShowroomFavoritesService(req.auth.uid, req.body ?? {});
+        logDomainEvent.info(req, {
+            domain: "sync",
+            event: "favorites_sync",
+            status: "success",
+            meta: {
+                acceptedCount: result?.applied?.favorites?.length ?? 0,
+                skippedCount: result?.skipped?.length ?? 0,
+            },
+        });
         return ok(res, result);
     } catch (err) {
         next(err);
@@ -62,6 +72,15 @@ export async function syncGuestShowrooms(req, res, next) {
 export async function syncGuestLookbooks(req, res, next) {
     try {
         const result = await syncGuestLookbookFavoritesService(req.auth.uid, req.body ?? {});
+        logDomainEvent.info(req, {
+            domain: "sync",
+            event: "favorites_sync",
+            status: "success",
+            meta: {
+                acceptedCount: result?.applied?.favorites?.length ?? 0,
+                skippedCount: result?.skipped?.length ?? 0,
+            },
+        });
         return ok(res, result);
     } catch (err) {
         next(err);
@@ -88,6 +107,15 @@ export async function listWantToVisitEvents(req, res, next) {
 export async function syncGuestEvents(req, res, next) {
     try {
         const result = await syncGuestEventsStateService(req.auth.uid, req.body ?? {});
+        logDomainEvent.info(req, {
+            domain: "sync",
+            event: "events_sync",
+            status: "success",
+            meta: {
+                wantToVisitCount: result?.applied?.wantToVisit?.length ?? 0,
+                dismissedCount: result?.applied?.dismissed?.length ?? 0,
+            },
+        });
         return ok(res, result);
     } catch (err) {
         next(err);

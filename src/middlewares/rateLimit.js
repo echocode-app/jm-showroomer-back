@@ -1,4 +1,6 @@
 import rateLimit from "express-rate-limit";
+import { logDomainEvent } from "../utils/logDomainEvent.js";
+import { classifyError } from "../utils/errorClassifier.js";
 
 const DEFAULT_WINDOW_MS = 15 * 60 * 1000;
 const DEFAULT_MAX = 100;
@@ -28,6 +30,16 @@ const rateLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     handler: (req, res, next, options) => {
+        const { level } = classifyError({ code: "RATE_LIMIT_EXCEEDED", status: 429 });
+        logDomainEvent(req, {
+            domain: "system",
+            event: "rate_limit",
+            status: "blocked",
+            meta: {
+                route: req.baseUrl ? `${req.baseUrl}${req.path || ""}` : (req.path || req.url),
+                limit: `${max}/${windowMs}ms`,
+            },
+        }, level);
         res.status(429).json(options.message);
     },
 });
