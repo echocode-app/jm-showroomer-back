@@ -13,6 +13,7 @@ import {
 } from "./filters.js";
 import { MAX_GEO_PREFIXES } from "./constants.js";
 import { parseList, parseType } from "./lists.js";
+import { buildNearbyGeohashPrefixes } from "./nearby.js";
 
 /**
  * Parses and normalizes explicit city filter.
@@ -39,6 +40,16 @@ function parseBrandFilter(filters) {
  * Parses geo prefix filter with hard limits.
  */
 function parseGeohashPrefixes(filters) {
+    const hasExplicitGeo =
+        filters.geohashPrefix !== undefined || filters.geohashPrefixes !== undefined;
+    const nearbyPrefixes = buildNearbyGeohashPrefixes(filters);
+    if (hasExplicitGeo && nearbyPrefixes.length > 0) {
+        throw badRequest("QUERY_INVALID");
+    }
+    if (nearbyPrefixes.length > 0) {
+        return nearbyPrefixes;
+    }
+
     const hasPrefix = filters.geohashPrefix !== undefined;
     const hasPrefixes = filters.geohashPrefixes !== undefined;
     if (hasPrefix && hasPrefixes) {

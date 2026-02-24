@@ -421,6 +421,9 @@ paths:
         Cursor is backend-owned and stable per mode. Client must only follow nextCursor.
         Map mode with multiple geohashPrefixes explicitly disables paging.
         Combining geohashPrefix(es) with q/name search is rejected.
+        nearby params (nearLat/nearLng/nearRadiusKm) are a server-side shorthand that
+        expands to geohashPrefix(es) and follow the same map-mode restrictions.
+        Nearby search is approximate (geohash buckets) and is not distance-sorted.
         Showrooms from blocked countries are silently excluded.
         For MVP1 clients, follow response `meta.paging` and `meta.nextCursor` as the source of truth.
       operationId: listShowrooms
@@ -505,6 +508,32 @@ paths:
           style: form
           explode: false
           description: Multiple geohash prefixes (paging disabled; nextCursor is null).
+        - name: nearLat
+          in: query
+          schema:
+            type: number
+            minimum: -90
+            maximum: 90
+          description: |
+            Nearby search center latitude. Must be used with nearLng.
+            Server derives geohashPrefix(es) from the center/radius.
+        - name: nearLng
+          in: query
+          schema:
+            type: number
+            minimum: -180
+            maximum: 180
+          description: Nearby search center longitude. Must be used with nearLat.
+        - name: nearRadiusKm
+          in: query
+          schema:
+            type: number
+            minimum: 0.1
+            maximum: 200
+            default: 10
+          description: |
+            Optional nearby radius (approximate) in kilometers.
+            Cannot be combined with geohashPrefix/geohashPrefixes.
         - name: status
           in: query
           schema:
@@ -616,6 +645,17 @@ paths:
                       hasMore: true
                       nextCursor: "eyJ2IjoyLCJmIjoidXBkYXRlZEF0IiwiZCI6ImRlc2MiLCJ2YWx1ZSI6IjIwMjQtMDEtMDFUMDA6MDA6MDAuMDAwWiIsImlkIjoiYWJjMTIzIn0="
                       paging: enabled
+                nearby:
+                  summary: nearby search (approx geohash area)
+                  value:
+                    success: true
+                    data:
+                      showrooms: []
+                    meta:
+                      hasMore: false
+                      nextCursor: null
+                      paging: disabled
+                      reason: multi_geohash_prefixes
         "429":
           description: Rate limit exceeded
           content:
@@ -740,6 +780,8 @@ paths:
       description: |
         Returns count of showrooms by current filters.
         q is optional. geohashPrefix(es) with q is invalid.
+        nearby params (nearLat/nearLng/nearRadiusKm) expand to geohashPrefix(es).
+        Nearby search is approximate (geohash buckets) and is not distance-sorted.
         cursor/fields/limit are not supported.
         Endpoint is intended for count-only UI (facets, badges, map overlays).
       operationId: getShowroomCounters
@@ -774,6 +816,28 @@ paths:
               type: string
           style: form
           explode: false
+        - name: nearLat
+          in: query
+          schema:
+            type: number
+            minimum: -90
+            maximum: 90
+          description: Nearby search center latitude. Must be used with nearLng.
+        - name: nearLng
+          in: query
+          schema:
+            type: number
+            minimum: -180
+            maximum: 180
+          description: Nearby search center longitude. Must be used with nearLat.
+        - name: nearRadiusKm
+          in: query
+          schema:
+            type: number
+            minimum: 0.1
+            maximum: 200
+            default: 10
+          description: Optional nearby radius (approximate) in kilometers.
       responses:
         "200":
           description: Counters
@@ -791,6 +855,15 @@ paths:
                     meta:
                       mode: no_geo
                       prefixesCount: 0
+                nearby:
+                  summary: counters near user location
+                  value:
+                    success: true
+                    data:
+                      total: 12
+                    meta:
+                      mode: multi_prefix
+                      prefixesCount: 9
         "400":
           description: Invalid query
           content:

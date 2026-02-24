@@ -13,6 +13,7 @@ import {
 } from "../../_categoryConstants.js";
 import { MAX_GEO_PREFIXES } from "./constants.js";
 import { parseList } from "./lists.js";
+import { buildNearbyGeohashPrefixes } from "./nearby.js";
 
 /**
  * Parses city/q search pair and resolves which normalized field should be used.
@@ -93,6 +94,16 @@ export function parseSubcategories(value) {
  * Parses one or multiple geohash prefixes with dedupe and constraints.
  */
 export function parseGeohashPrefixes(filters) {
+    const hasExplicitGeo =
+        filters.geohashPrefix !== undefined || filters.geohashPrefixes !== undefined;
+    const nearbyPrefixes = buildNearbyGeohashPrefixes(filters);
+    if (hasExplicitGeo && nearbyPrefixes.length > 0) {
+        throw badRequest("QUERY_INVALID");
+    }
+    if (nearbyPrefixes.length > 0) {
+        return nearbyPrefixes;
+    }
+
     const geohashPrefixes = Array.from(
         new Set([
             ...parseList(filters.geohashPrefixes),
