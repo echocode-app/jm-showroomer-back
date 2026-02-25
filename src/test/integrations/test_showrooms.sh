@@ -19,6 +19,8 @@ guard_prod_write "${BASE_URL}"
 AUTH_HEADER=(-H "$(auth_header "${TEST_USER_TOKEN}")")
 JSON_HEADER=(-H "$(json_header)")
 NOW=$(now_ns)
+SHORT_NOW="${NOW: -6}"
+SAFE_SUFFIX=$(printf '%s' "$SHORT_NOW" | tr '0-9' 'a-j')
 warn_if_prod_write "${BASE_URL}"
 
 print_section "Auth + role"
@@ -62,7 +64,7 @@ http_request "PATCH /users/profile (name)" 200 "" \
   "${BASE_URL}/users/profile"
 
 print_section "Draft flow"
-NAME_MAIN="My Showroom 01 ${NOW}"
+NAME_MAIN="My Showroom 01 ${SAFE_SUFFIX}"
 ADDRESS_MAIN="Cherkasy, Shevchenka Ave ${NOW}"
 
 http_request "POST /showrooms/draft" 200 "" \

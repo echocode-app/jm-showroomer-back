@@ -1,4 +1,5 @@
 import { getFirestoreInstance } from "../../config/firebase.js";
+import { FieldValue } from "firebase-admin/firestore";
 import { log } from "../../config/logger.js";
 import { badRequest } from "../../core/error.js";
 import { assertUserWritableInTx } from "../users/writeGuardService.js";
@@ -94,7 +95,17 @@ export async function submitShowroomForReviewService(id, user) {
         // Snapshot invariant:
         // once pendingSnapshot is built on submit, moderation must treat it as immutable source.
         const updates = buildSubmitUpdates(showroom, user, normalized, updatedAt);
-        tx.update(ref, updates);
+        assertSubmittedAtInvariant(updates);
+
+        const persistedUpdates = {
+            ...updates,
+            // Firestore commit time is the queue source-of-truth for moderation ordering.
+            submittedAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
+        };
+        assertSubmittedAtInvariant(persistedUpdates);
+
+        tx.update(ref, persistedUpdates);
         result = { id, ...showroom, ...updates };
     });
 
@@ -105,6 +116,17 @@ export async function submitShowroomForReviewService(id, user) {
     });
 
     return result;
+}
+
+function assertSubmittedAtInvariant(updates) {
+    // Pending moderation queue depends on submittedAt ordering.
+    // Fail closed if an internal refactor ever drops this field from submit updates.
+    if (!updates || updates.submittedAt === undefined || updates.submittedAt === null) {
+        const err = new Error("Pending submit requires submittedAt");
+        err.code = "INTERNAL_ERROR";
+        err.status = 500;
+        throw err;
+    }
 }
 
 async function emitShowroomSubmitForReviewAnalytics({ user, showroomId, ownerUid }) {
