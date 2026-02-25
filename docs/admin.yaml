@@ -3,53 +3,88 @@ paths:
     get:
       tags: [Admin]
       summary: List showrooms (admin)
-      description: Includes pending and deleted.
+      description: |
+        Admin showroom list.
+        Requires explicit `status` filter.
+
+        `status=pending` activates moderation queue mode:
+        - deterministic ordering by `submittedAt desc` + document id tie-breaker
+        - admin-specific queue DTO (minimal moderation payload)
+        - dedicated v3 cursor with moderation fingerprint validation
+        - only `status`, `limit`, `cursor` query params are accepted in this mode
+
+        For non-pending statuses, backend uses the shared showroom list engine and returns
+        the same nested paging envelope shape (`data.showrooms.{showrooms,meta}`).
       operationId: listShowroomsAdmin
+      externalDocs:
+        description: Flutter guide for admin pending queue cursor pagination
+        url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/ADMIN_PENDING_QUEUE_CURSOR.md
       security:
         - bearerAuth: []
       x-roles: [admin]
       parameters:
         - name: status
           in: query
+          required: true
           schema:
             type: string
+            enum: [draft, pending, approved, rejected, deleted]
+          description: Explicit admin status filter. `pending` enables moderation queue mode.
         - name: country
           in: query
           schema:
             type: string
+          description: Shared showroom list filter (non-pending admin modes).
         - name: city
           in: query
           schema:
             type: string
+          description: Shared showroom list filter (non-pending admin modes).
         - name: type
           in: query
           schema:
             type: string
+          description: Shared showroom list filter (non-pending admin modes).
         - name: availability
           in: query
           schema:
             type: string
+          description: Shared showroom list filter (non-pending admin modes).
         - name: limit
           in: query
           schema:
             type: integer
             default: 20
+            minimum: 1
+            maximum: 100
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: |
+            Opaque backend cursor from previous response.
+            In moderation queue mode (`status=pending`) backend uses a dedicated v3 moderation cursor.
       responses:
         "200":
-          description: Showrooms list
+          description: Showrooms list (nested list envelope inside `data.showrooms`)
           content:
             application/json:
               schema:
                 allOf:
                   - $ref: './common.yaml#/components/schemas/ApiSuccess'
-                  - properties:
+                  - type: object
+                    properties:
                       data:
                         type: object
                         properties:
                           showrooms:
-                            type: array
-                            items:
-                              $ref: './showrooms.yaml#/components/schemas/ShowroomPrivileged'
+                            $ref: '#/components/schemas/AdminShowroomsListEnvelope'
+        "400":
+          description: Invalid query or cursor
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
         "401":
           description: Unauthorized
           content:
@@ -58,6 +93,12 @@ paths:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "403":
           description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "503":
+          description: Required Firestore index is not ready
           content:
             application/json:
               schema:
@@ -74,24 +115,34 @@ paths:
     get:
       tags: [Admin]
       summary: Get showroom by ID (admin)
+      description: |
+        Returns privileged showroom detail for admin.
+
+        If showroom status is `pending`, backend returns a wrapper object with:
+        - `canonical` (current document state)
+        - `pendingSnapshot` (frozen moderation snapshot)
+        - `diff` (currently `null`, reserved for future server-side diff)
       operationId: getShowroomAdmin
       security:
         - bearerAuth: []
       x-roles: [admin]
       responses:
         "200":
-          description: Showroom
+          description: Showroom detail (direct privileged DTO or pending wrapper)
           content:
             application/json:
               schema:
                 allOf:
                   - $ref: './common.yaml#/components/schemas/ApiSuccess'
-                  - properties:
+                  - type: object
+                    properties:
                       data:
                         type: object
                         properties:
                           showroom:
-                            $ref: './showrooms.yaml#/components/schemas/ShowroomPrivileged'
+                            oneOf:
+                              - $ref: './showrooms.yaml#/components/schemas/ShowroomPrivileged'
+                              - $ref: '#/components/schemas/AdminPendingShowroomDetail'
         "404":
           description: Not found
           content:
@@ -112,7 +163,10 @@ paths:
                 $ref: './common.yaml#/components/schemas/ApiError'
     delete:
       tags: [Admin]
-      summary: Soft delete showroom (admin)
+      summary: Soft-delete showroom (admin)
+      description: |
+        Admin soft delete for any showroom status.
+        Returns privileged showroom payload after status is changed to `deleted`.
       operationId: deleteShowroomAdmin
       security:
         - bearerAuth: []
@@ -125,12 +179,19 @@ paths:
               schema:
                 allOf:
                   - $ref: './common.yaml#/components/schemas/ApiSuccess'
-                  - properties:
+                  - type: object
+                    properties:
                       data:
                         type: object
                         properties:
                           showroom:
                             $ref: './showrooms.yaml#/components/schemas/ShowroomPrivileged'
+        "400":
+          description: Invalid state transition
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
         "403":
           description: Forbidden
           content:
@@ -173,7 +234,8 @@ paths:
               schema:
                 allOf:
                   - $ref: './common.yaml#/components/schemas/ApiSuccess'
-                  - properties:
+                  - type: object
+                    properties:
                       data:
                         type: object
                         properties:
@@ -243,7 +305,8 @@ paths:
               schema:
                 allOf:
                   - $ref: './common.yaml#/components/schemas/ApiSuccess'
-                  - properties:
+                  - type: object
+                    properties:
                       data:
                         type: object
                         properties:
@@ -267,3 +330,105 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
+components:
+  schemas:
+    AdminPagingMeta:
+      type: object
+      description: Standard cursor pagination meta used by admin showroom list flows.
+      required: [nextCursor, hasMore, paging]
+      properties:
+        nextCursor:
+          type: string
+          nullable: true
+          description: Opaque backend cursor token (v3 in moderation queue mode; shared list cursor otherwise).
+        hasMore:
+          type: boolean
+        paging:
+          type: string
+          enum: [enabled, end, disabled]
+        reason:
+          type: string
+          nullable: true
+          description: Present only when paging is disabled for a specific mode.
+
+    AdminModerationQueueItem:
+      type: object
+      description: Admin pending moderation queue item DTO (minimal, whitelist-only).
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          nullable: true
+        type:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        ownerUid:
+          type: string
+          nullable: true
+        submittedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+        editCount:
+          type: integer
+        status:
+          type: string
+      required: [id, ownerUid, status, submittedAt, createdAt, updatedAt, editCount]
+
+    AdminShowroomsListItem:
+      oneOf:
+        - $ref: '#/components/schemas/AdminModerationQueueItem'
+        - $ref: './showrooms.yaml#/components/schemas/Showroom'
+      description: |
+        Item shape depends on admin list mode:
+        - `status=pending` => moderation queue item DTO
+        - other statuses => shared showroom list DTO
+
+    AdminShowroomsListEnvelope:
+      type: object
+      required: [showrooms, meta]
+      properties:
+        showrooms:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminShowroomsListItem'
+        meta:
+          $ref: '#/components/schemas/AdminPagingMeta'
+
+    AdminPendingShowroomDetail:
+      type: object
+      description: Pending admin detail wrapper exposing canonical doc and immutable moderation snapshot.
+      required: [canonical, pendingSnapshot, diff]
+      properties:
+        canonical:
+          $ref: './showrooms.yaml#/components/schemas/ShowroomPrivileged'
+        pendingSnapshot:
+          type: object
+          nullable: true
+          additionalProperties: true
+        diff:
+          type: object
+          nullable: true
+          additionalProperties: true

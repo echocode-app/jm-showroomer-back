@@ -101,6 +101,9 @@ paths:
         Guest users can keep local likes/dismiss state in app and sync after login via
         POST /collections/want-to-visit/events/sync.
       operationId: listEvents
+      externalDocs:
+        description: Flutter cursor pagination guide (all endpoints)
+        url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/CURSOR_PAGINATION_FLUTTER.md
       security: []
       parameters:
         - name: country

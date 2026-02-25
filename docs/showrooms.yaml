@@ -514,6 +514,9 @@ paths:
         owner identifiers, exact geo coordinates, and phone contact.
         `fields=marker` returns a minimal map payload and may include `geo.coords`.
       operationId: listShowrooms
+      externalDocs:
+        description: Flutter cursor pagination guide (all endpoints)
+        url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/CURSOR_PAGINATION_FLUTTER.md
       security: []
       parameters:
         - name: q

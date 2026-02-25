@@ -363,6 +363,9 @@ paths:
         Ordered by `createdAt desc`, then `documentId desc`.
         Cursor is backend-owned base64 JSON `{ v, createdAt, id }`.
       operationId: listMyNotifications
+      externalDocs:
+        description: Flutter cursor pagination guide (all endpoints)
+        url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/CURSOR_PAGINATION_FLUTTER.md
       security:
         - bearerAuth: []
       parameters:
@@ -779,6 +782,9 @@ paths:
         Auth mode returns current user favorite showrooms, revalidated as approved-only.
         Supports cursor pagination.
       operationId: listFavoriteShowrooms
+      externalDocs:
+        description: Flutter cursor pagination guide (all endpoints)
+        url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/CURSOR_PAGINATION_FLUTTER.md
       security: []
       parameters:
         - name: limit
@@ -792,7 +798,10 @@ paths:
           in: query
           schema:
             type: string
-          description: Server-issued base64 cursor
+          description: |
+            Opaque backend cursor from previous response (`meta.nextCursor`).
+            Current format is backend-owned v1 base64 JSON `{v:1,createdAt,id}`.
+            Reuse only with the same endpoint and filters.
       responses:
         "200":
           description: Favorites list

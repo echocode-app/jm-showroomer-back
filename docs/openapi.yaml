@@ -10,6 +10,16 @@ info:
       Value: correct client-side search implementation aligned with backend behavior.  
       <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_MVP1_SEARCH.md" target="_blank" rel="noopener noreferrer">Open document</a>
 
+    - **CURSOR_PAGINATION_FLUTTER.md**  
+      For Flutter: universal cursor pagination rules for all backend list endpoints (opaque token, reset rules, error handling).  
+      Value: correct infinite scroll implementation without duplicates/skips/cursor misuse.  
+      <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/CURSOR_PAGINATION_FLUTTER.md" target="_blank" rel="noopener noreferrer">Open document</a>
+
+    - **ADMIN_PENDING_QUEUE_CURSOR.md**  
+      For Flutter Admin Panel: how to use cursor pagination for the pending moderation queue (`/admin/showrooms?status=pending`).  
+      Value: correct infinite scroll behavior without duplicates, skips, or cursor misuse.  
+      <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/ADMIN_PENDING_QUEUE_CURSOR.md" target="_blank" rel="noopener noreferrer">Open document</a>
+
     - **README_UA.md**  
       For PM/client: business logic and key product flows in plain language.  
       Value: clear understanding of system behavior without technical implementation details.  
@@ -163,8 +173,8 @@ tags:
   - name: Admin
     description: Admin moderation endpoints for showrooms.
     externalDocs:
-      description: Backend map (UA)
-      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/README_BACKEND_MAP_UA.md
+      description: Admin pending queue cursor guide (Flutter)
+      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/ADMIN_PENDING_QUEUE_CURSOR.md
   - name: Analytics
     description: Client analytics ingest endpoint and backend analytics contract references.
     externalDocs:

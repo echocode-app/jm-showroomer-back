@@ -139,6 +139,9 @@ paths:
         Ordering is deterministic: ranked (`sortRank asc`) first, then unranked (`publishedAt desc`) with id tie-breaker.
         Signed URL is generated for coverPath only.
       operationId: listLookbooks
+      externalDocs:
+        description: Flutter cursor pagination guide (all endpoints)
+        url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/CURSOR_PAGINATION_FLUTTER.md
       security: []
       parameters:
         - name: country
@@ -163,7 +166,12 @@ paths:
           in: query
           schema:
             type: string
-          description: Base64 cursor from previous response (`meta.nextCursor`).
+          description: |
+            Opaque backend cursor from previous response (`meta.nextCursor`).
+            Lookbooks use v1 cursor with two internal modes:
+            ranked `{v:1,m:"rank",r:number,id:string}` or
+            published `{v:1,m:"published",p:ISODate,id:string}`.
+            Do not construct or edit client-side.
       responses:
         "200":
           description: Lookbooks list
