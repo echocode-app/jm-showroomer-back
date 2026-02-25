@@ -43,14 +43,37 @@ app.use(
 app.use("/api/v1/analytics/ingest", analyticsLimiter);
 app.use(rateLimiter);
 
+function normalizeOrigin(origin) {
+  return String(origin || "").trim().replace(/\/+$/, "");
+}
+
+const corsOptions = {
+  origin(origin, callback) {
+    // Allow non-browser requests (curl, server-to-server, health checks).
+    if (!origin) return callback(null, true);
+
+    const normalizedOrigin = normalizeOrigin(origin);
+    if (CONFIG.allowedOrigins.includes(normalizedOrigin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+const corsMiddleware = cors(corsOptions);
+
 // middleware
+// CORS must run before body parsers so browser preflight requests are handled early.
+app.use(corsMiddleware);
+// Express/router path parser in this stack rejects bare "*" for app.options(...).
+// Regex keeps equivalent "all paths" preflight handling without wildcard parsing issues.
+app.options(/.*/, corsMiddleware);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(sanitizeInput);
-app.use(cors({
-  origin: CONFIG.allowedOrigins || "*",
-  credentials: true,
-}));
 app.use(requestLogContextMiddleware);
 
 // API
