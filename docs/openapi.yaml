@@ -109,6 +109,10 @@ paths:
     $ref: './admin.yaml#/paths/~1admin~1showrooms'
   /admin/showrooms/{id}:
     $ref: './admin.yaml#/paths/~1admin~1showrooms~1{id}'
+  /admin/showrooms/{id}/history:
+    $ref: './admin.yaml#/paths/~1admin~1showrooms~1{id}~1history'
+  /admin/showrooms/{id}/stats:
+    $ref: './admin.yaml#/paths/~1admin~1showrooms~1{id}~1stats'
   /admin/showrooms/{id}/approve:
     $ref: './admin.yaml#/paths/~1admin~1showrooms~1{id}~1approve'
   /admin/showrooms/{id}/reject:

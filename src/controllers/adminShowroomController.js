@@ -9,6 +9,10 @@ import {
     listAdminModerationQueueService,
     parseAdminShowroomsStatus,
 } from "../services/showrooms/adminModerationQueue.js";
+import {
+    getAdminShowroomHistoryService,
+    getAdminShowroomStatsService,
+} from "../services/showrooms/adminShowroomInsights.js";
 import { ok } from "../utils/apiResponse.js";
 import { logDomainEvent } from "../utils/logDomainEvent.js";
 import { log } from "../config/logger.js";
@@ -51,6 +55,24 @@ export async function getShowroomAdmin(req, res, next) {
             });
         }
         return ok(res, { showroom });
+    } catch (err) {
+        next(err);
+    }
+}
+
+export async function getShowroomHistoryAdmin(req, res, next) {
+    try {
+        const result = await getAdminShowroomHistoryService(req.params.id, req.user);
+        return ok(res, result);
+    } catch (err) {
+        next(err);
+    }
+}
+
+export async function getShowroomStatsAdmin(req, res, next) {
+    try {
+        const stats = await getAdminShowroomStatsService(req.params.id, req.user);
+        return ok(res, stats);
     } catch (err) {
         next(err);
     }

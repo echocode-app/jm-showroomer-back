@@ -25,8 +25,20 @@ export const errorHandler = (err, req, res, next) => {
   const code = err.code || "INTERNAL_ERROR";
   const status = getStatusForCode(code) ?? err.status ?? 500;
   const message = getMessageForCode(code, err.message || "Internal server error");
-  const requestLog = req?.log ?? log;
+  const requestLog = req?._baseLog ?? req?.log ?? log;
   const isDev = process.env.NODE_ENV === "dev";
+  const errorLogPayload = {
+    requestId: req?.id,
+    method: req?.method,
+    path: String(req?.originalUrl || req?.url || "").split("?")[0],
+    status,
+    code,
+    message,
+    userId: req?.user?.uid ?? req?.auth?.uid ?? undefined,
+  };
+  if (isDev && err?.stack) {
+    errorLogPayload.stack = err.stack;
+  }
 
   if (code === "INDEX_NOT_READY" && !err?.__domainLogged) {
     const { level } = classifyError({ code, status });
@@ -41,23 +53,9 @@ export const errorHandler = (err, req, res, next) => {
   }
 
   if (status >= 500) {
-    if (isDev) {
-      requestLog.error({ err, code, status }, "request failed");
-    } else {
-      requestLog.error(
-        {
-          code,
-          status,
-          err: {
-            message: err?.message || "Internal server error",
-            type: err?.name || "Error",
-          },
-        },
-        "request failed"
-      );
-    }
+    requestLog.error(errorLogPayload, "request failed");
   } else {
-    requestLog.warn({ code, status, err: { message } }, "request failed");
+    requestLog.warn(errorLogPayload, "request failed");
   }
 
   res.status(status).json({

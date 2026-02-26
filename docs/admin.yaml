@@ -211,6 +211,104 @@ paths:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
 
+  /admin/showrooms/{id}/history:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Showroom ID
+    get:
+      tags: [Admin]
+      summary: Get showroom edit/moderation history (admin)
+      description: |
+        Returns showroom `editHistory` entries sorted newest-first (server sorts on read).
+        Read-only endpoint: no Firestore writes, no transaction, no analytics events.
+      operationId: getShowroomHistoryAdmin
+      security:
+        - bearerAuth: []
+      x-roles: [admin]
+      responses:
+        "200":
+          description: Showroom history
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AdminShowroomHistoryResponse'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "404":
+          description: Showroom not found
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
+  /admin/showrooms/{id}/stats:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Showroom ID
+    get:
+      tags: [Admin]
+      summary: Get showroom lifecycle/moderation stats (admin)
+      description: |
+        Derives read-only stats from showroom fields and `editHistory`.
+        Read-only endpoint: no Firestore writes, no transaction, no analytics events.
+      operationId: getShowroomStatsAdmin
+      security:
+        - bearerAuth: []
+      x-roles: [admin]
+      responses:
+        "200":
+          description: Showroom stats
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AdminShowroomStats'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "404":
+          description: Showroom not found
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
   /admin/showrooms/{id}/approve:
     parameters:
       - name: id
@@ -447,3 +545,77 @@ components:
           type: object
           nullable: true
           additionalProperties: true
+
+    AdminShowroomHistoryMeta:
+      type: object
+      required: [total]
+      properties:
+        total:
+          type: integer
+          minimum: 0
+
+    AdminShowroomHistoryResponse:
+      type: object
+      required: [history, meta]
+      properties:
+        history:
+          type: array
+          description: Newest-first sorted copy of showroom `editHistory`.
+          items:
+            type: object
+            additionalProperties: true
+        meta:
+          $ref: '#/components/schemas/AdminShowroomHistoryMeta'
+
+    AdminShowroomModerationStats:
+      type: object
+      required:
+        [approveCount, rejectCount, submitCount, lastReviewedAt, lastReviewedBy]
+      properties:
+        approveCount:
+          type: integer
+          minimum: 0
+        rejectCount:
+          type: integer
+          minimum: 0
+        submitCount:
+          type: integer
+          minimum: 0
+        lastReviewedAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastReviewedBy:
+          type: object
+          nullable: true
+          additionalProperties: true
+
+    AdminShowroomLifecycleStats:
+      type: object
+      required: [createdAt, lastUpdatedAt, currentStatus]
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastUpdatedAt:
+          type: string
+          format: date-time
+          nullable: true
+        currentStatus:
+          type: string
+          nullable: true
+          enum: [draft, pending, approved, rejected, deleted]
+
+    AdminShowroomStats:
+      type: object
+      required: [editCount, moderation, lifecycle]
+      properties:
+        editCount:
+          type: integer
+          minimum: 0
+          description: Source of truth is `showroom.editCount`.
+        moderation:
+          $ref: '#/components/schemas/AdminShowroomModerationStats'
+        lifecycle:
+          $ref: '#/components/schemas/AdminShowroomLifecycleStats'

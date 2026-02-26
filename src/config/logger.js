@@ -5,7 +5,13 @@ const isDev = process.env.NODE_ENV === "dev";
 
 const baseOptions = {
   level: process.env.LOG_LEVEL || (isDev ? "debug" : "info"),
+  base: undefined,
   timestamp: pino.stdTimeFunctions.isoTime,
+  formatters: {
+    level(label) {
+      return { level: label };
+    },
+  },
 };
 
 const devTransport = isDev

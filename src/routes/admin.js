@@ -11,6 +11,8 @@ import {
     deleteShowroomAdmin,
     listShowroomsAdmin,
     getShowroomAdmin,
+    getShowroomHistoryAdmin,
+    getShowroomStatsAdmin,
 } from "../controllers/adminShowroomController.js";
 
 const router = Router();
@@ -22,6 +24,10 @@ router.get("/showrooms", listShowroomsAdmin);
 
 // GET BY ID
 router.get("/showrooms/:id", getShowroomAdmin);
+
+// HISTORY / STATS
+router.get("/showrooms/:id/history", getShowroomHistoryAdmin);
+router.get("/showrooms/:id/stats", getShowroomStatsAdmin);
 
 // APPROVE
 router.post("/showrooms/:id/approve", approveShowroom);

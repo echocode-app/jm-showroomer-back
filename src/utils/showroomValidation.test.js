@@ -47,5 +47,3 @@ assert.equal(e164, "+380505555587");
 
 // Phone without + is invalid
 expectThrows(() => validatePhone("0999999999"), "PHONE_INVALID");
-
-console.log("showroomValidation.test.js passed");

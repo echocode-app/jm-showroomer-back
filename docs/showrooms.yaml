@@ -201,6 +201,7 @@ components:
               description: |
                 Append-only audit history (server-managed, capped to latest 50 entries).
                 Moderation actions append `approve`/`reject` entries; submit appends `submit`; owner patch/delete flows append their actions.
+                Admin history endpoint (`GET /admin/showrooms/{id}/history`) returns a read-only newest-first sorted view of this array.
               items:
                 type: object
                 properties:
