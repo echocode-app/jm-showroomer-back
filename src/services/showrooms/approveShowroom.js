@@ -39,10 +39,12 @@ export async function approveShowroomService(id, user) {
 
         const statusBefore = showroom.status;
         showroom.status = "approved";
+        showroom.reviewReason = null;
         showroom.reviewedAt = new Date().toISOString();
         showroom.reviewedBy = { uid: user.uid, role: user.role };
         showroom.pendingSnapshot = null;
         showroom.updatedAt = showroom.reviewedAt;
+        showroom.editCount = (showroom.editCount || 0) + 1;
         showroom.editHistory = appendHistory(
             showroom.editHistory || [],
             makeHistoryEntry({
@@ -123,10 +125,12 @@ export async function approveShowroomService(id, user) {
         const statusBefore = showroom.status;
         const historyAt = Timestamp.fromDate(new Date());
         updates.status = "approved";
+        updates.reviewReason = null;
         updates.reviewedAt = FieldValue.serverTimestamp();
         updates.reviewedBy = { uid: user.uid, role: user.role };
         updates.pendingSnapshot = null;
         updates.updatedAt = FieldValue.serverTimestamp();
+        updates.editCount = (showroom.editCount || 0) + 1;
         updates.editHistory = appendHistory(
             showroom.editHistory || [],
             makeHistoryEntry({

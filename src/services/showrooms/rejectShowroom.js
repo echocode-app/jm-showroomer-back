@@ -19,7 +19,10 @@ export async function rejectShowroomService(id, reason, user) {
         throw forbidden("ACCESS_DENIED");
     }
 
-    if (!reason) {
+    const normalizedReason =
+        typeof reason === "string" ? reason.trim() : "";
+
+    if (normalizedReason.length < 3) {
         throw badRequest("VALIDATION_ERROR");
     }
 
@@ -34,9 +37,10 @@ export async function rejectShowroomService(id, reason, user) {
         showroom.status = "rejected";
         showroom.reviewedAt = new Date().toISOString();
         showroom.reviewedBy = { uid: user.uid, role: user.role };
-        showroom.reviewReason = reason;
+        showroom.reviewReason = normalizedReason;
         showroom.pendingSnapshot = null;
         showroom.updatedAt = showroom.reviewedAt;
+        showroom.editCount = (showroom.editCount || 0) + 1;
         showroom.editHistory = appendHistory(
             showroom.editHistory || [],
             makeHistoryEntry({
@@ -60,7 +64,7 @@ export async function rejectShowroomService(id, reason, user) {
                 resourceId: id,
                 payload: {
                     showroomName: showroom.name ?? null,
-                    reason,
+                    reason: normalizedReason,
                 },
                 dedupeKey: `showroom:${id}:rejected`,
             });
@@ -97,7 +101,7 @@ export async function rejectShowroomService(id, reason, user) {
         }
 
         const statusBefore = showroom.status;
-        const updates = buildRejectUpdates(showroom, reason, user, statusBefore);
+        const updates = buildRejectUpdates(showroom, normalizedReason, user, statusBefore);
         tx.update(ref, updates);
         notificationDraft = {
             targetUid: showroom.ownerUid,
@@ -107,7 +111,7 @@ export async function rejectShowroomService(id, reason, user) {
             resourceId: id,
             payload: {
                 showroomName: showroom.name ?? null,
-                reason,
+                reason: normalizedReason,
             },
             dedupeKey: `showroom:${id}:rejected`,
         };
@@ -135,6 +139,7 @@ function buildRejectUpdates(showroom, reason, user, statusBefore) {
         reviewReason: reason,
         pendingSnapshot: null,
         updatedAt: FieldValue.serverTimestamp(),
+        editCount: (showroom.editCount || 0) + 1,
         editHistory: appendHistory(
             showroom.editHistory || [],
             makeHistoryEntry({

@@ -163,13 +163,19 @@ Prod Swagger: https://jm-showroomer-back.onrender.com/docs/
 - перевірка статусу всередині tx;
 - apply snapshot + status transition;
 - атомарне оновлення history/review fields;
+- `reviewReason` очищується (`null`) при approve;
+- `editCount` інкрементиться;
 - notification owner-у створюється post-commit.
+- analytics event не емітиться (лише notification + domain log).
 
 ### `POST /admin/showrooms/{id}/reject`
 
 - аналогічно атомарна tx перевірка;
-- status -> rejected + reason;
+- status -> rejected + reason (trim + min length validation на бекенді);
+- `editCount` інкрементиться;
+- `pendingSnapshot` очищується;
 - notification owner-у post-commit.
+- analytics event не емітиться (лише notification + domain log).
 
 ### `DELETE /showrooms/{id}`
 
@@ -813,6 +819,7 @@ Additional ingest guarantees:
 - `/analytics/ingest` uses a dedicated rate-limiter bucket (separate from business endpoints)
 - ingest does **not** emit domain logs (request/system logs only)
 - for `*_view`, `*_favorite`, `*_want_to_visit`, missing `resource.type/id` only emits a soft warning log (`analytics_invalid_shape`) and remains non-breaking
+- moderation admin actions (`approve` / `reject`) are not analytics events in the current backend registry
 
 ---
 

@@ -11,6 +11,7 @@ import {
 } from "../services/showrooms/adminModerationQueue.js";
 import { ok } from "../utils/apiResponse.js";
 import { logDomainEvent } from "../utils/logDomainEvent.js";
+import { log } from "../config/logger.js";
 import { ROLES } from "../constants/roles.js";
 
 // listShowroomsAdmin
@@ -60,13 +61,20 @@ export async function approveShowroom(req, res, next) {
     try {
         await approveShowroomService(req.params.id, req.user);
         const showroom = await getShowroomByIdService(req.params.id, req.user);
-        logDomainEvent.info(req, {
-            domain: "moderation",
-            event: "approve",
-            resourceType: "showroom",
-            resourceId: req.params.id,
-            status: "success",
-        });
+        try {
+            logDomainEvent.info(req, {
+                domain: "moderation",
+                event: "approve",
+                resourceType: "showroom",
+                resourceId: req.params.id,
+                status: "success",
+            });
+        } catch (e) {
+            (req?.log ?? log).warn(
+                { err: { message: e?.message || String(e) }, showroomId: req.params.id },
+                "moderation approve domain log failed"
+            );
+        }
         return ok(res, { showroom });
     } catch (err) {
         next(err);
@@ -82,13 +90,20 @@ export async function rejectShowroom(req, res, next) {
             req.user
         );
         const showroom = await getShowroomByIdService(req.params.id, req.user);
-        logDomainEvent.info(req, {
-            domain: "moderation",
-            event: "reject",
-            resourceType: "showroom",
-            resourceId: req.params.id,
-            status: "success",
-        });
+        try {
+            logDomainEvent.info(req, {
+                domain: "moderation",
+                event: "reject",
+                resourceType: "showroom",
+                resourceId: req.params.id,
+                status: "success",
+            });
+        } catch (e) {
+            (req?.log ?? log).warn(
+                { err: { message: e?.message || String(e) }, showroomId: req.params.id },
+                "moderation reject domain log failed"
+            );
+        }
         return ok(res, { showroom });
     } catch (err) {
         next(err);

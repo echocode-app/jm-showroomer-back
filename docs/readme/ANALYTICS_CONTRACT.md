@@ -34,6 +34,11 @@ Current server-generated events:
 - `lookbook_view`
 - `event_view`
 
+Explicitly absent (current backend implementation):
+
+- moderation approve/reject analytics events (`approve`, `reject`) are **not** part of `ANALYTICS_EVENTS`
+- admin moderation actions use domain logs + notifications, not analytics
+
 ## 3. Client-Generated Events
 
 Client-originated analytics events are accepted via:
@@ -107,6 +112,7 @@ Backend phase note:
 
 - Detail `*_view` events (`showroom_view`, `lookbook_view`, `event_view`) are emitted only by backend.
 - State-transition analytics events (favorites, want-to-visit, showroom submit/create auth completion/failure) are emitted only by backend.
+- Admin moderation approve/reject are not analytics events in MVP and should not be expected in analytics streams.
 - Client must not duplicate server-generated events.
 - Client must not send events that are not present in the backend `ANALYTICS_EVENTS` registry.
 - Client-originated events should use `/api/v1/analytics/ingest` only.

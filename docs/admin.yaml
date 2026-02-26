@@ -222,6 +222,11 @@ paths:
     post:
       tags: [Admin]
       summary: Approve showroom
+      description: |
+        Approves only `pending` showrooms.
+        Backend applies the immutable `pendingSnapshot` to canonical editable fields inside a Firestore transaction,
+        appends moderation history, increments `editCount`, clears `pendingSnapshot`, and clears stale `reviewReason`.
+        Owner notification is emitted post-commit (best-effort). No analytics event is emitted for approve.
       operationId: approveShowroom
       security:
         - bearerAuth: []
@@ -283,6 +288,11 @@ paths:
     post:
       tags: [Admin]
       summary: Reject showroom
+      description: |
+        Rejects only `pending` showrooms.
+        Backend validates reason (minimum 3 chars), trims it, stores the normalized value in `reviewReason`,
+        appends moderation history, increments `editCount`, and clears `pendingSnapshot` in one transaction.
+        Owner notification is emitted post-commit (best-effort). No analytics event is emitted for reject.
       operationId: rejectShowroom
       security:
         - bearerAuth: []
@@ -293,10 +303,15 @@ paths:
           application/json:
             schema:
               type: object
+              additionalProperties: false
               required: [reason]
               properties:
                 reason:
                   type: string
+                  minLength: 3
+                  description: |
+                    Rejection reason. Backend trims whitespace before validation/storage.
+                    Empty/short (after trim) returns `VALIDATION_ERROR`.
       responses:
         "200":
           description: Showroom rejected

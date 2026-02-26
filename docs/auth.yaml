@@ -13,7 +13,10 @@ paths:
     post:
       tags: [Auth]
       summary: Login via Firebase ID token (Google/Apple/any)
-      description: Bootstrap auth endpoint using Firebase ID token.
+      description: |
+        Bootstrap auth endpoint using Firebase ID token.
+        Route has no auth middleware chain (public endpoint); controller verifies the provided token in service layer.
+        Backend emits auth analytics (`auth_completed` / `auth_failed`) and auth domain logs.
       operationId: oauthLogin
       security: []
       requestBody:
