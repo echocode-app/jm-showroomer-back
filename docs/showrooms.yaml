@@ -995,6 +995,8 @@ paths:
         Creates a showroom (status=draft).
         Draft mode is supported via body {"draft": true} or query mode=draft.
         Showroom country must match owner country.
+        Owner recreation cooldown applies after soft delete: the same owner cannot recreate the same showroom
+        (same normalized name) for 3 calendar months after deletion (`SHOWROOM_RECREATE_COOLDOWN`, 409).
       operationId: createShowroom
       security:
         - bearerAuth: []
@@ -1028,6 +1030,12 @@ paths:
                             $ref: '#/components/schemas/ShowroomPrivileged'
         "400":
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "409":
+          description: Recreation cooldown or other conflict states
           content:
             application/json:
               schema:
@@ -1195,6 +1203,8 @@ paths:
       description: |
         Only owner can delete, only for draft/rejected/approved. Pending is locked.
         Error codes: SHOWROOM_LOCKED_PENDING (409), SHOWROOM_NOT_EDITABLE (400).
+        Soft delete keeps the document (`status=deleted`) and stores `deletedAt`/`deletedBy`.
+        Recreating the same showroom name for the same owner is backend-blocked for 3 calendar months after delete (`SHOWROOM_RECREATE_COOLDOWN`, 409).
       operationId: deleteShowroom
       security:
         - bearerAuth: []
@@ -1260,7 +1270,7 @@ paths:
         Status becomes pending and submittedAt is set.
         Resubmission from `approved` and `rejected` back to `pending` is intentionally allowed.
         Showroom country must match owner country.
-        Error codes: SHOWROOM_INCOMPLETE (400), SHOWROOM_NAME_ALREADY_EXISTS (400), SHOWROOM_DUPLICATE (400), SHOWROOM_LOCKED_PENDING (409), SHOWROOM_NOT_EDITABLE (400).
+        Error codes: SHOWROOM_INCOMPLETE (400), SHOWROOM_NAME_ALREADY_EXISTS (400), SHOWROOM_DUPLICATE (400), SHOWROOM_LOCKED_PENDING (409), SHOWROOM_NOT_EDITABLE (400), SHOWROOM_RECREATE_COOLDOWN (409).
       operationId: submitShowroom
       security:
         - bearerAuth: []
@@ -1304,7 +1314,7 @@ paths:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "409":
-          description: Locked (pending)
+          description: Locked (pending) or recreation cooldown conflict
           content:
             application/json:
               schema:

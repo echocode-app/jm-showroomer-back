@@ -6,6 +6,7 @@ import { createDraftShowroom } from "./createDraftShowroom.js";
 import { normalizeCreatePayload } from "./create/normalizePayload.js";
 import { assertCreateAccess, assertCreatePayload } from "./create/validateAccess.js";
 import { DEV_STORE, generateId, useDevMock } from "./_store.js";
+import { assertNoOwnerRecreateCooldown } from "./recreateCooldown.js";
 import { buildAnalyticsEvent } from "../analytics/analyticsEventBuilder.js";
 import { record } from "../analytics/analyticsEventService.js";
 import { ANALYTICS_EVENTS } from "../analytics/eventNames.js";
@@ -22,6 +23,11 @@ export async function createShowroom(data, ownerUid, options = {}) {
     const normalized = normalizeCreatePayload(data, options);
 
     if (useDevMock) {
+        assertNoOwnerRecreateCooldown(DEV_STORE.showrooms, {
+            ownerUid,
+            normalizedName: normalized.nameNormalized,
+        });
+
         // DEV mock mode keeps showrooms in memory and may run without Firestore user docs.
         // Writability invariant is enforced in real Firestore-backed flows.
         const id = generateId();
@@ -51,15 +57,21 @@ export async function createShowroom(data, ownerUid, options = {}) {
     const createdShowroom = await db.runTransaction(async tx => {
         await assertUserWritableInTx(tx, ownerUid);
 
-        const existingSnapshot = await tx.get(
+        const ownerSnapshot = await tx.get(
             ref
                 .where("ownerUid", "==", ownerUid)
-                .where("name", "==", data.name)
         );
 
+        const ownerItems = ownerSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        assertNoOwnerRecreateCooldown(ownerItems, {
+            ownerUid,
+            normalizedName: normalized.nameNormalized,
+        });
+
         // Keep owner-level uniqueness among non-deleted showrooms.
-        const existing = existingSnapshot.docs.filter(
-            d => d.data().status !== "deleted"
+        const existing = ownerItems.filter(
+            s => s.status !== "deleted" && s.name === data.name
         );
 
         if (existing.length > 0) {
