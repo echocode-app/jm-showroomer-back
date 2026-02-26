@@ -1035,11 +1035,20 @@ paths:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "409":
-          description: Recreation cooldown or other conflict states
+          description: Recreation cooldown or other conflict states (`SHOWROOM_RECREATE_COOLDOWN` may include `error.meta.nextAvailableAt`)
           content:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+              examples:
+                recreate_cooldown:
+                  summary: Same owner recreates same showroom too early after soft delete
+                  value:
+                    error:
+                      code: SHOWROOM_RECREATE_COOLDOWN
+                      message: Showroom can be recreated after cooldown period
+                      meta:
+                        nextAvailableAt: "2026-05-26T13:00:00.000Z"
         "401":
           description: Unauthorized
           content:
@@ -1271,6 +1280,7 @@ paths:
         Resubmission from `approved` and `rejected` back to `pending` is intentionally allowed.
         Showroom country must match owner country.
         Error codes: SHOWROOM_INCOMPLETE (400), SHOWROOM_NAME_ALREADY_EXISTS (400), SHOWROOM_DUPLICATE (400), SHOWROOM_LOCKED_PENDING (409), SHOWROOM_NOT_EDITABLE (400), SHOWROOM_RECREATE_COOLDOWN (409).
+        `SHOWROOM_RECREATE_COOLDOWN` may include `error.meta.nextAvailableAt` (ISO timestamp).
       operationId: submitShowroom
       security:
         - bearerAuth: []
@@ -1319,6 +1329,15 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+              examples:
+                recreate_cooldown:
+                  summary: Resubmitting same normalized showroom name while cooldown is active
+                  value:
+                    error:
+                      code: SHOWROOM_RECREATE_COOLDOWN
+                      message: Showroom can be recreated after cooldown period
+                      meta:
+                        nextAvailableAt: "2026-05-26T13:00:00.000Z"
 
   /showrooms/{id}/favorite:
     parameters:

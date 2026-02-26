@@ -143,6 +143,8 @@ export async function getLookbookByIdCrudService(id, actor = null) {
 export async function updateLookbookService(id, payload, actor) {
     const db = getFirestoreInstance();
     const ref = getLookbooksCollection().doc(id);
+    const nextShowroomId =
+        payload.showroomId !== undefined ? parseOptionalString(payload.showroomId) : undefined;
 
     await db.runTransaction(async tx => {
         if (!actor.isAnonymous && actor.userId) {
@@ -154,8 +156,8 @@ export async function updateLookbookService(id, payload, actor) {
         const lookbook = normalizeLookbook({ id: snap.id, ...snap.data() });
         assertCanManageLookbook(lookbook, actor);
 
-        if (payload.showroomId && payload.showroomId !== lookbook.showroomId) {
-            await assertShowroomExists(payload.showroomId);
+        if (nextShowroomId && nextShowroomId !== lookbook.showroomId) {
+            await assertShowroomExistsInTx(tx, nextShowroomId);
         }
 
         const patch = {
@@ -189,7 +191,19 @@ export async function deleteLookbookService(id, actor) {
         assertCanManageLookbook(lookbook, actor);
         tx.delete(ref);
     });
-    await deleteLikesSubcollection(ref, db);
+    try {
+        await deleteLikesSubcollection(ref, db);
+    } catch (err) {
+        log.warn(
+            {
+                lookbookId: id,
+                deletedLikesCount: err?.meta?.deletedLikesCount,
+                failedBatchSize: err?.meta?.failedBatchSize,
+                err: { message: err?.message || String(err) },
+            },
+            "lookbook likes cleanup failed after delete"
+        );
+    }
 
     return { id, status: "deleted" };
 }
@@ -380,6 +394,22 @@ async function assertShowroomExists(showroomId) {
     }
 
     const snap = await getFirestoreInstance().collection("showrooms").doc(id).get();
+    const showroom = snap.exists ? snap.data() : null;
+    if (!showroom || showroom.status === "deleted") {
+        throw badRequest("SHOWROOM_ID_INVALID");
+    }
+}
+
+async function assertShowroomExistsInTx(tx, showroomId) {
+    const id = parseOptionalString(showroomId);
+    if (!id) throw badRequest("SHOWROOM_ID_INVALID");
+
+    if (useDevMock) {
+        return assertShowroomExists(id);
+    }
+
+    const showroomRef = getFirestoreInstance().collection("showrooms").doc(id);
+    const snap = await tx.get(showroomRef);
     const showroom = snap.exists ? snap.data() : null;
     if (!showroom || showroom.status === "deleted") {
         throw badRequest("SHOWROOM_ID_INVALID");

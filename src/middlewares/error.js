@@ -58,10 +58,15 @@ export const errorHandler = (err, req, res, next) => {
     requestLog.warn(errorLogPayload, "request failed");
   }
 
+  const errorBody = {
+    code,
+    message,
+  };
+  if (err?.meta && typeof err.meta === "object" && !Array.isArray(err.meta)) {
+    errorBody.meta = err.meta;
+  }
+
   res.status(status).json({
-    error: {
-      code,
-      message,
-    },
+    error: errorBody,
   });
 };

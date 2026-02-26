@@ -94,14 +94,26 @@ export async function getLikedIdsForActor(ids, actor, db) {
 
 // Cascading cleanup for likes subcollection before deleting a lookbook document.
 export async function deleteLikesSubcollection(lookbookRef, db) {
+    let deletedLikesCount = 0;
     while (true) {
         const likesSnap = await lookbookRef.collection("likes").limit(LIKE_DELETE_BATCH_LIMIT).get();
         if (likesSnap.empty) break;
 
         const batch = db.batch();
         likesSnap.docs.forEach(doc => batch.delete(doc.ref));
-        await batch.commit();
+        try {
+            await batch.commit();
+            deletedLikesCount += likesSnap.docs.length;
+        } catch (err) {
+            err.meta = {
+                ...(err?.meta && typeof err.meta === "object" ? err.meta : {}),
+                deletedLikesCount,
+                failedBatchSize: likesSnap.docs.length,
+            };
+            throw err;
+        }
     }
+    return { deletedLikesCount };
 }
 
 // Auth mirror projection used by favorites collection endpoints.

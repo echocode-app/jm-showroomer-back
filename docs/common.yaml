@@ -13,7 +13,10 @@ components:
           type: object
     ApiError:
       type: object
-      required: [success, error]
+      description: |
+        Error envelope returned by backend endpoints.
+        Some handlers return `{ success: false, error }`, while the global error middleware returns `{ error }`.
+      required: [error]
       properties:
         success:
           type: boolean
@@ -29,6 +32,12 @@ components:
           description: Error code. See ErrorCode for common values.
         message:
           type: string
+        meta:
+          type: object
+          additionalProperties: true
+          description: |
+            Optional safe machine-readable metadata for the error.
+            Example: `SHOWROOM_RECREATE_COOLDOWN` may include `nextAvailableAt` (ISO timestamp).
     ErrorCode:
       type: string
       description: |
