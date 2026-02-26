@@ -1,4 +1,188 @@
 paths:
+  /admin/overview:
+    get:
+      tags: [Admin]
+      summary: Platform overview stats (admin)
+      description: |
+        Read-only aggregated platform overview built from Firestore aggregate `count()` queries.
+        No writes, no transactions, no analytics events.
+      operationId: getAdminOverview
+      security:
+        - bearerAuth: []
+      x-roles: [admin]
+      responses:
+        "200":
+          description: Aggregated admin overview
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AdminOverview'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
+  /admin/analytics/showrooms:
+    get:
+      tags: [Admin]
+      summary: Showroom analytics (admin)
+      description: |
+        Read-only aggregated showroom analytics for admin dashboards.
+        Groups showroom creations by `createdAt` and counts moderation `approve` / `reject`
+        actions from showroom `editHistory` within the requested range.
+      operationId: getShowroomsAnalytics
+      externalDocs:
+        description: Admin analytics endpoint guide
+        url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/ADMIN_ANALYTICS.md
+      security:
+        - bearerAuth: []
+      x-roles: [admin]
+      parameters:
+        - $ref: '#/components/parameters/AdminAnalyticsFrom'
+        - $ref: '#/components/parameters/AdminAnalyticsTo'
+        - $ref: '#/components/parameters/AdminAnalyticsGroupBy'
+      responses:
+        "200":
+          description: Showroom analytics
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AdminShowroomsAnalyticsResponse'
+        "400":
+          description: Invalid query params (`from`, `to`, `groupBy`)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
+  /admin/analytics/events:
+    get:
+      tags: [Admin]
+      summary: Event analytics (admin)
+      description: |
+        Read-only aggregated event analytics for admin dashboards.
+        Groups events by `createdAt` and returns current summary counts (`upcoming`, `past`, `newLast7Days`).
+      operationId: getEventsAnalytics
+      externalDocs:
+        description: Admin analytics endpoint guide
+        url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/ADMIN_ANALYTICS.md
+      security:
+        - bearerAuth: []
+      x-roles: [admin]
+      parameters:
+        - $ref: '#/components/parameters/AdminAnalyticsFrom'
+        - $ref: '#/components/parameters/AdminAnalyticsTo'
+        - $ref: '#/components/parameters/AdminAnalyticsGroupBy'
+      responses:
+        "200":
+          description: Event analytics
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AdminEventsAnalyticsResponse'
+        "400":
+          description: Invalid query params (`from`, `to`, `groupBy`)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
+  /admin/analytics/platform:
+    get:
+      tags: [Admin]
+      summary: Platform analytics (admin)
+      description: |
+        Read-only analytics ingest aggregation from `analytics_events`.
+        Groups timeline by requested bucket and returns event-name occurrence counts.
+      operationId: getPlatformAnalytics
+      externalDocs:
+        description: Admin analytics endpoint guide
+        url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/ADMIN_ANALYTICS.md
+      security:
+        - bearerAuth: []
+      x-roles: [admin]
+      parameters:
+        - $ref: '#/components/parameters/AdminAnalyticsFrom'
+        - $ref: '#/components/parameters/AdminAnalyticsTo'
+        - $ref: '#/components/parameters/AdminAnalyticsGroupBy'
+      responses:
+        "200":
+          description: Platform analytics
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AdminPlatformAnalyticsResponse'
+        "400":
+          description: Invalid query params (`from`, `to`, `groupBy`)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
   /admin/showrooms:
     get:
       tags: [Admin]
@@ -451,7 +635,189 @@ paths:
                 $ref: './common.yaml#/components/schemas/ApiError'
 
 components:
+  parameters:
+    AdminAnalyticsFrom:
+      name: from
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
+      description: "Range start (inclusive). Default: now - 30 days."
+    AdminAnalyticsTo:
+      name: to
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
+      description: "Range end (exclusive). Default: now."
+    AdminAnalyticsGroupBy:
+      name: groupBy
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [day, week, month]
+        default: day
+      description: "Time bucket granularity for timeline series."
   schemas:
+    AdminAnalyticsRange:
+      type: object
+      required: [from, to, groupBy]
+      properties:
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
+        groupBy:
+          type: string
+          enum: [day, week, month]
+
+    AdminAnalyticsBucketPoint:
+      type: object
+      required: [bucket, count]
+      properties:
+        bucket:
+          type: string
+          format: date-time
+          description: Bucket start in UTC (`day`, `week` Monday start, or first day of month).
+        count:
+          type: integer
+
+    AdminAnalyticsCreatedSeries:
+      type: object
+      required: [total, series]
+      properties:
+        total:
+          type: integer
+        series:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminAnalyticsBucketPoint'
+
+    AdminShowroomsAnalyticsModeration:
+      type: object
+      required: [approveCount, rejectCount]
+      properties:
+        approveCount:
+          type: integer
+        rejectCount:
+          type: integer
+
+    AdminShowroomsAnalyticsResponse:
+      type: object
+      required: [range, created, moderation]
+      properties:
+        range:
+          $ref: '#/components/schemas/AdminAnalyticsRange'
+        created:
+          $ref: '#/components/schemas/AdminAnalyticsCreatedSeries'
+        moderation:
+          $ref: '#/components/schemas/AdminShowroomsAnalyticsModeration'
+
+    AdminEventsAnalyticsSummary:
+      type: object
+      required: [upcoming, past, newLast7Days]
+      properties:
+        upcoming:
+          type: integer
+        past:
+          type: integer
+        newLast7Days:
+          type: integer
+
+    AdminEventsAnalyticsResponse:
+      type: object
+      required: [range, created, summary]
+      properties:
+        range:
+          $ref: '#/components/schemas/AdminAnalyticsRange'
+        created:
+          $ref: '#/components/schemas/AdminAnalyticsCreatedSeries'
+        summary:
+          $ref: '#/components/schemas/AdminEventsAnalyticsSummary'
+
+    AdminPlatformAnalyticsEventCount:
+      type: object
+      required: [eventName, count]
+      properties:
+        eventName:
+          type: string
+        count:
+          type: integer
+
+    AdminPlatformAnalyticsResponse:
+      type: object
+      required: [range, total, timeline, byEventName]
+      properties:
+        range:
+          $ref: '#/components/schemas/AdminAnalyticsRange'
+        total:
+          type: integer
+        timeline:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminAnalyticsBucketPoint'
+        byEventName:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminPlatformAnalyticsEventCount'
+
+    AdminOverviewShowroomStats:
+      type: object
+      required: [total, pending, approved, rejected, deleted, newLast7Days]
+      properties:
+        total:
+          type: integer
+        pending:
+          type: integer
+        approved:
+          type: integer
+        rejected:
+          type: integer
+        deleted:
+          type: integer
+        newLast7Days:
+          type: integer
+
+    AdminOverviewEventStats:
+      type: object
+      required: [total, upcoming, past, newLast7Days]
+      properties:
+        total:
+          type: integer
+        upcoming:
+          type: integer
+        past:
+          type: integer
+        newLast7Days:
+          type: integer
+
+    AdminOverviewUserStats:
+      type: object
+      required: [total, owners, newLast7Days]
+      properties:
+        total:
+          type: integer
+        owners:
+          type: integer
+        newLast7Days:
+          type: integer
+
+    AdminOverview:
+      type: object
+      required: [showrooms, events, users]
+      properties:
+        showrooms:
+          $ref: '#/components/schemas/AdminOverviewShowroomStats'
+        events:
+          $ref: '#/components/schemas/AdminOverviewEventStats'
+        users:
+          $ref: '#/components/schemas/AdminOverviewUserStats'
+
     AdminPagingMeta:
       type: object
       description: Standard cursor pagination meta used by admin showroom list flows.

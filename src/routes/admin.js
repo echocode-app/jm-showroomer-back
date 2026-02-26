@@ -5,6 +5,12 @@ import { requireRole } from "../middlewares/role.js";
 import { ROLES } from "../constants/roles.js";
 import { schemaValidate } from "../middlewares/schemaValidate.js";
 import { showroomReviewSchema } from "../schemas/showroom.review.schema.js";
+import { getAdminOverview } from "../controllers/adminOverviewController.js";
+import {
+    getEventsAnalytics,
+    getPlatformAnalytics,
+    getShowroomsAnalytics,
+} from "../controllers/adminAnalyticsController.js";
 import {
     approveShowroom,
     rejectShowroom,
@@ -18,6 +24,14 @@ import {
 const router = Router();
 
 router.use(authMiddleware, loadUser, requireRole([ROLES.ADMIN]));
+
+// OVERVIEW
+router.get("/overview", getAdminOverview);
+
+// ANALYTICS (read-only)
+router.get("/analytics/showrooms", getShowroomsAnalytics);
+router.get("/analytics/events", getEventsAnalytics);
+router.get("/analytics/platform", getPlatformAnalytics);
 
 // LIST ALL (incl pending/deleted)
 router.get("/showrooms", listShowroomsAdmin);

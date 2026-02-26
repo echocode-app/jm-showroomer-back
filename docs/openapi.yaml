@@ -39,6 +39,11 @@ info:
       For Flutter + Backend: analytics ingest contract, event origins, anti-duplication rules, session/anonymous identity responsibilities.  
       Value: safe client analytics integration without duplicating backend-generated events.  
       <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/ANALYTICS_CONTRACT.md" target="_blank" rel="noopener noreferrer">Open document</a>
+
+    - **ADMIN_ANALYTICS.md**  
+      For Admin Panel + Backend: admin analytics endpoints, query params, response shapes, and examples.  
+      Value: predictable dashboard integration for overview/analytics pages without backend contract drift.  
+      <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/ADMIN_ANALYTICS.md" target="_blank" rel="noopener noreferrer">Open document</a>
   license:
     name: UNLICENSED
     url: https://unlicense.org/
@@ -105,6 +110,14 @@ paths:
   /collections/want-to-visit/events/sync:
     $ref: './users.yaml#/paths/~1collections~1want-to-visit~1events~1sync'
 
+  /admin/overview:
+    $ref: './admin.yaml#/paths/~1admin~1overview'
+  /admin/analytics/showrooms:
+    $ref: './admin.yaml#/paths/~1admin~1analytics~1showrooms'
+  /admin/analytics/events:
+    $ref: './admin.yaml#/paths/~1admin~1analytics~1events'
+  /admin/analytics/platform:
+    $ref: './admin.yaml#/paths/~1admin~1analytics~1platform'
   /admin/showrooms:
     $ref: './admin.yaml#/paths/~1admin~1showrooms'
   /admin/showrooms/{id}:
