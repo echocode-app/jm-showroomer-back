@@ -886,6 +886,9 @@ paths:
         Nearby search is approximate (geohash buckets) and is not distance-sorted.
         cursor/fields/limit are not supported.
         Endpoint is intended for count-only UI (facets, badges, map overlays).
+      externalDocs:
+        description: Flutter guide with concrete marker/counters scenarios and curl samples
+        url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_MVP1_SEARCH.md
       operationId: getShowroomCounters
       security: []
       parameters:

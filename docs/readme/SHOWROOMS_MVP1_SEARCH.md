@@ -165,6 +165,26 @@ GET /showrooms?nearLat=50.4501&nearLng=30.5234&nearRadiusKm=5
 GET /showrooms?nearLat=50.4501&nearLng=30.5234&nearRadiusKm=5&fields=marker
 ```
 
+## 10.9 Flutter quick scenarios (cURL)
+```bash
+# 1) Map pins (minimal marker payload)
+curl -s "https://jm-showroomer-back.onrender.com/api/v1/showrooms?fields=marker&country=Ukraine"
+
+# 2) Total count with the same filters
+curl -s "https://jm-showroomer-back.onrender.com/api/v1/showrooms/counters?country=Ukraine"
+
+# 3) Count for a specific city
+curl -s "https://jm-showroomer-back.onrender.com/api/v1/showrooms/counters?country=Ukraine&city=Irpin"
+
+# 4) Nearby count (geo)
+curl -s "https://jm-showroomer-back.onrender.com/api/v1/showrooms/counters?nearLat=50.4501&nearLng=30.5234&nearRadiusKm=10"
+```
+
+Important:
+- `GET /showrooms?fields=marker` is for marker items (pins), not grouped counters by city.
+- `GET /showrooms/counters` returns only `data.total` for the current filter set.
+- If UI needs counts for several cities, call `/showrooms/counters` per city filter.
+
 ---
 
 ## 11) Flutter implementation checklist
