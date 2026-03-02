@@ -711,8 +711,6 @@ Notification policy (`MVP_MODE`):
 | POST   | `/users/complete-onboarding`                    | завершити onboarding       |
 | POST   | `/users/complete-owner-profile`                 | завершити owner profile    |
 | PATCH  | `/users/profile`                                | часткове оновлення профілю |
-| POST   | `/users/dev/register-test`                      | DEV: створити test user    |
-| POST   | `/users/dev/make-owner`                         | DEV: підняти role до owner |
 | GET    | `/showrooms`                                    | list showroom              |
 | GET    | `/showrooms/suggestions`                        | showroom suggestions       |
 | GET    | `/showrooms/counters`                           | showroom counters          |

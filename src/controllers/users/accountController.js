@@ -3,23 +3,9 @@ import { getAuthInstance } from "../../config/firebase.js";
 import { log } from "../../config/logger.js";
 import { logDomainEvent } from "../../utils/logDomainEvent.js";
 import {
-    makeOwnerDevUser,
     getUserById,
     deleteUserAccountWithBlockGuard,
 } from "../../services/users/profileService.js";
-
-/**
- * Dev-only endpoint to grant owner role for local/manual testing.
- */
-export async function makeOwnerDev(req, res) {
-    if (process.env.NODE_ENV === "prod") {
-        return fail(res, "NOT_FOUND", "Not found", 404);
-    }
-
-    await makeOwnerDevUser(req.user.uid);
-
-    return ok(res, { role: "owner" });
-}
 
 /**
  * Soft-deletes current account if there are no blocking owned business entities.

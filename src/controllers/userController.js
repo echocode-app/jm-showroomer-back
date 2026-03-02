@@ -8,7 +8,6 @@ export {
 } from "./users/profileController.js";
 
 export {
-    makeOwnerDev,
     deleteMyProfile,
 } from "./users/accountController.js";
 

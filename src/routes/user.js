@@ -16,7 +16,6 @@ import {
   completeOnboarding,
   completeOwnerProfile,
   updateUserProfile,
-  makeOwnerDev,
   deleteMyProfile,
   listMyNotifications,
   markMyNotificationRead,
@@ -24,8 +23,6 @@ import {
   registerMyDevice,
   deleteMyDevice,
 } from "../controllers/userController.js";
-
-import { registerTestUser } from "../controllers/testUserController.js";
 
 const router = Router();
 
@@ -131,24 +128,6 @@ router.patch(
   loadUser,
   schemaValidate({ body: userProfileUpdateSchema }),
   updateUserProfile
-);
-
-/**
- * DEV: create test user
- */
-router.post(
-  "/dev/register-test",
-  registerTestUser
-);
-
-/**
- * DEV: upgrade current user to owner
- */
-router.post(
-  "/dev/make-owner",
-  authMiddleware,
-  loadUser,
-  makeOwnerDev
 );
 
 export default router;

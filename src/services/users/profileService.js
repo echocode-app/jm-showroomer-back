@@ -90,22 +90,6 @@ export async function updateUserProfileDoc(userId, updates) {
 }
 
 /**
- * Dev-only helper to force owner role for local testing.
- */
-export async function makeOwnerDevUser(userId) {
-    const db = getFirestoreInstance();
-    const ref = getUserRef(userId);
-    await db.runTransaction(async tx => {
-        await assertUserWritableInTx(tx, userId);
-        tx.update(ref, {
-            role: "owner",
-            roles: ["owner"],
-            updatedAt: new Date().toISOString(),
-        });
-    });
-}
-
-/**
  * Checks whether owner still has any showroom that blocks profile deletion.
  */
 export async function ownerHasActiveShowrooms(ownerUid) {

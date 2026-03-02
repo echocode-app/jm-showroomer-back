@@ -302,7 +302,7 @@ Race-safety strategy:
 
 - `showroomService.js`, `lookbooksService.js`, `eventsService.js`
   - фасадні export-barrel файли.
-- `authService.js`, `userService.js`, `mediaService.js`, `testUserService.js`.
+- `authService.js`, `userService.js`, `mediaService.js`.
 
 ## 7) Schemas map (`src/schemas/`)
 

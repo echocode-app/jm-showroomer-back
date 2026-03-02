@@ -57,8 +57,6 @@ Base URL:
 | Users       | POST   | `/users/complete-onboarding`                    | MVP1 Required | Завершення онбордингу                        |
 | Users       | POST   | `/users/complete-owner-profile`                 | MVP1 Required | Upgrade user -> owner                        |
 | Users       | PATCH  | `/users/profile`                                | MVP1 Required | Оновлення профілю                            |
-| Users       | POST   | `/users/dev/register-test`                      | MVP1 Skip     | Dev-only endpoint                            |
-| Users       | POST   | `/users/dev/make-owner`                         | MVP1 Skip     | Dev-only endpoint                            |
 | Showrooms   | GET    | `/showrooms`                                    | MVP1 Required | Каталог + пагінація                          |
 | Showrooms   | GET    | `/showrooms/suggestions`                        | MVP1 Required | Підказки пошуку                              |
 | Showrooms   | GET    | `/showrooms/counters`                           | MVP1 Required | Лічильники фільтрів                          |
