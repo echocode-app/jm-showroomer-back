@@ -4,6 +4,7 @@ const okMock = jest.fn();
 const getShowroomsAnalyticsServiceMock = jest.fn();
 const getEventsAnalyticsServiceMock = jest.fn();
 const getPlatformAnalyticsServiceMock = jest.fn();
+const getUsersOnboardingAnalyticsServiceMock = jest.fn();
 
 jest.unstable_mockModule("../../utils/apiResponse.js", () => ({
     ok: okMock,
@@ -13,12 +14,14 @@ jest.unstable_mockModule("../../services/admin/adminAnalyticsService.js", () => 
     getShowroomsAnalyticsService: getShowroomsAnalyticsServiceMock,
     getEventsAnalyticsService: getEventsAnalyticsServiceMock,
     getPlatformAnalyticsService: getPlatformAnalyticsServiceMock,
+    getUsersOnboardingAnalyticsService: getUsersOnboardingAnalyticsServiceMock,
 }));
 
 const {
     getShowroomsAnalytics,
     getEventsAnalytics,
     getPlatformAnalytics,
+    getUsersOnboardingAnalytics,
 } = await import("../adminAnalyticsController.js");
 
 describe("adminAnalyticsController", () => {
@@ -58,6 +61,26 @@ describe("adminAnalyticsController", () => {
         await getPlatformAnalytics({ query: {} }, res, jest.fn());
 
         expect(getPlatformAnalyticsServiceMock).toHaveBeenCalledWith({});
+        expect(okMock).toHaveBeenCalledWith(res, data);
+    });
+
+    it("getUsersOnboardingAnalytics returns ok envelope with service data", async () => {
+        const data = {
+            funnel: {
+                totalUsers: 10,
+                onboardingCompleted: 6,
+                onboardingNotCompleted: 4,
+                ownerProfileCompleted: 2,
+                ownerProfileNotCompleted: 4,
+            },
+        };
+        getUsersOnboardingAnalyticsServiceMock.mockResolvedValue(data);
+        const req = { query: { includeUsers: "true", limit: "20" } };
+        const res = {};
+
+        await getUsersOnboardingAnalytics(req, res, jest.fn());
+
+        expect(getUsersOnboardingAnalyticsServiceMock).toHaveBeenCalledWith(req.query);
         expect(okMock).toHaveBeenCalledWith(res, data);
     });
 });

@@ -10,6 +10,7 @@ import {
     getEventsAnalytics,
     getPlatformAnalytics,
     getShowroomsAnalytics,
+    getUsersOnboardingAnalytics,
 } from "../controllers/adminAnalyticsController.js";
 import {
     approveShowroom,
@@ -32,6 +33,7 @@ router.get("/overview", getAdminOverview);
 router.get("/analytics/showrooms", getShowroomsAnalytics);
 router.get("/analytics/events", getEventsAnalytics);
 router.get("/analytics/platform", getPlatformAnalytics);
+router.get("/analytics/users-onboarding", getUsersOnboardingAnalytics);
 
 // LIST ALL (incl pending/deleted)
 router.get("/showrooms", listShowroomsAdmin);

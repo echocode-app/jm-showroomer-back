@@ -164,6 +164,76 @@ export async function getPlatformAnalyticsService(filters = {}) {
     };
 }
 
+/**
+ * Aggregates onboarding funnel/progress metrics from `users` collection.
+ * Optionally returns a paged user list for admin progress tables.
+ * @param {{includeUsers?: string|boolean, limit?: string|number, cursor?: string}} [filters]
+ */
+export async function getUsersOnboardingAnalyticsService(filters = {}) {
+    const parsed = parseUsersOnboardingFilters(filters);
+    const db = getFirestoreInstance();
+    const users = db.collection("users");
+
+    const [totalUsers, onboardingCompleted, ownerProfileCompleted] = await Promise.all([
+        countQuery(users),
+        countQuery(users.where("onboardingState", "==", "completed")),
+        countQuery(users.where("role", "==", "owner")),
+    ]);
+
+    const onboardingNotCompleted = Math.max(0, totalUsers - onboardingCompleted);
+    const ownerProfileNotCompleted = Math.max(0, onboardingCompleted - ownerProfileCompleted);
+
+    const response = {
+        funnel: {
+            totalUsers,
+            onboardingCompleted,
+            onboardingNotCompleted,
+            ownerProfileCompleted,
+            ownerProfileNotCompleted,
+        },
+    };
+
+    if (!parsed.includeUsers) {
+        return response;
+    }
+
+    let query = users.orderBy("__name__", "asc").limit(parsed.limit + 1);
+
+    if (parsed.cursor) {
+        query = query.startAfter(parsed.cursor);
+    }
+
+    const snap = await query.get();
+    const docs = snap?.docs || [];
+    const hasMore = docs.length > parsed.limit;
+    const page = docs.slice(0, parsed.limit);
+
+    response.users = page.map(doc => {
+        const data = doc.data() || {};
+        const onboardingState = String(data.onboardingState || "new");
+        const role = String(data.role || "user");
+        return {
+            uid: data.uid || doc.id,
+            email: data.email || null,
+            name: data.name || null,
+            role,
+            onboardingState,
+            ownerProfileCompleted: role === "owner",
+            country: data.country || null,
+            createdAt: toIsoOrNull(data.createdAt),
+            updatedAt: toIsoOrNull(data.updatedAt),
+        };
+    });
+
+    response.meta = {
+        hasMore,
+        nextCursor: hasMore ? page[page.length - 1]?.id ?? null : null,
+        limit: parsed.limit,
+    };
+
+    return response;
+}
+
 // Shared query parsing for admin analytics endpoints.
 // Kept local to preserve consistent QUERY_INVALID behavior without changing endpoint contracts.
 function parseRangeFilters(filters = {}) {
@@ -186,6 +256,28 @@ function parseRangeFilters(filters = {}) {
     return { from, to, groupBy };
 }
 
+function parseUsersOnboardingFilters(filters = {}) {
+    const includeRaw = filters?.includeUsers;
+    const includeUsers =
+        includeRaw === true ||
+        includeRaw === "true" ||
+        includeRaw === "1" ||
+        includeRaw === 1;
+
+    const limitRaw = filters?.limit;
+    const limit = limitRaw === undefined ? 50 : Number(limitRaw);
+    if (!Number.isFinite(limit) || limit < 1 || limit > 200) {
+        throw badRequest("QUERY_INVALID");
+    }
+
+    const cursor = normalizeCursor(filters?.cursor);
+    return {
+        includeUsers,
+        limit: Math.trunc(limit),
+        cursor,
+    };
+}
+
 function withDateRange(collectionRef, field, from, to) {
     return collectionRef.where(field, ">=", from).where(field, "<", to);
 }
@@ -206,4 +298,16 @@ function buildTimeSeries(values, groupBy) {
     return Array.from(map.entries())
         .sort((a, b) => a[0].localeCompare(b[0]))
         .map(([bucket, count]) => ({ bucket, count }));
+}
+
+function normalizeCursor(cursor) {
+    if (cursor === undefined || cursor === null) return null;
+    const value = String(cursor).trim();
+    if (!value) throw badRequest("QUERY_INVALID");
+    return value;
+}
+
+function toIsoOrNull(value) {
+    const date = toDateOrNull(value);
+    return date ? date.toISOString() : null;
 }

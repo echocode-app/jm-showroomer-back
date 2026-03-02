@@ -5,6 +5,7 @@ import {
     getShowroomsAnalyticsService,
     getEventsAnalyticsService,
     getPlatformAnalyticsService,
+    getUsersOnboardingAnalyticsService,
 } from "../services/admin/adminAnalyticsService.js";
 import { ok } from "../utils/apiResponse.js";
 
@@ -38,6 +39,18 @@ export async function getEventsAnalytics(req, res, next) {
 export async function getPlatformAnalytics(req, res, next) {
     try {
         const data = await getPlatformAnalyticsService(req.query);
+        return ok(res, data);
+    } catch (err) {
+        next(err);
+    }
+}
+
+/**
+ * GET /api/v1/admin/analytics/users-onboarding
+ */
+export async function getUsersOnboardingAnalytics(req, res, next) {
+    try {
+        const data = await getUsersOnboardingAnalyticsService(req.query);
         return ok(res, data);
     } catch (err) {
         next(err);

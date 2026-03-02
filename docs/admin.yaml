@@ -183,6 +183,61 @@ paths:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
 
+  /admin/analytics/users-onboarding:
+    get:
+      tags: [Admin]
+      summary: Users onboarding funnel analytics (admin)
+      description: |
+        Read-only onboarding funnel/progress analytics from `users` collection.
+        Returns aggregate counters:
+        - `onboardingCompleted`
+        - `onboardingNotCompleted`
+        - `ownerProfileCompleted`
+        - `ownerProfileNotCompleted`
+
+        Optional users table payload can be enabled via `includeUsers=true`.
+      operationId: getUsersOnboardingAnalytics
+      externalDocs:
+        description: Admin analytics endpoint guide
+        url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/ADMIN_ANALYTICS.md
+      security:
+        - bearerAuth: []
+      x-roles: [admin]
+      parameters:
+        - $ref: '#/components/parameters/AdminUsersOnboardingIncludeUsers'
+        - $ref: '#/components/parameters/AdminUsersOnboardingLimit'
+        - $ref: '#/components/parameters/AdminUsersOnboardingCursor'
+      responses:
+        "200":
+          description: Users onboarding analytics
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AdminUsersOnboardingAnalyticsResponse'
+        "400":
+          description: Invalid query params (`includeUsers`, `limit`, `cursor`)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
   /admin/showrooms:
     get:
       tags: [Admin]
@@ -661,6 +716,31 @@ components:
         enum: [day, week, month]
         default: day
       description: "Time bucket granularity for timeline series."
+    AdminUsersOnboardingIncludeUsers:
+      name: includeUsers
+      in: query
+      required: false
+      schema:
+        type: boolean
+        default: false
+      description: Include paged `users` list for onboarding progress table.
+    AdminUsersOnboardingLimit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+      description: Users page size when `includeUsers=true`.
+    AdminUsersOnboardingCursor:
+      name: cursor
+      in: query
+      required: false
+      schema:
+        type: string
+      description: Cursor from previous response `meta.nextCursor` when `includeUsers=true`.
   schemas:
     AdminAnalyticsRange:
       type: object
@@ -765,6 +845,81 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AdminPlatformAnalyticsEventCount'
+
+    AdminUsersOnboardingFunnel:
+      type: object
+      required:
+        [totalUsers, onboardingCompleted, onboardingNotCompleted, ownerProfileCompleted, ownerProfileNotCompleted]
+      properties:
+        totalUsers:
+          type: integer
+        onboardingCompleted:
+          type: integer
+        onboardingNotCompleted:
+          type: integer
+        ownerProfileCompleted:
+          type: integer
+          description: Users with role `owner`.
+        ownerProfileNotCompleted:
+          type: integer
+          description: "`onboardingCompleted - ownerProfileCompleted` (clamped to 0)."
+
+    AdminUsersOnboardingUser:
+      type: object
+      required: [uid, role, onboardingState, ownerProfileCompleted]
+      properties:
+        uid:
+          type: string
+        email:
+          type: string
+          nullable: true
+        name:
+          type: string
+          nullable: true
+        role:
+          type: string
+        onboardingState:
+          type: string
+          enum: [new, completed]
+        ownerProfileCompleted:
+          type: boolean
+        country:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    AdminUsersOnboardingMeta:
+      type: object
+      required: [hasMore, nextCursor, limit]
+      properties:
+        hasMore:
+          type: boolean
+        nextCursor:
+          type: string
+          nullable: true
+        limit:
+          type: integer
+
+    AdminUsersOnboardingAnalyticsResponse:
+      type: object
+      required: [funnel]
+      properties:
+        funnel:
+          $ref: '#/components/schemas/AdminUsersOnboardingFunnel'
+        users:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/AdminUsersOnboardingUser'
+        meta:
+          $ref: '#/components/schemas/AdminUsersOnboardingMeta'
 
     AdminOverviewShowroomStats:
       type: object

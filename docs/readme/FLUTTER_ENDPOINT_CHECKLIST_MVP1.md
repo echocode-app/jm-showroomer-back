@@ -97,6 +97,7 @@ Base URL:
 | Admin       | GET    | `/admin/analytics/showrooms`                    | MVP1 Skip     | Для admin panel                              |
 | Admin       | GET    | `/admin/analytics/events`                       | MVP1 Skip     | Для admin panel                              |
 | Admin       | GET    | `/admin/analytics/platform`                     | MVP1 Skip     | Для admin panel                              |
+| Admin       | GET    | `/admin/analytics/users-onboarding`             | MVP1 Skip     | Для admin panel (onboarding funnel/progress) |
 | Admin       | GET    | `/admin/showrooms`                              | MVP1 Skip     | Для admin panel                              |
 | Admin       | GET    | `/admin/showrooms/{id}`                         | MVP1 Skip     | Для admin panel                              |
 | Admin       | GET    | `/admin/showrooms/{id}/history`                 | MVP1 Skip     | Для admin panel                              |

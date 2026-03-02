@@ -10,6 +10,7 @@ const {
     getShowroomsAnalyticsService,
     getEventsAnalyticsService,
     getPlatformAnalyticsService,
+    getUsersOnboardingAnalyticsService,
 } = await import("../adminAnalyticsService.js");
 
 function stableValue(value) {
@@ -28,27 +29,84 @@ function queryKey(collectionName, filters = []) {
     });
 }
 
+function docsQueryKey(collectionName, {
+    filters = [],
+    orders = [],
+    startAfter = null,
+    limit = null,
+} = {}) {
+    return JSON.stringify({
+        collectionName,
+        filters: filters.map(f => ({
+            field: f.field,
+            op: f.op,
+            value: stableValue(f.value),
+        })),
+        orders: orders.map(o => ({ field: o.field, direction: o.direction })),
+        startAfter: stableValue(startAfter),
+        limit,
+    });
+}
+
 function makeDoc(data) {
     return {
+        id: data?.uid || data?.id || null,
         data: () => JSON.parse(JSON.stringify(data)),
     };
 }
 
-function makeQuery(collectionName, state, filters = []) {
+function makeQuery(collectionName, state, queryState = {}) {
+    const current = {
+        filters: queryState.filters || [],
+        orders: queryState.orders || [],
+        startAfter: queryState.startAfter ?? null,
+        limit: queryState.limit ?? null,
+    };
     return {
         where(field, op, value) {
-            return makeQuery(collectionName, state, [...filters, { field, op, value }]);
+            return makeQuery(collectionName, state, {
+                ...current,
+                filters: [...current.filters, { field, op, value }],
+            });
+        },
+        orderBy(field, direction = "asc") {
+            return makeQuery(collectionName, state, {
+                ...current,
+                orders: [...current.orders, { field, direction }],
+            });
+        },
+        startAfter(value) {
+            return makeQuery(collectionName, state, {
+                ...current,
+                startAfter: value,
+            });
+        },
+        limit(value) {
+            return makeQuery(collectionName, state, {
+                ...current,
+                limit: value,
+            });
         },
         count() {
             return {
                 async get() {
-                    const count = state.counts.get(queryKey(collectionName, filters)) ?? 0;
+                    const count = state.counts.get(queryKey(collectionName, current.filters)) ?? 0;
                     return { data: () => ({ count }) };
                 },
             };
         },
         async get() {
-            const docs = state.docs.get(queryKey(collectionName, filters)) ?? [];
+            const docs =
+                state.docs.get(
+                    docsQueryKey(collectionName, {
+                        filters: current.filters,
+                        orders: current.orders,
+                        startAfter: current.startAfter,
+                        limit: current.limit,
+                    })
+                ) ??
+                state.docs.get(queryKey(collectionName, current.filters)) ??
+                [];
             return { docs: docs.map(makeDoc) };
         },
     };
@@ -205,5 +263,76 @@ describe("adminAnalyticsService", () => {
             { eventName: "event_view", count: 1 },
             { eventName: "unknown", count: 1 },
         ]);
+    });
+
+    it("returns users onboarding funnel and optional paged users list", async () => {
+        const state = {
+            counts: new Map([
+                [queryKey("users", []), 10],
+                [queryKey("users", [{ field: "onboardingState", op: "==", value: "completed" }]), 6],
+                [queryKey("users", [{ field: "role", op: "==", value: "owner" }]), 2],
+            ]),
+            docs: new Map([
+                [docsQueryKey("users", {
+                    orders: [{ field: "__name__", direction: "asc" }],
+                    startAfter: null,
+                    limit: 3,
+                }), [
+                    {
+                        uid: "u-1",
+                        email: "u1@example.com",
+                        name: "User 1",
+                        role: "owner",
+                        onboardingState: "completed",
+                        country: "Ukraine",
+                        createdAt: "2026-02-01T10:00:00.000Z",
+                        updatedAt: "2026-02-02T10:00:00.000Z",
+                    },
+                    {
+                        uid: "u-2",
+                        email: "u2@example.com",
+                        name: "User 2",
+                        role: "user",
+                        onboardingState: "completed",
+                        country: "Italy",
+                    },
+                    {
+                        uid: "u-3",
+                        email: "u3@example.com",
+                        role: "user",
+                        onboardingState: "new",
+                    },
+                ]],
+            ]),
+        };
+        getFirestoreInstanceMock.mockReturnValue(makeDb(state));
+
+        const result = await getUsersOnboardingAnalyticsService({ includeUsers: "true", limit: "2" });
+
+        expect(result.funnel).toEqual({
+            totalUsers: 10,
+            onboardingCompleted: 6,
+            onboardingNotCompleted: 4,
+            ownerProfileCompleted: 2,
+            ownerProfileNotCompleted: 4,
+        });
+        expect(result.users).toHaveLength(2);
+        expect(result.users[0]).toMatchObject({
+            uid: "u-1",
+            role: "owner",
+            onboardingState: "completed",
+            ownerProfileCompleted: true,
+        });
+        expect(result.users[1]).toMatchObject({
+            uid: "u-2",
+            role: "user",
+            onboardingState: "completed",
+            ownerProfileCompleted: false,
+        });
+        expect(result.meta).toEqual({
+            hasMore: true,
+            nextCursor: "u-2",
+            limit: 2,
+        });
     });
 });

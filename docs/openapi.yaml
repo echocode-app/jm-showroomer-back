@@ -128,6 +128,8 @@ paths:
     $ref: './admin.yaml#/paths/~1admin~1analytics~1events'
   /admin/analytics/platform:
     $ref: './admin.yaml#/paths/~1admin~1analytics~1platform'
+  /admin/analytics/users-onboarding:
+    $ref: './admin.yaml#/paths/~1admin~1analytics~1users-onboarding'
   /admin/showrooms:
     $ref: './admin.yaml#/paths/~1admin~1showrooms'
   /admin/showrooms/{id}:

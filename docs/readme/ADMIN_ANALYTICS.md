@@ -15,6 +15,7 @@ Admin analytics endpoints are read-only aggregations for internal dashboards.
 - `GET /api/v1/admin/analytics/showrooms`
 - `GET /api/v1/admin/analytics/events`
 - `GET /api/v1/admin/analytics/platform`
+- `GET /api/v1/admin/analytics/users-onboarding`
 
 ## Query Params
 
@@ -27,6 +28,12 @@ Admin analytics endpoints are read-only aggregations for internal dashboards.
   - default: `day`
 
 Invalid `from` / `to` / `groupBy` returns `QUERY_INVALID` (400).
+
+`/admin/analytics/users-onboarding` query params:
+
+- `includeUsers` (optional, boolean, default `false`)
+- `limit` (optional, integer `1..200`, default `50`, used with `includeUsers=true`)
+- `cursor` (optional, opaque cursor from previous response `meta.nextCursor`)
 
 ## Response Envelope
 
@@ -66,4 +73,9 @@ curl -H "Authorization: Bearer <ADMIN_TOKEN>" \
 ```bash
 curl -H "Authorization: Bearer <ADMIN_TOKEN>" \
   "https://<host>/api/v1/admin/analytics/platform?groupBy=month"
+```
+
+```bash
+curl -H "Authorization: Bearer <ADMIN_TOKEN>" \
+  "https://<host>/api/v1/admin/analytics/users-onboarding?includeUsers=true&limit=20"
 ```
