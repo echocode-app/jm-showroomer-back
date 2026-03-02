@@ -10,10 +10,15 @@ export function getLookbooksCollection() {
 
 // Shared public base filter used by ranked/unranked list queries.
 export function buildPublicLookbooksBaseQuery({ countryNormalized, seasonKey }) {
-    return getLookbooksCollection()
+    let query = getLookbooksCollection()
         .where("published", "==", true)
-        .where("countryNormalized", "==", countryNormalized)
-        .where("seasonKey", "==", seasonKey);
+        .where("countryNormalized", "==", countryNormalized);
+
+    if (seasonKey) {
+        query = query.where("seasonKey", "==", seasonKey);
+    }
+
+    return query;
 }
 
 // Ranked segment ordering: manual rank first, deterministic id tie-breaker.

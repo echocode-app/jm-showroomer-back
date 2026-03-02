@@ -1,23 +1,32 @@
 import { encodeListCursor, parseLookbookListFilters } from "./parse.js";
 import { fetchRanked, fetchUnranked } from "./list/queryFetch.js";
 import { fetchWithInMemoryFallback } from "./list/fallback.js";
+import { fetchNearby, mapNearbyIndexError } from "./list/nearby.js";
 
 export async function listLookbooksService(filters = {}) {
     const parsed = parseLookbookListFilters(filters);
     const maxItems = parsed.limit + 1;
 
     let items;
-    try {
-        const ranked = await fetchRanked(parsed, maxItems);
-        items = ranked.length >= maxItems
-            ? ranked.slice(0, maxItems)
-            : ranked.concat(await fetchUnranked(parsed, maxItems - ranked.length));
-    } catch (err) {
-        if (!shouldUseFallback(err)) {
-            throw err;
+    if (parsed.nearbyGeohashPrefixes.length > 0) {
+        try {
+            items = await fetchNearby(parsed, maxItems);
+        } catch (err) {
+            mapNearbyIndexError(err);
         }
-        // Dev/test fallback avoids hard dependency on composite indexes.
-        items = await fetchWithInMemoryFallback(parsed, maxItems);
+    } else {
+        try {
+            const ranked = await fetchRanked(parsed, maxItems);
+            items = ranked.length >= maxItems
+                ? ranked.slice(0, maxItems)
+                : ranked.concat(await fetchUnranked(parsed, maxItems - ranked.length));
+        } catch (err) {
+            if (!shouldUseFallback(err)) {
+                throw err;
+            }
+            // Dev/test fallback avoids hard dependency on composite indexes.
+            items = await fetchWithInMemoryFallback(parsed, maxItems);
+        }
     }
 
     const hasMore = items.length > parsed.limit;

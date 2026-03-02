@@ -42,7 +42,13 @@ export async function listLookbooks(req, res, next) {
         const actor = resolveActorIdentity(req);
 
         // Backward-compatible mode for existing catalog endpoints.
-        if (req.query?.country || req.query?.seasonKey) {
+        if (
+            req.query?.country ||
+            req.query?.seasonKey ||
+            req.query?.nearLat !== undefined ||
+            req.query?.nearLng !== undefined ||
+            req.query?.nearRadiusKm !== undefined
+        ) {
             const { lookbooks, meta } = await listLookbooksService(req.query ?? {});
             const withCover = await Promise.all(lookbooks.map(attachCoverUrl));
             attachAnonymousIdHeader(res, actor);

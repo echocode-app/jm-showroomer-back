@@ -1,7 +1,5 @@
 # Cursor Pagination (Flutter Integration Guide, UA)
 
-## Що таке cursor і навіщо бекенд його використовує
-
 У багатьох list endpoint-ах цього бекенду використовується **cursor pagination**, а не page/offset.
 
 Чому:
@@ -106,6 +104,14 @@ Flutter має:
 - той самий набір фільтрів для continuation
 - reset при зміні фільтрів
 - при `CURSOR_INVALID` починати з page 1
+
+Lookbooks nearby приклади (Flutter):
+- `GET /lookbooks?country=Ukraine&nearLat=50&nearLng=30&nearRadiusKm=5&limit=20`
+- `GET /lookbooks?country=Ukraine&seasonKey=ss-2026&nearLat=50&nearLng=30&nearRadiusKm=5&limit=20`
+
+Для наступної сторінки:
+- взяти `meta.nextCursor` з першої відповіді
+- повторити той самий запит + `cursor=<meta.nextCursor>`
 
 ## Мінімальна модель state у Flutter (recommended)
 

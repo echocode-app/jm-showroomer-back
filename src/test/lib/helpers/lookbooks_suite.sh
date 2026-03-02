@@ -68,12 +68,18 @@ run_lookbooks_suite() {
     fail "Page 2 must differ from page 1"
   fi
 
-  print_section "3) Invalid filter contract"
+  print_section "3) Filter contract"
   http_request "GET /lookbooks missing country" 400 "QUERY_INVALID" \
     "${BASE_URL}/lookbooks?seasonKey=ss-2026"
 
-  http_request "GET /lookbooks missing seasonKey" 400 "QUERY_INVALID" \
+  http_request "GET /lookbooks missing seasonKey (optional)" 200 "" \
     "${BASE_URL}/lookbooks?country=Ukraine"
+
+  HAS_FW_IN_NO_SEASON=$(echo "$LAST_BODY" | jq -r --arg id "$OTHER_SEASON_ID" '.data.lookbooks[]?.id | select(. == $id)')
+  assert_non_empty "$HAS_FW_IN_NO_SEASON" "other season in list without seasonKey filter"
+
+  http_request "GET /lookbooks nearby" 200 "" \
+    "${BASE_URL}/lookbooks?country=Ukraine&nearLat=50&nearLng=30&nearRadiusKm=5"
 
   http_request "GET /lookbooks invalid cursor" 400 "CURSOR_INVALID" \
     "${BASE_URL}/lookbooks?country=Ukraine&seasonKey=ss-2026&cursor=bad"

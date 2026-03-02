@@ -274,6 +274,12 @@ Important:
 
 - list з actor-aware полями (`likedByMe`);
 - роль/видимість впливають на результат.
+- lookbooks є окремою сутністю і не залежать від showroom lifecycle.
+- `country` — обов'язковий;
+- `seasonKey` — optional (можна не передавати);
+- nearby режим підтримується у тому ж endpoint:
+  - `GET /lookbooks?country=Ukraine&nearLat=50&nearLng=30&nearRadiusKm=5`
+  - `GET /lookbooks?country=Ukraine&seasonKey=ss-2026&nearLat=50&nearLng=30&nearRadiusKm=5`
 
 ## `POST /lookbooks` і `POST /lookbooks/create`
 
@@ -304,6 +310,7 @@ Important:
 
 - public-compatible list;
 - при auth збагачення user state.
+- events є окремою сутністю (не прив'язані до showrooms).
 
 ## `GET /events/{id}`
 
@@ -339,6 +346,32 @@ Important:
 - `/collections/favorites/showrooms/sync`
 - `/collections/favorites/lookbooks/sync`
 - `/collections/want-to-visit/events/sync`
+
+---
+
+## 9) Mock seed for Flutter layout/testing
+
+Коли потрібно швидко наповнити БД мок-даними під макет Flutter:
+
+1. Покласти зображення в:
+- `images/lookbooks`
+- `images/events`
+
+2. Dry-run (перевірити кількість і payload без запису):
+- `npm run seed:mocks:dry`
+
+3. Реальний seed (upload у Storage + upsert у Firestore):
+- `npm run seed:mocks`
+
+4. Опції:
+- `--prefix=<name>` для контрольованого namespace id
+- `--only-lookbooks` або `--only-events`
+- `--skip-upload` (тільки Firestore, без Storage upload)
+
+Cleanup після тестів:
+- dry-run: `npm run cleanup:mocks:dry -- --prefix=<name>`
+- видалити з Firestore: `npm run cleanup:mocks -- --prefix=<name>`
+- видалити з Firestore + Storage: `npm run cleanup:mocks -- --prefix=<name> --with-storage`
 
 Sync behavior:
 

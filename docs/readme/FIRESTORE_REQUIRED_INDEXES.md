@@ -3,9 +3,11 @@
 This document lists all currently required **composite** Firestore indexes for backend query paths.
 
 Source of truth:
+
 - `/Users/annakotlyar/Desktop/projects/jm-showroomer-back/firestore.indexes.json`
 
 Deployment:
+
 ```bash
 firebase deploy --only firestore:indexes
 ```
@@ -41,12 +43,20 @@ firebase deploy --only firestore:indexes
 27. `status ASCENDING | country ASCENDING | nameNormalized ASCENDING | __name__ ASCENDING`
 28. `ownerUid ASCENDING | country ASCENDING | nameNormalized ASCENDING | __name__ ASCENDING`
 29. `country ASCENDING | nameNormalized ASCENDING | __name__ ASCENDING`
+30. `status ASCENDING | geo.cityNormalized ASCENDING | nameNormalized ASCENDING | __name__ ASCENDING`
+31. `ownerUid ASCENDING | geo.cityNormalized ASCENDING | nameNormalized ASCENDING | __name__ ASCENDING`
+32. `ownerUid ASCENDING | status ASCENDING | geo.cityNormalized ASCENDING | nameNormalized ASCENDING | __name__ ASCENDING`
 
 ### Notes for map/counters paths
+
 - The map/counters geohash path requires:
   - `status + geo.geohash (+ __name__)`
   - `status + country + geo.geohash (+ __name__)`
 - Owner/admin variants are included as well to avoid role-specific index misses.
+- Suggestions city-precedence path requires:
+  - `status + geo.cityNormalized + nameNormalized (+ __name__)`
+  - `ownerUid + geo.cityNormalized + nameNormalized (+ __name__)`
+  - `ownerUid + status + geo.cityNormalized + nameNormalized (+ __name__)`
 
 ## lookbooks (composite)
 
@@ -54,6 +64,15 @@ firebase deploy --only firestore:indexes
 2. `published ASCENDING | countryNormalized ASCENDING | seasonKey ASCENDING | sortRank ASCENDING | publishedAt DESCENDING | __name__ ASCENDING`
 3. `published ASCENDING | createdAt DESCENDING | __name__ DESCENDING`
 4. `published ASCENDING | showroomId ASCENDING | createdAt DESCENDING | __name__ DESCENDING`
+5. `published ASCENDING | countryNormalized ASCENDING | geo.geohash ASCENDING | __name__ ASCENDING`
+6. `published ASCENDING | countryNormalized ASCENDING | seasonKey ASCENDING | geo.geohash ASCENDING | __name__ ASCENDING`
+
+### Notes for nearby path
+
+- Nearby query (`nearLat/nearLng/nearRadiusKm`) requires geohash indexes:
+  - `published + countryNormalized + geo.geohash (+ __name__)`
+  - Optional season filter path also uses:
+    `published + countryNormalized + seasonKey + geo.geohash (+ __name__)`
 
 ## events (composite)
 

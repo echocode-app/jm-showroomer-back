@@ -201,8 +201,8 @@ paths:
         the same nested paging envelope shape (`data.showrooms.{showrooms,meta}`).
       operationId: listShowroomsAdmin
       externalDocs:
-        description: Flutter guide for admin pending queue cursor pagination
-        url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/ADMIN_PENDING_QUEUE_CURSOR.md
+        description: Flutter cursor pagination guide (all endpoints)
+        url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/CURSOR_PAGINATION_FLUTTER.md
       security:
         - bearerAuth: []
       x-roles: [admin]

@@ -86,6 +86,30 @@ components:
         cityNormalized:
           type: string
           nullable: true
+        geo:
+          type: object
+          nullable: true
+          properties:
+            country:
+              type: string
+              nullable: true
+            city:
+              type: string
+              nullable: true
+            cityNormalized:
+              type: string
+              nullable: true
+            coords:
+              type: object
+              nullable: true
+              properties:
+                lat:
+                  type: number
+                lng:
+                  type: number
+            geohash:
+              type: string
+              nullable: true
         seasonLabel:
           type: string
           nullable: true
@@ -134,10 +158,17 @@ paths:
       summary: List lookbooks
       description: |
         Public list endpoint.
-        Requires `country` and `seasonKey` query params.
+        Requires `country` query param. `seasonKey` is optional.
+        Supports nearby mode via `nearLat/nearLng/nearRadiusKm` (same UX entrypoint as showrooms).
         Returns published lookbooks only.
         Ordering is deterministic: ranked (`sortRank asc`) first, then unranked (`publishedAt desc`) with id tie-breaker.
         Signed URL is generated for coverPath only.
+        
+        Request examples:
+        - `GET /api/v1/lookbooks?country=Ukraine`
+        - `GET /api/v1/lookbooks?country=Ukraine&seasonKey=ss-2026`
+        - `GET /api/v1/lookbooks?country=Ukraine&nearLat=50&nearLng=30&nearRadiusKm=5`
+        - `GET /api/v1/lookbooks?country=Ukraine&seasonKey=ss-2026&nearLat=50&nearLng=30&nearRadiusKm=5`
       operationId: listLookbooks
       externalDocs:
         description: Flutter cursor pagination guide (all endpoints)
@@ -149,12 +180,42 @@ paths:
           required: true
           schema:
             type: string
+            example: Ukraine
         - name: seasonKey
           in: query
-          required: true
+          required: false
           schema:
             type: string
             example: ss-2026
+          description: Optional season filter. If omitted, returns all seasons for selected country.
+        - name: nearLat
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: -90
+            maximum: 90
+            example: 50
+          description: Nearby search center latitude. Must be used with nearLng.
+        - name: nearLng
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: -180
+            maximum: 180
+            example: 30
+          description: Nearby search center longitude. Must be used with nearLat.
+        - name: nearRadiusKm
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: 0.1
+            maximum: 200
+            default: 10
+            example: 5
+          description: Optional nearby radius in kilometers. Used only with nearLat/nearLng.
         - name: limit
           in: query
           schema:
@@ -199,6 +260,27 @@ paths:
                           paging:
                             type: string
                             enum: [enabled, end]
+              examples:
+                country_only:
+                  summary: Country feed without season filter
+                  value:
+                    success: true
+                    data:
+                      lookbooks: []
+                    meta:
+                      hasMore: false
+                      nextCursor: null
+                      paging: end
+                nearby_feed:
+                  summary: Nearby feed
+                  value:
+                    success: true
+                    data:
+                      lookbooks: []
+                    meta:
+                      hasMore: false
+                      nextCursor: null
+                      paging: end
         "400":
           description: Invalid query or cursor
           content:

@@ -27,6 +27,76 @@
           "order": "ASCENDING"
         },
         {
+          "fieldPath": "geo.cityNormalized",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "nameNormalized",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "showrooms",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "ownerUid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "geo.cityNormalized",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "nameNormalized",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "showrooms",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "ownerUid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "geo.cityNormalized",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "nameNormalized",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "showrooms",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
           "fieldPath": "submittedAt",
           "order": "DESCENDING"
         },
@@ -624,6 +694,54 @@
         },
         {
           "fieldPath": "sortRank",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "lookbooks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "published",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "countryNormalized",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "geo.geohash",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "lookbooks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "published",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "countryNormalized",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "seasonKey",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "geo.geohash",
           "order": "ASCENDING"
         },
         {

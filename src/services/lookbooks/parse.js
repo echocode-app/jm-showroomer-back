@@ -2,21 +2,23 @@ import { badRequest } from "../../core/error.js";
 import { normalizeCountry } from "../../constants/countries.js";
 import { decodeListCursor, encodeListCursor, CURSOR_VERSION } from "./parseCursor.js";
 import { parseStrictLimit } from "../../utils/pagination.js";
+import { buildNearbyGeohashPrefixes } from "../showrooms/list/parse/nearby.js";
 
 export const DEFAULT_LIMIT = 20;
 export const MAX_LIMIT = 100;
 export const SYNC_MAX_IDS = 100;
 
 export function parseLookbookListFilters(filters = {}) {
-    // Public list requires both dimensions for stable product-facing catalog slices.
+    // Country remains required for MVP1 catalog partitioning.
     const country = parseRequiredString(filters.country);
-    const seasonKey = parseRequiredString(filters.seasonKey);
+    const seasonKey = parseOptionalString(filters.seasonKey);
 
     return {
         limit: parseLimit(filters.limit, DEFAULT_LIMIT, MAX_LIMIT),
         cursor: filters.cursor ? decodeListCursor(filters.cursor) : null,
         countryNormalized: normalizeCountry(country),
-        seasonKey: normalizeSeasonKey(seasonKey),
+        seasonKey: seasonKey ? normalizeSeasonKey(seasonKey) : null,
+        nearbyGeohashPrefixes: buildNearbyGeohashPrefixes(filters),
     };
 }
 
@@ -61,6 +63,13 @@ function parseRequiredString(value) {
         throw badRequest("QUERY_INVALID");
     }
 
+    return trimmed;
+}
+
+function parseOptionalString(value) {
+    if (value === undefined || value === null) return null;
+    const trimmed = String(value).trim();
+    if (!trimmed) return null;
     return trimmed;
 }
 

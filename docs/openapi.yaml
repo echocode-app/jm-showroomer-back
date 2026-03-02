@@ -15,11 +15,6 @@ info:
       Value: correct infinite scroll implementation without duplicates/skips/cursor misuse.  
       <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/CURSOR_PAGINATION_FLUTTER.md" target="_blank" rel="noopener noreferrer">Open document</a>
 
-    - **ADMIN_PENDING_QUEUE_CURSOR.md**  
-      For Flutter Admin Panel: how to use cursor pagination for the pending moderation queue (`/admin/showrooms?status=pending`).  
-      Value: correct infinite scroll behavior without duplicates, skips, or cursor misuse.  
-      <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/ADMIN_PENDING_QUEUE_CURSOR.md" target="_blank" rel="noopener noreferrer">Open document</a>
-
     - **README_UA.md**  
       For PM/client: business logic and key product flows in plain language.  
       Value: clear understanding of system behavior without technical implementation details.  
@@ -44,6 +39,21 @@ info:
       For Admin Panel + Backend: admin analytics endpoints, query params, response shapes, and examples.  
       Value: predictable dashboard integration for overview/analytics pages without backend contract drift.  
       <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/ADMIN_ANALYTICS.md" target="_blank" rel="noopener noreferrer">Open document</a>
+
+    - **FIRESTORE_REQUIRED_INDEXES.md**  
+      For Backend/DevOps: required Firestore indexes and deployment notes.  
+      Value: avoid `INDEX_NOT_READY` runtime failures in list/search endpoints.  
+      <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/FIRESTORE_REQUIRED_INDEXES.md" target="_blank" rel="noopener noreferrer">Open document</a>
+
+    - **FLUTTER_ENDPOINT_CHECKLIST_MVP1.md**  
+      For Flutter: full MVP1 endpoint matrix with required/optional/skip scope and failure handling.  
+      Value: consistent integration coverage and fewer contract misses before release.  
+      <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/FLUTTER_ENDPOINT_CHECKLIST_MVP1.md" target="_blank" rel="noopener noreferrer">Open document</a>
+
+    - **QA_POSTMAN_TESTER_CHECKLIST.md**  
+      For QA: step-by-step Postman regression checklist with smoke, domain flows, and bug-report format.  
+      Value: repeatable manual testing for complex backend flows.  
+      <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/QA_POSTMAN_TESTER_CHECKLIST.md" target="_blank" rel="noopener noreferrer">Open document</a>
   license:
     name: UNLICENSED
     url: https://unlicense.org/
@@ -190,8 +200,8 @@ tags:
   - name: Admin
     description: Admin moderation endpoints for showrooms.
     externalDocs:
-      description: Admin pending queue cursor guide (Flutter)
-      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/ADMIN_PENDING_QUEUE_CURSOR.md
+      description: Admin analytics endpoints and dashboard integration notes
+      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/ADMIN_ANALYTICS.md
   - name: Analytics
     description: Client analytics ingest endpoint and backend analytics contract references.
     externalDocs:

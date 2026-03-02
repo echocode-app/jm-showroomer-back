@@ -21,6 +21,10 @@
     "// maintenance": "----",
     "test:cleanup": "NODE_ENV=test node scripts/cleanup_test_data.js",
     "test:cleanup:dry": "NODE_ENV=test node scripts/cleanup_test_data.js --dry-run",
+    "seed:mocks": "NODE_ENV=dev node scripts/seed_mock_content_from_images.js",
+    "seed:mocks:dry": "NODE_ENV=dev node scripts/seed_mock_content_from_images.js --dry-run",
+    "cleanup:mocks": "NODE_ENV=dev node scripts/cleanup_mock_content_by_prefix.js",
+    "cleanup:mocks:dry": "NODE_ENV=dev node scripts/cleanup_mock_content_by_prefix.js --dry-run",
     "firebase:migration": "bash scripts/firebase_project_migration.sh",
     "dev": "NODE_ENV=dev nodemon src/core/server.js",
     "start": "NODE_ENV=prod node src/core/server.js"
