@@ -54,7 +54,10 @@ Prod Swagger: https://jm-showroomer-back.onrender.com/docs/
 Що робить:
 
 - запускає soft-delete поточного профілю;
-- блокує видалення, якщо користувач володіє активними бізнес-сутностями (showrooms/lookbooks/events);
+- каскадно очищає пов'язані ownership-дані:
+  - showrooms -> soft-delete (`status=deleted`);
+  - lookbooks/events -> hard-delete;
+  - user subcollections (`devices/notifications/favorites/want-to-visit`) -> cleanup;
 - операція ідемпотентна (`Account already deleted` при повторному виклику).
 
 Ключові інваріанти:
@@ -68,7 +71,6 @@ Prod Swagger: https://jm-showroomer-back.onrender.com/docs/
 - `200` — `Account deleted`
 - `200` — `Account already deleted` (idempotent)
 - `200` — `Account deletion in progress` (конкурентний повторний delete)
-- `409 USER_DELETE_BLOCKED` — є ownership blockers
 
 ---
 
@@ -580,7 +582,6 @@ Notification policy (`MVP_MODE`):
 | `SHOWROOM_LOCKED_PENDING`             | 409  | showroom locked у pending                              |
 | `SHOWROOM_PENDING_SNAPSHOT_MISSING`   | 409  | немає snapshot для approve                             |
 | `USER_COUNTRY_CHANGE_BLOCKED`         | 409  | зміну country заборонено через активні сутності        |
-| `USER_DELETE_BLOCKED`                 | 409  | delete user заблоковано через owned business entities  |
 | `RATE_LIMIT_EXCEEDED`                 | 429  | перевищено rate-limit middleware                       |
 | `EVENTS_WRITE_MVP2_ONLY`              | 501  | write-endpoint події недоступний у MVP1                |
 | `NOT_IMPLEMENTED`                     | 501  | не реалізовано                                         |

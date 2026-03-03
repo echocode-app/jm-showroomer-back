@@ -314,8 +314,9 @@ paths:
       tags: [Users]
       summary: Delete current user (soft-delete)
       description: |
-        Ownership-based BLOCK DELETE semantics.
-        Deletion is blocked when the user still owns active business entities.
+        Cascading delete semantics for account-owned data.
+        Endpoint soft-deletes the user profile and removes owned business entities:
+        showrooms are soft-deleted, lookbooks/events are hard-deleted, and user subcollections are cleaned up.
         Endpoint is idempotent and may return `Account already deleted` or
         `Account deletion in progress` under concurrent repeated calls.
       operationId: deleteMyProfile
@@ -343,12 +344,6 @@ paths:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "404":
           description: User not found
-          content:
-            application/json:
-              schema:
-                $ref: './common.yaml#/components/schemas/ApiError'
-        "409":
-          description: Delete blocked by owned business entities (USER_DELETE_BLOCKED)
           content:
             application/json:
               schema:

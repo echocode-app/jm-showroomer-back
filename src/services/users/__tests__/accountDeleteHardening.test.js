@@ -37,6 +37,12 @@ function makeDb(state) {
                 throw new Error(`Unsupported op ${filter.op}`);
             });
         });
+        if (query.orderByField === "__name__") {
+            docs = docs.slice().sort((a, b) => String(a.id).localeCompare(String(b.id)));
+        }
+        if (query.startAfterId) {
+            docs = docs.filter(doc => String(doc.id) > String(query.startAfterId));
+        }
         if (typeof query.limitN === "number") {
             docs = docs.slice(0, query.limitN);
         }
@@ -45,21 +51,30 @@ function makeDb(state) {
             docs: docs.map(doc => ({
                 id: doc.id,
                 data: () => ({ ...doc }),
+                ref: makeDocRef(query.collectionName, doc.id),
             })),
         };
     }
 
-    function makeQuery(collectionName, filters = [], limitN = null) {
+    function makeQuery(collectionName, filters = [], limitN = null, orderByField = null, startAfterId = null) {
         return {
             _kind: "query",
             collectionName,
             filters,
             limitN,
+            orderByField,
+            startAfterId,
             where(field, op, value) {
-                return makeQuery(collectionName, [...filters, { field, op, value }], limitN);
+                return makeQuery(collectionName, [...filters, { field, op, value }], limitN, orderByField, startAfterId);
             },
             limit(n) {
-                return makeQuery(collectionName, filters, n);
+                return makeQuery(collectionName, filters, n, orderByField, startAfterId);
+            },
+            orderBy(field) {
+                return makeQuery(collectionName, filters, limitN, field, startAfterId);
+            },
+            startAfter(doc) {
+                return makeQuery(collectionName, filters, limitN, orderByField, doc?.id ?? null);
             },
             async get() {
                 return applyQuery(this);
@@ -89,6 +104,14 @@ function makeDb(state) {
                 }
                 if (!state.users?.[id]) throw new Error("not found");
                 state.users[id] = { ...state.users[id], ...patch };
+            },
+            async delete() {
+                if (collectionName === "users") {
+                    delete state.users?.[id];
+                    return;
+                }
+                if (!state[collectionName]) return;
+                state[collectionName] = state[collectionName].filter(item => item.id !== id);
             },
         };
     }
@@ -147,21 +170,23 @@ describe("account delete hardening", () => {
         getFirestoreInstanceMock.mockReset();
     });
 
-    it("blocks deletion when user owns an event (future-proof blocker)", async () => {
+    it("deletes account and cascades cleanup when user owns business entities", async () => {
         const state = {
             users: { u1: { uid: "u1", isDeleted: false } },
-            showrooms: [],
-            lookbooks: [],
+            showrooms: [{ id: "sr-1", ownerUid: "u1", status: "approved" }],
+            lookbooks: [{ id: "lb-1", authorId: "u1", published: true }],
             events: [{ id: "ev-1", ownerUid: "u1" }],
         };
         getFirestoreInstanceMock.mockReturnValue(makeDb(state));
 
         const result = await profileService.deleteUserAccountWithBlockGuard("u1");
 
-        expect(result.status).toBe("blocked");
-        expect(result.blockers.events).toBe(true);
-        expect(state.users.u1.isDeleted).not.toBe(true);
+        expect(result.status).toBe("deleted");
+        expect(state.users.u1.isDeleted).toBe(true);
         expect(state.users.u1.deleteLock).toBeNull();
+        expect(state.showrooms[0].status).toBe("deleted");
+        expect(state.lookbooks).toHaveLength(0);
+        expect(state.events).toHaveLength(0);
     });
 
     it("allows deletion when user owns only deleted showrooms", async () => {
@@ -181,7 +206,7 @@ describe("account delete hardening", () => {
         expect(typeof state.users.u1.deletedAt).toBe("string");
     });
 
-    it("blocks deletion for lookbooks using canonical authorId ownership", async () => {
+    it("deletes lookbooks using canonical authorId ownership", async () => {
         const state = {
             users: { u1: { uid: "u1", isDeleted: false } },
             showrooms: [],
@@ -192,8 +217,8 @@ describe("account delete hardening", () => {
 
         const result = await profileService.deleteUserAccountWithBlockGuard("u1");
 
-        expect(result.status).toBe("blocked");
-        expect(result.blockers.lookbooks).toBe(true);
+        expect(result.status).toBe("deleted");
+        expect(state.lookbooks).toHaveLength(0);
     });
 
     it("treats deleteLock as non-writable for concurrent write guards", async () => {

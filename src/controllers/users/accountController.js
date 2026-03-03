@@ -8,7 +8,7 @@ import {
 } from "../../services/users/profileService.js";
 
 /**
- * Soft-deletes current account if there are no blocking owned business entities.
+ * Soft-deletes current account with cascading cleanup of owned data.
  */
 export async function deleteMyProfile(req, res) {
     const userId = req.auth?.uid;
@@ -35,15 +35,6 @@ export async function deleteMyProfile(req, res) {
     if (result.status === "delete_in_progress") {
         return ok(res, { message: "Account deletion in progress" });
     }
-    if (result.status === "blocked") {
-        return fail(
-            res,
-            "USER_DELETE_BLOCKED",
-            "Resolve owned business entities before deleting your account.",
-            409
-        );
-    }
-
     try {
         await getAuthInstance().revokeRefreshTokens(userId);
     } catch (err) {

@@ -222,9 +222,9 @@ User writable only if:
 Delete flow (`DELETE /users/me`):
 - `accountController.deleteMyProfile` -> `users/profileService.deleteUserAccountWithBlockGuard`
 - крок 1: tx acquire `deleteLock`
-- крок 2: fan-out read ownership blockers (showrooms/lookbooks/events)
-- крок 3: якщо blockers відсутні -> tx finalize soft delete (перевіряє, що lock ще утримується)
-- крок 4: якщо blocker/error -> release lock
+- крок 2: cascade cleanup ownership/user data (showrooms soft-delete, lookbooks/events hard-delete, user subcollections cleanup)
+- крок 3: tx finalize soft delete (перевіряє, що lock ще утримується)
+- крок 4: якщо error -> release lock
 
 Race-safety strategy:
 - write-сервіси використовують `assertUserWritableInTx(tx, uid)` всередині Firestore transaction;

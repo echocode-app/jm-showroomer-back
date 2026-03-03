@@ -150,18 +150,9 @@ seed_and_delete_throwaway_showroom() {
 
 seed_ephemeral_user
 
-print_section "Delete blocked for throwaway user with lookbook ownership"
+print_section "Delete throwaway user with ownership data (cascade cleanup)"
 seed_throwaway_lookbook
-http_request "DELETE /users/me (throwaway blocked by lookbook)" 409 "USER_DELETE_BLOCKED" \
-  -X DELETE "${EPHEMERAL_HEADER[@]}" \
-  "${BASE_URL}/users/me"
-delete_throwaway_lookbook
-
-print_section "Delete allowed when throwaway owns only deleted showrooms"
-seed_and_delete_throwaway_showroom
-
-print_section "Delete throwaway user"
-http_request "DELETE /users/me (throwaway)" 200 "" \
+http_request "DELETE /users/me (throwaway with lookbook ownership)" 200 "" \
   -X DELETE "${EPHEMERAL_HEADER[@]}" \
   "${BASE_URL}/users/me"
 
@@ -189,29 +180,6 @@ http_request "POST /users/me/devices (throwaway deleted)" 404 "USER_NOT_FOUND" \
   -X POST "${EPHEMERAL_HEADER[@]}" "${JSON_HEADER[@]}" \
   -d '{"deviceId":"dev-delete-test","fcmToken":"token-delete-test","platform":"ios","appVersion":"1.0.0","locale":"en"}' \
   "${BASE_URL}/users/me/devices"
-
-print_section "Seed showroom (active asset)"
-http_request "POST /auth/oauth (ensure blocked user exists)" 200 "" \
-  -X POST "${JSON_HEADER[@]}" \
-  -d "{\"idToken\":\"${TEST_USER_TOKEN}\"}" \
-  "${BASE_URL}/auth/oauth"
-
-BLOCKED_USER_DELETED=$(json_get "$LAST_BODY" '.data.user.isDeleted // false')
-if [[ "$BLOCKED_USER_DELETED" == "true" ]]; then
-  fail "blocked user is deleted; provide a non-deleted TEST_USER_TOKEN"
-fi
-
-ensure_blocked_owner_role
-
-http_request "POST /showrooms/draft (blocked owner seed)" 200 "" \
-  -X POST "${BLOCKED_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d '{}' \
-  "${BASE_URL}/showrooms/draft"
-
-print_section "Delete blocked for owner with active assets"
-http_request "DELETE /users/me (blocked owner)" 409 "USER_DELETE_BLOCKED" \
-  -X DELETE "${BLOCKED_HEADER[@]}" \
-  "${BASE_URL}/users/me"
 
 print_section "RESULT"
 echo "✔ User delete tests passed"
