@@ -166,9 +166,9 @@ paths:
         
         Request examples:
         - `GET /api/v1/lookbooks?country=Ukraine`
-        - `GET /api/v1/lookbooks?country=Ukraine&seasonKey=ss-2026`
+        - `GET /api/v1/lookbooks?country=Ukraine&seasonKey=summer`
         - `GET /api/v1/lookbooks?country=Ukraine&nearLat=50&nearLng=30&nearRadiusKm=5`
-        - `GET /api/v1/lookbooks?country=Ukraine&seasonKey=ss-2026&nearLat=50&nearLng=30&nearRadiusKm=5`
+        - `GET /api/v1/lookbooks?country=Ukraine&seasonKey=summer&nearLat=50&nearLng=30&nearRadiusKm=5`
       operationId: listLookbooks
       externalDocs:
         description: Flutter cursor pagination guide (all endpoints)
@@ -186,8 +186,8 @@ paths:
           required: false
           schema:
             type: string
-            example: ss-2026
-          description: Optional season filter. If omitted, returns all seasons for selected country.
+            example: summer
+          description: "Optional season filter. Recommended values for MVP mock catalog: spring, summer, autumn, winter."
         - name: nearLat
           in: query
           required: false

@@ -188,12 +188,18 @@ paths:
       tags: [Admin]
       summary: Users onboarding funnel analytics (admin)
       description: |
-        Read-only onboarding funnel/progress analytics from `users` collection.
+        Read-only onboarding funnel/progress analytics from `users` + `analytics_events`.
         Returns aggregate counters:
         - `onboardingCompleted`
         - `onboardingNotCompleted`
         - `ownerProfileCompleted`
         - `ownerProfileNotCompleted`
+        Also returns onboarding journey/drop-off progression:
+        - splash
+        - onboarding steps 1..4
+        - auth
+        - owner registration
+        - owner registration completed
 
         Optional users table payload can be enabled via `includeUsers=true`.
       operationId: getUsersOnboardingAnalytics
@@ -204,6 +210,8 @@ paths:
         - bearerAuth: []
       x-roles: [admin]
       parameters:
+        - $ref: '#/components/parameters/AdminAnalyticsFrom'
+        - $ref: '#/components/parameters/AdminAnalyticsTo'
         - $ref: '#/components/parameters/AdminUsersOnboardingIncludeUsers'
         - $ref: '#/components/parameters/AdminUsersOnboardingLimit'
         - $ref: '#/components/parameters/AdminUsersOnboardingCursor'
@@ -220,7 +228,7 @@ paths:
                       data:
                         $ref: '#/components/schemas/AdminUsersOnboardingAnalyticsResponse'
         "400":
-          description: Invalid query params (`includeUsers`, `limit`, `cursor`)
+          description: Invalid query params (`from`, `to`, `includeUsers`, `limit`, `cursor`)
           content:
             application/json:
               schema:
@@ -406,6 +414,7 @@ paths:
       description: |
         Admin soft delete for any showroom status.
         Returns privileged showroom payload after status is changed to `deleted`.
+        Owner notification is emitted post-commit (best-effort) with showroom id/name and deletion timestamp.
       operationId: deleteShowroomAdmin
       security:
         - bearerAuth: []
@@ -909,10 +918,12 @@ components:
 
     AdminUsersOnboardingAnalyticsResponse:
       type: object
-      required: [funnel]
+      required: [funnel, journey]
       properties:
         funnel:
           $ref: '#/components/schemas/AdminUsersOnboardingFunnel'
+        journey:
+          $ref: '#/components/schemas/AdminUsersOnboardingJourney'
         users:
           type: array
           nullable: true
@@ -920,6 +931,78 @@ components:
             $ref: '#/components/schemas/AdminUsersOnboardingUser'
         meta:
           $ref: '#/components/schemas/AdminUsersOnboardingMeta'
+
+    AdminUsersOnboardingJourneyRange:
+      type: object
+      required: [from, to]
+      properties:
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
+
+    AdminUsersOnboardingJourneyStage:
+      type: object
+      required: [key, reached]
+      properties:
+        key:
+          type: string
+          enum:
+            - splash
+            - onboardingStep1
+            - onboardingStep2
+            - onboardingStep3
+            - onboardingStep4
+            - auth
+            - ownerRegistration
+            - ownerRegistrationCompleted
+        reached:
+          type: integer
+
+    AdminUsersOnboardingJourneyDropoff:
+      type: object
+      required:
+        - splash
+        - onboardingStep1
+        - onboardingStep2
+        - onboardingStep3
+        - onboardingStep4
+        - auth
+        - ownerRegistration
+      properties:
+        splash:
+          type: integer
+        onboardingStep1:
+          type: integer
+        onboardingStep2:
+          type: integer
+        onboardingStep3:
+          type: integer
+        onboardingStep4:
+          type: integer
+        auth:
+          type: integer
+        ownerRegistration:
+          type: integer
+
+    AdminUsersOnboardingJourney:
+      type: object
+      required: [range, totalActors, completedActors, stages, dropoff]
+      properties:
+        range:
+          $ref: '#/components/schemas/AdminUsersOnboardingJourneyRange'
+        totalActors:
+          type: integer
+        completedActors:
+          type: integer
+        stages:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminUsersOnboardingJourneyStage'
+        dropoff:
+          $ref: '#/components/schemas/AdminUsersOnboardingJourneyDropoff'
 
     AdminOverviewShowroomStats:
       type: object

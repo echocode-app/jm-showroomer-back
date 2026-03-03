@@ -31,6 +31,8 @@ Invalid `from` / `to` / `groupBy` returns `QUERY_INVALID` (400).
 
 `/admin/analytics/users-onboarding` query params:
 
+- `from` (optional, ISO datetime, inclusive, default `now - 30 days`)
+- `to` (optional, ISO datetime, exclusive, default `now`)
 - `includeUsers` (optional, boolean, default `false`)
 - `limit` (optional, integer `1..200`, default `50`, used with `includeUsers=true`)
 - `cursor` (optional, opaque cursor from previous response `meta.nextCursor`)
@@ -55,6 +57,9 @@ All endpoints use the standard success envelope:
   range-bounded Firestore read (`updatedAt >= from`) and filters history entries in memory (Firestore cannot aggregate nested history actions).
 - Platform analytics totals use aggregate `count()`, while `timeline` and `byEventName` require a range-bounded read
   of `analytics_events` within the requested timestamp window.
+- Users onboarding endpoint now includes:
+  - `funnel` (users collection aggregate)
+  - `journey` (analytics-events-based stage progression and drop-off)
 - Timeline buckets are UTC-based.
 - `week` buckets start on Monday (UTC).
 
@@ -77,5 +82,5 @@ curl -H "Authorization: Bearer <ADMIN_TOKEN>" \
 
 ```bash
 curl -H "Authorization: Bearer <ADMIN_TOKEN>" \
-  "https://<host>/api/v1/admin/analytics/users-onboarding?includeUsers=true&limit=20"
+  "https://<host>/api/v1/admin/analytics/users-onboarding?from=2026-02-01T00:00:00.000Z&to=2026-03-01T00:00:00.000Z&includeUsers=true&limit=20"
 ```

@@ -100,6 +100,7 @@ components:
       enum:
         - SHOWROOM_APPROVED
         - SHOWROOM_REJECTED
+        - SHOWROOM_DELETED_BY_ADMIN
         - SHOWROOM_FAVORITED
         - LOOKBOOK_FAVORITED
         - EVENT_WANT_TO_VISIT

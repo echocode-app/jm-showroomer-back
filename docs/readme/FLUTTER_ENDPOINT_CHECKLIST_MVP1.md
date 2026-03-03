@@ -35,6 +35,18 @@ Base URL:
 - favorite/want-to-visit/dismiss/read можуть викликатися повторно без падіння;
 - UI має лишатися консистентним після повторного tap.
 
+5. Notifications type handling (обов'язково):
+
+- Flutter має коректно відображати всі поточні типи:
+  - `SHOWROOM_APPROVED`
+  - `SHOWROOM_REJECTED`
+  - `SHOWROOM_DELETED_BY_ADMIN`
+  - `SHOWROOM_FAVORITED`
+  - `LOOKBOOK_FAVORITED`
+  - `EVENT_WANT_TO_VISIT`
+- Для `SHOWROOM_DELETED_BY_ADMIN` показувати, який showroom видалено, та час з `payload.deletedAt` (якщо присутній).
+- На цьому етапі причина видалення не передається і не очікується.
+
 ## 3) Матриця endpoint-ів проекту для Flutter
 
 Легенда:
@@ -139,14 +151,14 @@ Base URL:
 
 1. Happy:
 
-- `GET /lookbooks?country=Ukraine&seasonKey=ss-2026` -> `200`;
+- `GET /lookbooks?country=Ukraine&seasonKey=summer` -> `200`;
 - `GET /lookbooks?country=Ukraine&nearLat=50&nearLng=30&nearRadiusKm=5` -> `200`;
 - `GET /lookbooks/{id}` -> `200`;
 - favorite/unfavorite -> `200`.
 
 Ready-to-use запити для Flutter кнопки "Шукати поблизу мене":
 - `GET {{baseUrl}}/lookbooks?country=Ukraine&nearLat=50&nearLng=30&nearRadiusKm=5`
-- `GET {{baseUrl}}/lookbooks?country=Ukraine&seasonKey=ss-2026&nearLat=50&nearLng=30&nearRadiusKm=5`
+- `GET {{baseUrl}}/lookbooks?country=Ukraine&seasonKey=summer&nearLat=50&nearLng=30&nearRadiusKm=5`
 
 2. Unhappy:
 
@@ -211,6 +223,24 @@ Ready-to-use запити для Flutter кнопки "Шукати поблиз
 
 - валідний батч подій -> `200`, `accepted/stored/failed`.
 
+MVP1 client events, які Flutter має відправляти:
+- `app_opened`
+- `session_started`
+- `splash_view`
+- `onboarding_step_view` (передавати `context.step=1..4`)
+- `onboarding_step_completed` (передавати `context.step=1..4`)
+- `continue_as_guest`
+- `auth_started`
+- `owner_registration_view`
+- `owner_registration_submitted`
+- `screen_view`
+- `search_executed`
+- `filter_applied`
+
+Важливо:
+- `onboarding_completed` і `owner_registration_completed` зараз емітяться бекендом (Flutter їх не дублює).
+- Події поза whitelist будуть відхилені з `400 EVENT_NAME_INVALID`.
+
 2. Unhappy:
 
 - невалідна структура або eventName -> `400` (наприклад `EVENT_NAME_INVALID`);
@@ -256,7 +286,7 @@ Ready-to-use запити для Flutter кнопки "Шукати поблиз
 3. Реалізована cursor pagination без ручної генерації cursor.
 4. Реалізовані idempotent toggle-стани (favorite/want-to-visit/dismiss/read).
 5. Реалізований guest->auth sync одразу після логіну.
-6. Підключений analytics ingest.
+6. Підключений analytics ingest + відправляються всі MVP1 client events з п.4.8.
 7. Для `POST /events/{id}/rsvp` є захист (не викликати у MVP1).
 8. Пройдено smoke вручну: auth, списки, деталі, тумблери, notifications, sync.
 

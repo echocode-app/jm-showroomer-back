@@ -107,7 +107,7 @@ Flutter має:
 
 Lookbooks nearby приклади (Flutter):
 - `GET /lookbooks?country=Ukraine&nearLat=50&nearLng=30&nearRadiusKm=5&limit=20`
-- `GET /lookbooks?country=Ukraine&seasonKey=ss-2026&nearLat=50&nearLng=30&nearRadiusKm=5&limit=20`
+- `GET /lookbooks?country=Ukraine&seasonKey=summer&nearLat=50&nearLng=30&nearRadiusKm=5&limit=20`
 
 Для наступної сторінки:
 - взяти `meta.nextCursor` з першої відповіді

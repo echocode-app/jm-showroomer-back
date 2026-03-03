@@ -20,6 +20,8 @@ All analytics events are stored in a canonical envelope with these top-level fie
 
 Current server-generated events:
 
+- `onboarding_completed`
+- `owner_registration_completed`
 - `auth_completed`
 - `auth_failed`
 - `showroom_favorite`
@@ -60,9 +62,11 @@ Onboarding/Auth:
 
 - `splash_view`
 - `onboarding_step_view`
-- `onboarding_completed`
+- `onboarding_step_completed`
 - `continue_as_guest`
 - `auth_started`
+- `owner_registration_view`
+- `owner_registration_submitted`
 
 Navigation:
 
@@ -75,9 +79,9 @@ Search:
 
 Backend phase note:
 
-- In the current backend implementation, ingest whitelist is enforced from `ANALYTICS_EVENTS` registry.
+- Ingest whitelist is enforced from `ANALYTICS_EVENTS` registry.
+- Client events listed above are enabled in registry and accepted by `/analytics/ingest`.
 - Events not present in registry are rejected with `EVENT_NAME_INVALID` (HTTP 400).
-- The list above is the client integration contract and must be enabled via registry in a future backend pass before mobile starts sending them in production.
 
 ## Event Origin Matrix
 
@@ -101,9 +105,13 @@ Backend phase note:
 | `session_started`            | client | mobile                                          |
 | `splash_view`                | client | mobile                                          |
 | `onboarding_step_view`       | client | mobile                                          |
-| `onboarding_completed`       | client | mobile                                          |
+| `onboarding_step_completed`  | client | mobile                                          |
+| `onboarding_completed`       | server | backend                                         |
 | `continue_as_guest`          | client | mobile                                          |
 | `auth_started`               | client | mobile                                          |
+| `owner_registration_view`    | client | mobile                                          |
+| `owner_registration_submitted` | client | mobile                                        |
+| `owner_registration_completed` | server | backend                                       |
 | `screen_view`                | client | mobile                                          |
 | `search_executed`            | client | mobile                                          |
 | `filter_applied`             | client | mobile                                          |

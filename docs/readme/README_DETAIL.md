@@ -177,6 +177,12 @@ Prod Swagger: https://jm-showroomer-back.onrender.com/docs/
 - notification owner-у post-commit.
 - analytics event не емітиться (лише notification + domain log).
 
+### `DELETE /admin/showrooms/{id}`
+
+- admin soft delete для будь-якого статусу;
+- після commit емітиться owner notification `SHOWROOM_DELETED_BY_ADMIN`;
+- payload містить showroom identity + `deletedAt` (без динамічної причини).
+
 ### `DELETE /showrooms/{id}`
 
 - soft delete.
@@ -279,7 +285,7 @@ Important:
 - `seasonKey` — optional (можна не передавати);
 - nearby режим підтримується у тому ж endpoint:
   - `GET /lookbooks?country=Ukraine&nearLat=50&nearLng=30&nearRadiusKm=5`
-  - `GET /lookbooks?country=Ukraine&seasonKey=ss-2026&nearLat=50&nearLng=30&nearRadiusKm=5`
+  - `GET /lookbooks?country=Ukraine&seasonKey=summer&nearLat=50&nearLng=30&nearRadiusKm=5`
 
 ## `POST /lookbooks` і `POST /lookbooks/create`
 
@@ -415,7 +421,7 @@ Notification policy (`MVP_MODE`):
 
 - `MVP_MODE=false` (default): всі notification type-и дозволені.
 - `MVP_MODE=true`: відключені `LOOKBOOK_FAVORITED` і `EVENT_WANT_TO_VISIT`.
-- `SHOWROOM_APPROVED`, `SHOWROOM_REJECTED`, `SHOWROOM_FAVORITED` залишаються активними.
+- `SHOWROOM_APPROVED`, `SHOWROOM_REJECTED`, `SHOWROOM_DELETED_BY_ADMIN`, `SHOWROOM_FAVORITED` залишаються активними.
 - policy впливає тільки на `notification storage + push dispatch` (доменної бізнес-операції не змінює).
 
 ---
@@ -679,6 +685,7 @@ Notification policy (`MVP_MODE`):
 | `POST /showrooms/{id}/submit`                 | `showroomController.submitShowroomForReviewController`        | `showrooms/submitShowroomForReview.submitShowroomForReviewService`                             | `showrooms/{id}`                                                                                  |
 | `POST /admin/showrooms/{id}/approve`          | `adminShowroomController.approveShowroom`                     | `showrooms/approveShowroom.approveShowroomService` + `notifications/create.createNotification` | `showrooms/{id}`, `users/{ownerUid}/notifications/{dedupeKey}`                                    |
 | `POST /admin/showrooms/{id}/reject`           | `adminShowroomController.rejectShowroom`                      | `showrooms/rejectShowroom.rejectShowroomService` + `notifications/create.createNotification`   | `showrooms/{id}`, `users/{ownerUid}/notifications/{dedupeKey}`                                    |
+| `DELETE /admin/showrooms/{id}`                | `adminShowroomController.deleteShowroomAdmin`                 | `showrooms/deleteShowroom.deleteShowroomService` + `notifications/create.createNotification`   | `showrooms/{id}`, `users/{ownerUid}/notifications/{dedupeKey}`                                    |
 | `POST /showrooms/{id}/favorite`               | `showroomController.favoriteShowroom`                         | `showrooms/userShowroomState.favoriteShowroom`                                                 | `users/{uid}/showrooms_favorites/{id}`, `users/{ownerUid}/notifications/*`                        |
 | `DELETE /showrooms/{id}/favorite`             | `showroomController.unfavoriteShowroom`                       | `showrooms/userShowroomState.unfavoriteShowroom`                                               | `users/{uid}/showrooms_favorites/{id}`                                                            |
 | `GET /lookbooks`                              | `lookbookController.listLookbooks`                            | `lookbooks/crud.listLookbooksCrudService`                                                      | `lookbooks/*`, `lookbooks/{id}/likes/*`                                                           |
