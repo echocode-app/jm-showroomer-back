@@ -231,6 +231,14 @@ reject_showroom "$REJECTED_ID"
 REJECT_DEDUPE="showroom:${REJECTED_ID}:rejected"
 assert_notification_exists "$USER_UID" "$REJECT_DEDUPE" "SHOWROOM_REJECTED" "showroom" "$REJECTED_ID" "$ADMIN_UID"
 
+print_section "Admin delete showroom notification"
+DELETED_ID=$(create_submittable_showroom "notif-admin-delete" "Kyiv" | tail -n1)
+http_request "DELETE /admin/showrooms/{id}" 200 "" \
+  -X DELETE "${ADMIN_HEADER[@]}" \
+  "${BASE_URL}/admin/showrooms/${DELETED_ID}"
+DELETED_DEDUPE="showroom:${DELETED_ID}:deleted_by_admin"
+assert_notification_exists "$USER_UID" "$DELETED_DEDUPE" "SHOWROOM_DELETED_BY_ADMIN" "showroom" "$DELETED_ID" "$ADMIN_UID"
+
 print_section "Showroom favorite notifications"
 http_request "POST /showrooms/{id}/favorite (admin first)" 200 "" \
   -X POST "${ADMIN_HEADER[@]}" \

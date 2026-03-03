@@ -34,6 +34,11 @@ function resolvePushText(type, payload = {}) {
                 title: "Your showroom was rejected",
                 body: payload.showroomName || "",
             };
+        case "SHOWROOM_DELETED_BY_ADMIN":
+            return {
+                title: "Your showroom was deleted by moderator",
+                body: payload.showroomName || "",
+            };
         case "SHOWROOM_FAVORITED":
             return {
                 title: "New showroom follower",

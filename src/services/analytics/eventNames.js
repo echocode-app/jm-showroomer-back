@@ -1,6 +1,21 @@
 // Canonical analytics event registry.
 // All server emits must reference this map to prevent schema drift and string-literal event names.
 export const ANALYTICS_EVENTS = {
+    APP_OPENED: "app_opened",
+    SESSION_STARTED: "session_started",
+    SPLASH_VIEW: "splash_view",
+    ONBOARDING_STEP_VIEW: "onboarding_step_view",
+    ONBOARDING_STEP_COMPLETED: "onboarding_step_completed",
+    ONBOARDING_COMPLETED: "onboarding_completed",
+    CONTINUE_AS_GUEST: "continue_as_guest",
+    AUTH_STARTED: "auth_started",
+    SCREEN_VIEW: "screen_view",
+    SEARCH_EXECUTED: "search_executed",
+    FILTER_APPLIED: "filter_applied",
+    OWNER_REGISTRATION_VIEW: "owner_registration_view",
+    OWNER_REGISTRATION_SUBMITTED: "owner_registration_submitted",
+    OWNER_REGISTRATION_COMPLETED: "owner_registration_completed",
+
     AUTH_COMPLETED: "auth_completed",
     AUTH_FAILED: "auth_failed",
 

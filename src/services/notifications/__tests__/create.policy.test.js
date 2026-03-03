@@ -117,6 +117,31 @@ describe("notification policy gating", () => {
         expect(sendPushToUserMock).toHaveBeenCalledTimes(1);
     });
 
+    it("keeps SHOWROOM_DELETED_BY_ADMIN enabled when MVP_MODE=true", async () => {
+        process.env.MVP_MODE = "true";
+        const { db, docRef } = buildDb();
+        getFirestoreInstanceMock.mockReturnValue(db);
+        sendPushToUserMock.mockResolvedValue({ skipped: false, successCount: 1, failureCount: 0 });
+
+        const result = await createNotification({
+            targetUid: "owner-4",
+            actorUid: "admin-1",
+            type: "SHOWROOM_DELETED_BY_ADMIN",
+            resourceType: "showroom",
+            resourceId: "sr-4",
+            payload: { showroomName: "Showroom D", deletedAt: "2026-03-03T12:00:00.000Z" },
+            dedupeKey: "showroom:sr-4:deleted_by_admin",
+        });
+
+        expect(result).toEqual({
+            skippedByPolicy: false,
+            created: true,
+            pushed: true,
+        });
+        expect(docRef.create).toHaveBeenCalledTimes(1);
+        expect(sendPushToUserMock).toHaveBeenCalledTimes(1);
+    });
+
     it("skips deleted target in tx mode (future tx callers safe)", async () => {
         const { db, docRef } = buildDb({ user: { isDeleted: true } });
         getFirestoreInstanceMock.mockReturnValue(db);

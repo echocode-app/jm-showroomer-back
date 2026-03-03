@@ -94,7 +94,13 @@ function warnOnSoftShapeMismatch(eventName, event, logger) {
 }
 
 function requiresResourceIdentity(eventName) {
-    return /(?:_view|_favorite|_want_to_visit)$/.test(eventName);
+    if (/^(showroom|lookbook|event)_view$/.test(eventName)) {
+        return true;
+    }
+    if (/(?:_favorite|_want_to_visit)$/.test(eventName)) {
+        return true;
+    }
+    return false;
 }
 
 function isNonEmptyString(value) {

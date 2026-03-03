@@ -334,5 +334,62 @@ describe("adminAnalyticsService", () => {
             nextCursor: "u-2",
             limit: 2,
         });
+        expect(result.journey).toEqual(
+            expect.objectContaining({
+                totalActors: 0,
+                completedActors: 0,
+            })
+        );
+    });
+
+    it("builds onboarding journey/dropoff by actor stage progression", async () => {
+        const from = "2026-02-01T00:00:00.000Z";
+        const to = "2026-03-01T00:00:00.000Z";
+        const state = {
+            counts: new Map([
+                [queryKey("users", []), 0],
+                [queryKey("users", [{ field: "onboardingState", op: "==", value: "completed" }]), 0],
+                [queryKey("users", [{ field: "role", op: "==", value: "owner" }]), 0],
+            ]),
+            docs: new Map([
+                [queryKey("analytics_events", [
+                    { field: "timestamp", op: ">=", value: from },
+                    { field: "timestamp", op: "<", value: to },
+                ]), [
+                    { eventName: "splash_view", user: { actorId: "a:g1" }, timestamp: "2026-02-01T10:00:00.000Z" },
+                    { eventName: "onboarding_step_view", user: { actorId: "a:u-step2" }, context: { step: 2 }, timestamp: "2026-02-01T10:01:00.000Z" },
+                    { eventName: "auth_started", user: { actorId: "a:u-auth" }, timestamp: "2026-02-01T10:02:00.000Z" },
+                    { eventName: "owner_registration_view", user: { actorId: "u:u-owner" }, timestamp: "2026-02-01T10:03:00.000Z" },
+                    { eventName: "owner_registration_completed", user: { actorId: "u:u-done" }, timestamp: "2026-02-01T10:04:00.000Z" },
+                ]],
+            ]),
+        };
+        getFirestoreInstanceMock.mockReturnValue(makeDb(state));
+
+        const result = await getUsersOnboardingAnalyticsService({ from, to });
+
+        expect(result.journey).toMatchObject({
+            totalActors: 5,
+            completedActors: 1,
+            dropoff: {
+                splash: 1,
+                onboardingStep1: 0,
+                onboardingStep2: 1,
+                onboardingStep3: 0,
+                onboardingStep4: 0,
+                auth: 1,
+                ownerRegistration: 1,
+            },
+        });
+        expect(result.journey.stages).toEqual([
+            { key: "splash", reached: 5 },
+            { key: "onboardingStep1", reached: 4 },
+            { key: "onboardingStep2", reached: 4 },
+            { key: "onboardingStep3", reached: 3 },
+            { key: "onboardingStep4", reached: 3 },
+            { key: "auth", reached: 3 },
+            { key: "ownerRegistration", reached: 2 },
+            { key: "ownerRegistrationCompleted", reached: 1 },
+        ]);
     });
 });

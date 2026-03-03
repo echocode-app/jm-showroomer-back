@@ -1,6 +1,9 @@
 import { getFirestoreInstance } from "../../config/firebase.js";
+import { log } from "../../config/logger.js";
 import { badRequest, forbidden, notFound } from "../../core/error.js";
 import { assertUserWritableInTx } from "../users/writeGuardService.js";
+import { createNotification } from "../notifications/notificationService.js";
+import { NOTIFICATION_TYPES } from "../notifications/types.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 import { appendHistory, makeHistoryEntry } from "./_helpers.js";
 
@@ -48,6 +51,24 @@ export async function deleteShowroomService(id, user) {
                 at: showroom.updatedAt,
             })
         );
+        if (isAdmin) {
+            try {
+                await createNotification({
+                    targetUid: showroom.ownerUid ?? null,
+                    actorUid: user.uid,
+                    type: NOTIFICATION_TYPES.SHOWROOM_DELETED_BY_ADMIN,
+                    resourceType: "showroom",
+                    resourceId: id,
+                    payload: {
+                        showroomName: showroom.name ?? null,
+                        deletedAt: showroom.deletedAt,
+                    },
+                    dedupeKey: `showroom:${id}:deleted_by_admin`,
+                });
+            } catch (err) {
+                log.error(`Notification write skipped (admin delete ${id}): ${err?.message || err}`);
+            }
+        }
 
         return showroom;
     }
@@ -55,6 +76,7 @@ export async function deleteShowroomService(id, user) {
     const db = getFirestoreInstance();
     const ref = db.collection("showrooms").doc(id);
     let result = null;
+    let notificationDraft = null;
     await db.runTransaction(async tx => {
         if (user?.uid) {
             await assertUserWritableInTx(tx, user.uid);
@@ -91,6 +113,27 @@ export async function deleteShowroomService(id, user) {
 
         tx.update(ref, updates);
         result = { id, ...showroom, ...updates };
+        if (isAdmin) {
+            notificationDraft = {
+                targetUid: showroom.ownerUid ?? null,
+                actorUid: user.uid,
+                type: NOTIFICATION_TYPES.SHOWROOM_DELETED_BY_ADMIN,
+                resourceType: "showroom",
+                resourceId: id,
+                payload: {
+                    showroomName: showroom.name ?? null,
+                    deletedAt: updatedAt,
+                },
+                dedupeKey: `showroom:${id}:deleted_by_admin`,
+            };
+        }
     });
+    if (notificationDraft) {
+        try {
+            await createNotification(notificationDraft);
+        } catch (err) {
+            log.error(`Notification write skipped (admin delete ${id}): ${err?.message || err}`);
+        }
+    }
     return result;
 }

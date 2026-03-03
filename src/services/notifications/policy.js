@@ -7,6 +7,7 @@ import { log } from "../../config/logger.js";
 export const NOTIFICATION_POLICY = Object.freeze({
     SHOWROOM_APPROVED: true,
     SHOWROOM_REJECTED: true,
+    SHOWROOM_DELETED_BY_ADMIN: true,
     SHOWROOM_FAVORITED: true,
     LOOKBOOK_FAVORITED: () => process.env.MVP_MODE !== "true",
     EVENT_WANT_TO_VISIT: () => process.env.MVP_MODE !== "true",

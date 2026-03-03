@@ -32,6 +32,10 @@ jest.unstable_mockModule("../../analytics/eventNames.js", () => ({
     },
 }));
 
+jest.unstable_mockModule("../../notifications/notificationService.js", () => ({
+    createNotification: jest.fn(async () => ({ created: true, pushed: false })),
+}));
+
 const { createShowroom } = await import("../createShowroom.js");
 const { submitShowroomForReviewService } = await import("../submitShowroomForReview.js");
 const { deleteShowroomService } = await import("../deleteShowroom.js");

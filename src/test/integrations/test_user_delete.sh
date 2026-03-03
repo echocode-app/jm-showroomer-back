@@ -7,7 +7,7 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 source "$SCRIPT_DIR/../_lib.sh"
 
 load_env
-require_cmd curl jq
+require_cmd curl jq node
 require_env TEST_USER_TOKEN TEST_DELETE_USER_TOKEN
 
 BASE_URL="$(resolve_base_url)"
@@ -15,6 +15,14 @@ preflight_server "${BASE_URL}"
 JSON_HEADER=(-H "$(json_header)")
 warn_if_prod_write "${BASE_URL}"
 guard_prod_write "${BASE_URL}"
+
+ENV_FILE=".env.${NODE_ENV:-dev}"
+if [ -f "$ENV_FILE" ]; then
+  FIREBASE_PRIVATE_KEY=$(grep -v '^#' "$ENV_FILE" | grep -m1 '^FIREBASE_PRIVATE_KEY=' | cut -d= -f2-)
+  FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY#\"}
+  FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY%\"}
+  export FIREBASE_PRIVATE_KEY
+fi
 
 EPHEMERAL_HEADER=(-H "$(auth_header "${TEST_DELETE_USER_TOKEN}")")
 BLOCKED_HEADER=(-H "$(auth_header "${TEST_USER_TOKEN}")")
@@ -108,9 +116,17 @@ seed_throwaway_lookbook() {
 }
 
 delete_throwaway_lookbook() {
-  http_request "DELETE /lookbooks/:id (cleanup throwaway lookbook)" 200 "" \
+  http_request "DELETE /lookbooks/:id (cleanup throwaway lookbook, soft)" 200 "" \
     -X DELETE "${EPHEMERAL_HEADER[@]}" \
     "${BASE_URL}/lookbooks/${LOOKBOOK_ID}"
+
+  node --input-type=module - "$LOOKBOOK_ID" <<'NODE'
+import { getFirestoreInstance } from "./src/config/firebase.js";
+
+const [lookbookId] = process.argv.slice(2);
+const db = getFirestoreInstance();
+await db.collection("lookbooks").doc(lookbookId).delete();
+NODE
 }
 
 seed_and_delete_throwaway_showroom() {

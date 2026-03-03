@@ -12,6 +12,10 @@ import {
     ownerHasLookbooks,
     ownerHasEvents,
 } from "../../services/users/profileService.js";
+import { ANALYTICS_EVENTS } from "../../services/analytics/eventNames.js";
+import { buildAnalyticsEvent } from "../../services/analytics/analyticsEventBuilder.js";
+import { record } from "../../services/analytics/analyticsEventService.js";
+import { log } from "../../config/logger.js";
 
 /**
  * Returns authenticated user profile from middleware context.
@@ -39,6 +43,30 @@ export async function completeOnboarding(req, res) {
     }
 
     await updateUserOnboarding(req.user.uid, country);
+    try {
+        await record(buildAnalyticsEvent({
+            eventName: ANALYTICS_EVENTS.ONBOARDING_COMPLETED,
+            source: "server",
+            actor: {
+                userId: req.user?.uid ?? null,
+                isAnonymous: false,
+            },
+            context: {
+                surface: "onboarding",
+                route: "/api/v1/users/complete-onboarding",
+                method: "POST",
+            },
+            resource: {
+                type: "onboarding",
+                id: "completed",
+            },
+            meta: {
+                producer: "backend_api",
+            },
+        }));
+    } catch (err) {
+        log.error(`Analytics emit failed (onboarding_completed): ${err?.message || err}`);
+    }
 
     return ok(res, { message: "Onboarding completed" });
 }
@@ -62,6 +90,7 @@ export async function completeOwnerProfile(req, res) {
     }
 
     try {
+        const wasOwner = req.user?.role === "owner";
         const normalizedInstagram = normalizeInstagramUrl(trimmedInstagram);
         validateInstagramUrl(normalizedInstagram);
 
@@ -78,6 +107,34 @@ export async function completeOwnerProfile(req, res) {
             ownerProfile,
             updatedAt: now,
         });
+
+        if (!wasOwner) {
+            try {
+                await record(buildAnalyticsEvent({
+                    eventName: ANALYTICS_EVENTS.OWNER_REGISTRATION_COMPLETED,
+                    source: "server",
+                    actor: {
+                        userId: req.user?.uid ?? null,
+                        isAnonymous: false,
+                    },
+                    context: {
+                        surface: "owner_registration",
+                        route: "/api/v1/users/complete-owner-profile",
+                        method: "POST",
+                    },
+                    resource: {
+                        type: "owner_registration",
+                        id: "completed",
+                        ownerUserId: req.user?.uid ?? null,
+                    },
+                    meta: {
+                        producer: "backend_api",
+                    },
+                }));
+            } catch (err) {
+                log.error(`Analytics emit failed (owner_registration_completed): ${err?.message || err}`);
+            }
+        }
 
         return ok(res, { message: "Owner profile completed", role: "owner" });
     } catch (err) {

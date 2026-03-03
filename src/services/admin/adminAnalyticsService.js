@@ -5,6 +5,7 @@
 import { getFirestoreInstance } from "../../config/firebase.js";
 import { badRequest } from "../../core/error.js";
 import { assertGroupBy, bucketStartIso, toDateOrNull } from "../../utils/dateGrouping.js";
+import { ANALYTICS_EVENTS } from "../analytics/eventNames.js";
 
 const ANALYTICS_COLLECTION = "analytics_events";
 const MS_7_DAYS = 7 * 24 * 60 * 60 * 1000;
@@ -191,6 +192,7 @@ export async function getUsersOnboardingAnalyticsService(filters = {}) {
             ownerProfileCompleted,
             ownerProfileNotCompleted,
         },
+        journey: await getUsersOnboardingJourneyAnalytics(db, parsed),
     };
 
     if (!parsed.includeUsers) {
@@ -271,10 +273,19 @@ function parseUsersOnboardingFilters(filters = {}) {
     }
 
     const cursor = normalizeCursor(filters?.cursor);
+    const to = filters?.to ? toDateOrNull(filters.to) : new Date();
+    if (!to) throw badRequest("QUERY_INVALID");
+    const from = filters?.from
+        ? toDateOrNull(filters.from)
+        : new Date(to.getTime() - MS_30_DAYS);
+    if (!from) throw badRequest("QUERY_INVALID");
+    if (from >= to) throw badRequest("QUERY_INVALID");
     return {
         includeUsers,
         limit: Math.trunc(limit),
         cursor,
+        from,
+        to,
     };
 }
 
@@ -310,4 +321,142 @@ function normalizeCursor(cursor) {
 function toIsoOrNull(value) {
     const date = toDateOrNull(value);
     return date ? date.toISOString() : null;
+}
+
+async function getUsersOnboardingJourneyAnalytics(db, parsed) {
+    const fromIso = parsed.from.toISOString();
+    const toIso = parsed.to.toISOString();
+    const query = db
+        .collection(ANALYTICS_COLLECTION)
+        .where("timestamp", ">=", fromIso)
+        .where("timestamp", "<", toIso);
+    const snap = await query.get();
+
+    const actorStageIndex = new Map();
+
+    for (const doc of snap?.docs || []) {
+        const data = doc.data() || {};
+        const actorId = normalizeActorId(data?.user?.actorId);
+        if (!actorId) continue;
+        const stageIndex = resolveJourneyStageIndex(data);
+        if (stageIndex === null) continue;
+        const prev = actorStageIndex.get(actorId) ?? -1;
+        if (stageIndex > prev) {
+            actorStageIndex.set(actorId, stageIndex);
+        }
+    }
+
+    const reached = new Array(JOURNEY_STAGES.length).fill(0);
+    const dropoff = {
+        splash: 0,
+        onboardingStep1: 0,
+        onboardingStep2: 0,
+        onboardingStep3: 0,
+        onboardingStep4: 0,
+        auth: 0,
+        ownerRegistration: 0,
+    };
+
+    for (const [, maxStageIndex] of actorStageIndex.entries()) {
+        for (let i = 0; i <= maxStageIndex; i += 1) {
+            reached[i] += 1;
+        }
+
+        if (maxStageIndex === STAGE_INDEX.splash) dropoff.splash += 1;
+        if (maxStageIndex === STAGE_INDEX.onboardingStep1) dropoff.onboardingStep1 += 1;
+        if (maxStageIndex === STAGE_INDEX.onboardingStep2) dropoff.onboardingStep2 += 1;
+        if (maxStageIndex === STAGE_INDEX.onboardingStep3) dropoff.onboardingStep3 += 1;
+        if (maxStageIndex === STAGE_INDEX.onboardingStep4) dropoff.onboardingStep4 += 1;
+        if (maxStageIndex === STAGE_INDEX.auth) dropoff.auth += 1;
+        if (maxStageIndex === STAGE_INDEX.ownerRegistration) dropoff.ownerRegistration += 1;
+    }
+
+    return {
+        range: {
+            from: fromIso,
+            to: toIso,
+        },
+        totalActors: actorStageIndex.size,
+        completedActors: reached[STAGE_INDEX.ownerRegistrationCompleted],
+        stages: JOURNEY_STAGES.map((stage, index) => ({
+            key: stage.key,
+            reached: reached[index],
+        })),
+        dropoff,
+    };
+}
+
+const JOURNEY_STAGES = [
+    { key: "splash" },
+    { key: "onboardingStep1" },
+    { key: "onboardingStep2" },
+    { key: "onboardingStep3" },
+    { key: "onboardingStep4" },
+    { key: "auth" },
+    { key: "ownerRegistration" },
+    { key: "ownerRegistrationCompleted" },
+];
+
+const STAGE_INDEX = {
+    splash: 0,
+    onboardingStep1: 1,
+    onboardingStep2: 2,
+    onboardingStep3: 3,
+    onboardingStep4: 4,
+    auth: 5,
+    ownerRegistration: 6,
+    ownerRegistrationCompleted: 7,
+};
+
+function resolveJourneyStageIndex(event) {
+    const eventName = String(event?.eventName || "");
+    if (eventName === ANALYTICS_EVENTS.SPLASH_VIEW) return STAGE_INDEX.splash;
+
+    if (eventName === ANALYTICS_EVENTS.ONBOARDING_STEP_VIEW) {
+        const step = parseOnboardingStep(event);
+        if (step === 1) return STAGE_INDEX.onboardingStep1;
+        if (step === 2) return STAGE_INDEX.onboardingStep2;
+        if (step === 3) return STAGE_INDEX.onboardingStep3;
+        if (step === 4) return STAGE_INDEX.onboardingStep4;
+        return null;
+    }
+
+    if (
+        eventName === ANALYTICS_EVENTS.AUTH_STARTED ||
+        eventName === ANALYTICS_EVENTS.AUTH_COMPLETED ||
+        eventName === ANALYTICS_EVENTS.AUTH_FAILED
+    ) {
+        return STAGE_INDEX.auth;
+    }
+
+    if (
+        eventName === ANALYTICS_EVENTS.OWNER_REGISTRATION_VIEW ||
+        eventName === ANALYTICS_EVENTS.OWNER_REGISTRATION_SUBMITTED
+    ) {
+        return STAGE_INDEX.ownerRegistration;
+    }
+
+    if (eventName === ANALYTICS_EVENTS.OWNER_REGISTRATION_COMPLETED) {
+        return STAGE_INDEX.ownerRegistrationCompleted;
+    }
+
+    return null;
+}
+
+function parseOnboardingStep(event) {
+    const contextStep = event?.context?.step;
+    const attrStep = event?.resource?.attributes?.step;
+    const value = contextStep ?? attrStep;
+    const step = Number(value);
+    if (!Number.isInteger(step)) return null;
+    if (step < 1 || step > 4) return null;
+    return step;
+}
+
+function normalizeActorId(actorId) {
+    if (typeof actorId !== "string") return null;
+    const normalized = actorId.trim();
+    if (!normalized) return null;
+    if (normalized === "a:unknown") return null;
+    return normalized;
 }

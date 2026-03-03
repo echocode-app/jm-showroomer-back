@@ -65,4 +65,25 @@ describe("analyticsValidator", () => {
             },
         });
     });
+
+    it("does not warn for splash/onboarding ux view events without resource identity", () => {
+        const logger = { warn: jest.fn() };
+
+        const result = validateAnalyticsIngestPayload(
+            {
+                events: [
+                    {
+                        eventName: ANALYTICS_EVENTS.SPLASH_VIEW,
+                        context: { surface: "splash" },
+                        resource: {},
+                        meta: {},
+                    },
+                ],
+            },
+            { logger }
+        );
+
+        expect(result.events).toHaveLength(1);
+        expect(logger.warn).not.toHaveBeenCalled();
+    });
 });
