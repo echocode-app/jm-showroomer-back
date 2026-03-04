@@ -303,13 +303,15 @@ http_request "POST /showrooms/{id}/submit (owner duplicate name)" 400 "SHOWROOM_
   -d '{}' \
   "${BASE_URL}/showrooms/$SECOND_ID/submit"
 
+OWNER2_ENABLED=false
 if [[ -n "${TEST_OWNER_TOKEN_2:-}" ]]; then
   print_section "Owner2 token validation"
   OWNER2_AUTH_HEADER=(-H "$(auth_header "${TEST_OWNER_TOKEN_2}")")
   OWNER2_ME_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${OWNER2_AUTH_HEADER[@]}" "${BASE_URL}/users/me")
   if [[ "$OWNER2_ME_STATUS" != "200" ]]; then
-    echo "⚠ TEST_OWNER_TOKEN_2 invalid; skipping global duplicate tests"
+    echo "⚠ TEST_OWNER_TOKEN_2 has no active user profile (status=${OWNER2_ME_STATUS}); skipping OWNER2 duplicate tests"
   else
+    OWNER2_ENABLED=true
     print_section "Duplicate checks (global)"
 
   http_request "POST /showrooms/create (other owner draft)" 200 "" \
@@ -331,7 +333,7 @@ if [[ -n "${TEST_OWNER_TOKEN_2:-}" ]]; then
     "${BASE_URL}/showrooms/$OTHER_ID/submit"
   fi
 else
-  echo "⚠ Skipping global duplicate test (TEST_OWNER_TOKEN_2 not set)"
+  echo "⚠ Skipping OWNER2 duplicate tests (TEST_OWNER_TOKEN_2 not set)"
 fi
 
 print_section "Address normalization duplicate"
@@ -356,9 +358,7 @@ http_request "SUBMIT E" 200 "" \
   -d '{}' \
   "${BASE_URL}/showrooms/$SHOWROOM_E_ID/submit"
 
-if [[ -n "${TEST_OWNER_TOKEN_2:-}" ]]; then
-  OWNER2_AUTH_HEADER=(-H "$(auth_header "${TEST_OWNER_TOKEN_2}")")
-
+if [[ "$OWNER2_ENABLED" == "true" ]]; then
   http_request "OWNER2 /showrooms/draft (F)" 200 "" \
     -X POST "${OWNER2_AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
     -d '{}' \
@@ -377,12 +377,11 @@ if [[ -n "${TEST_OWNER_TOKEN_2:-}" ]]; then
     -d '{}' \
     "${BASE_URL}/showrooms/$SHOWROOM_F_ID/submit"
 else
-  echo "⚠ Skipping address normalization duplicate (TEST_OWNER_TOKEN_2 not set)"
+  echo "⚠ Skipping address normalization duplicate (OWNER2 not available)"
 fi
 
-if [[ -n "${TEST_OWNER_TOKEN_2:-}" ]]; then
+if [[ "$OWNER2_ENABLED" == "true" ]]; then
   print_section "Draft does not block global duplicate"
-  OWNER2_AUTH_HEADER=(-H "$(auth_header "${TEST_OWNER_TOKEN_2}")")
 
   http_request "POST /showrooms/draft (G)" 200 "" \
     -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
@@ -418,7 +417,7 @@ if [[ -n "${TEST_OWNER_TOKEN_2:-}" ]]; then
     -d '{}' \
     "${BASE_URL}/showrooms/$SHOWROOM_H_ID/submit"
 else
-  echo "⚠ Skipping draft does not block global duplicate (TEST_OWNER_TOKEN_2 not set)"
+  echo "⚠ Skipping draft does not block global duplicate (OWNER2 not available)"
 fi
 
 print_section "RESULT"
