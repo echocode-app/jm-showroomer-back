@@ -102,6 +102,10 @@ paths:
     $ref: './showrooms.yaml#/paths/~1showrooms~1{id}~1submit'
   /showrooms/{id}/favorite:
     $ref: './showrooms.yaml#/paths/~1showrooms~1{id}~1favorite'
+  /showrooms/{id}/share:
+    $ref: './showrooms.yaml#/paths/~1showrooms~1{id}~1share'
+  /share/showrooms/{id}:
+    $ref: './showrooms.yaml#/paths/~1share~1showrooms~1{id}'
 
   /collections/favorites/showrooms:
     $ref: './users.yaml#/paths/~1collections~1favorites~1showrooms'

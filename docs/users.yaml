@@ -35,6 +35,7 @@ components:
           description: Full country name (e.g., Ukraine). Not ISO2.
         appLanguage:
           type: string
+          enum: [uk, en]
           nullable: true
         notificationsEnabled:
           type: boolean
@@ -126,6 +127,7 @@ components:
           description: Owner-only field (role=owner). Non-owners get 403 FORBIDDEN.
         appLanguage:
           type: string
+          enum: [uk, en]
         notificationsEnabled:
           type: boolean
     DeviceRegisterRequest:

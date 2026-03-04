@@ -1,2 +1,4 @@
 extends:
   - recommended
+rules:
+  operation-2xx-response: off

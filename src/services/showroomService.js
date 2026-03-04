@@ -12,6 +12,10 @@ export { rejectShowroomService } from "./showrooms/rejectShowroom.js";
 export { suggestShowroomsService } from "./showrooms/suggestShowrooms.js";
 export { countShowroomsService } from "./showrooms/countShowrooms.js";
 export {
+    getShowroomSharePayloadService,
+    resolveShowroomShareRedirectService,
+} from "./showrooms/shareShowroom.js";
+export {
     favoriteShowroom as favoriteShowroomService,
     unfavoriteShowroom as unfavoriteShowroomService,
     listFavoriteShowrooms as listFavoriteShowroomsService,

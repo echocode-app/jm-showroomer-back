@@ -46,6 +46,8 @@ Base URL:
   - `EVENT_WANT_TO_VISIT`
 - Для `SHOWROOM_DELETED_BY_ADMIN` показувати, який showroom видалено, та час з `payload.deletedAt` (якщо присутній).
 - На цьому етапі причина видалення не передається і не очікується.
+- Push-текст від бекенду локалізується за `users.appLanguage` (`uk|en`) з fallback `en`.
+- In-app текст нотифікацій у Flutter має бути локалізований локально по `type + payload` (не покладатися тільки на push title/body).
 
 ## 3) Матриця endpoint-ів проекту для Flutter
 
@@ -75,11 +77,13 @@ Base URL:
 | Showrooms   | POST   | `/showrooms/create`                             | MVP1 Required | Owner flow                                   |
 | Showrooms   | POST   | `/showrooms/draft`                              | MVP1 Required | Owner flow                                   |
 | Showrooms   | GET    | `/showrooms/{id}`                               | MVP1 Required | Деталь showroom                              |
+| Showrooms   | GET    | `/showrooms/{id}/share`                         | MVP1 Required | Share payload (url/text/platform targets)    |
 | Showrooms   | PATCH  | `/showrooms/{id}`                               | MVP1 Required | Owner flow                                   |
 | Showrooms   | DELETE | `/showrooms/{id}`                               | MVP1 Required | Owner flow                                   |
 | Showrooms   | POST   | `/showrooms/{id}/submit`                        | MVP1 Required | Owner flow                                   |
 | Showrooms   | POST   | `/showrooms/{id}/favorite`                      | MVP1 Required | Favorite toggle                              |
 | Showrooms   | DELETE | `/showrooms/{id}/favorite`                      | MVP1 Required | Favorite toggle                              |
+| Showrooms   | GET    | `/share/showrooms/{id}`                         | MVP1 Required | Final public share URL (redirect/fallback)   |
 | Collections | GET    | `/collections/favorites/showrooms`              | MVP1 Required | Список favorite showrooms                    |
 | Collections | POST   | `/collections/favorites/showrooms/sync`         | MVP1 Required | Guest -> auth sync                           |
 | Lookbooks   | GET    | `/lookbooks`                                    | MVP1 Required | Каталог lookbooks + nearby (`nearLat`,`nearLng`,`nearRadiusKm`) |
@@ -146,6 +150,29 @@ Base URL:
 - favorite без auth -> `401`;
 - favorite для недоступного showroom -> `404 SHOWROOM_NOT_FOUND`;
 - submit/update у неправильному статусі -> `400 SHOWROOM_NOT_EDITABLE` або `409 SHOWROOM_LOCKED_PENDING`.
+
+## 4.2.1 Showroom share (обов'язково)
+
+1. Happy:
+
+- для тапу на "Share" викликати `GET /showrooms/{id}/share?platform=auto`;
+- з відповіді брати `data.share.shareUrl` як головний URL для native share sheet;
+- текст:
+  - мінімум: використовувати `data.share.recommendedText`;
+  - або локалізувати власний текст Flutter і додати `shareUrl`.
+
+2. Unhappy:
+
+- `404 SHOWROOM_NOT_FOUND` -> showroom недоступний для публічного share (видалений/не approved);
+- `400 QUERY_INVALID` -> помилка параметра `platform`.
+
+3. Платформна поведінка (must-have):
+
+- Flutter не повинен вручну підставляти App Store/Play URL у share payload;
+- backend вже повертає fallback targets (`targets.ios/android/web`);
+- якщо юзер відкрив `shareUrl`:
+  - app встановлено + налаштовані universal/app links -> система відкриває app;
+  - app не встановлено -> backend redirect на store/web fallback через `GET /share/showrooms/{id}`.
 
 ## 4.3 Lookbooks list/detail/favorite
 

@@ -10,6 +10,8 @@ import {
     unfavoriteShowroomService,
     updateShowroomService,
     deleteShowroomService,
+    getShowroomSharePayloadService,
+    resolveShowroomShareRedirectService,
 } from "../services/showroomService.js";
 import { ok } from "../utils/apiResponse.js";
 import { attachAnonymousIdHeader, resolveActorIdentity } from "../utils/actorIdentity.js";
@@ -278,6 +280,32 @@ export async function submitShowroomForReviewController(req, res, next) {
         return ok(res, { showroom });
     } catch (err) {
         logShowroomSubmitFailure(req, err);
+        next(err);
+    }
+}
+
+// SHARE METADATA
+export async function getShowroomSharePayload(req, res, next) {
+    try {
+        const share = await getShowroomSharePayloadService(req.params.id, {
+            platform: req.query?.platform,
+            userAgent: req.headers["user-agent"],
+        });
+        return ok(res, { share });
+    } catch (err) {
+        next(err);
+    }
+}
+
+// SHARE REDIRECT
+export async function redirectShowroomShare(req, res, next) {
+    try {
+        const { httpStatus, redirectUrl } = await resolveShowroomShareRedirectService(req.params.id, {
+            platform: req.query?.platform,
+            userAgent: req.headers["user-agent"],
+        });
+        return res.redirect(httpStatus, redirectUrl);
+    } catch (err) {
         next(err);
     }
 }

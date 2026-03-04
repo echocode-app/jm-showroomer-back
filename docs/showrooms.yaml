@@ -512,6 +512,46 @@ components:
         geo:
           $ref: '#/components/schemas/GeoLocation'
 
+    ShowroomShare:
+      type: object
+      required: [showroomId, platform, shareUrl, deepLinkUrl, targets, recommendedText]
+      properties:
+        showroomId:
+          type: string
+        showroomName:
+          type: string
+          nullable: true
+        platform:
+          type: string
+          enum: [ios, android, web]
+          description: Final platform used by backend (query platform or auto-detected from User-Agent).
+        shareUrl:
+          type: string
+          description: Stable URL for native share sheet. Points to backend redirect endpoint.
+          example: https://jm-showroomer-back.onrender.com/api/v1/share/showrooms/abc123
+        deepLinkUrl:
+          type: string
+          description: App deep link route.
+          example: jmshowroomer://showrooms/abc123
+        targets:
+          type: object
+          properties:
+            ios:
+              type: string
+              nullable: true
+              description: iOS fallback target (usually App Store URL).
+            android:
+              type: string
+              nullable: true
+              description: Android fallback target (usually Play Store URL).
+            web:
+              type: string
+              nullable: true
+              description: Web/desktop fallback target.
+        recommendedText:
+          type: string
+          description: Optional backend-generated share text template. Flutter may localize/override.
+
 paths:
   /showrooms:
     get:
@@ -1261,6 +1301,101 @@ paths:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "409":
           description: Locked (pending)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
+  /showrooms/{id}/share:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Showroom ID
+      - name: platform
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: [auto, ios, android, web]
+          default: auto
+        description: |
+          Platform override for link packaging.
+          `auto` detects platform from User-Agent.
+    get:
+      tags: [Showrooms]
+      summary: Get share payload for showroom
+      description: |
+        Returns share metadata for native share sheet integration.
+        Only approved showrooms are shareable via public links.
+      operationId: getShowroomSharePayload
+      security: []
+      responses:
+        "200":
+          description: Share payload
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          share:
+                            $ref: '#/components/schemas/ShowroomShare'
+        "400":
+          description: Invalid query params
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "404":
+          description: Showroom not found or not shareable
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
+  /share/showrooms/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Showroom ID
+      - name: platform
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: [auto, ios, android, web]
+          default: auto
+        description: Optional platform override. `auto` uses User-Agent detection.
+    get:
+      tags: [Showrooms]
+      summary: Redirect showroom share link to platform fallback target
+      description: |
+        Public redirect endpoint used as final shared URL.
+        Expected behavior:
+        - App installed + universal/app links configured => OS opens app directly.
+        - App not installed => backend redirects to App Store / Play Store / web fallback.
+      operationId: redirectShowroomShare
+      security: []
+      responses:
+        "302":
+          description: Redirect to platform-specific fallback target
+        "400":
+          description: Invalid query params
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "404":
+          description: Showroom not found or not shareable
           content:
             application/json:
               schema:

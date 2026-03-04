@@ -16,6 +16,7 @@ import { ANALYTICS_EVENTS } from "../../services/analytics/eventNames.js";
 import { buildAnalyticsEvent } from "../../services/analytics/analyticsEventBuilder.js";
 import { record } from "../../services/analytics/analyticsEventService.js";
 import { log } from "../../config/logger.js";
+import { normalizeAppLanguage } from "../../constants/appLanguage.js";
 
 /**
  * Returns authenticated user profile from middleware context.
@@ -229,7 +230,7 @@ export async function updateUserProfile(req, res) {
     }
 
     if (appLanguage !== undefined) {
-        updates.appLanguage = String(appLanguage).trim();
+        updates.appLanguage = normalizeAppLanguage(appLanguage);
     }
 
     if (notificationsEnabled !== undefined) {

@@ -7,6 +7,7 @@ import { buildPushPayload } from "./payload.js";
 import { isNotificationTypeEnabled } from "./policy.js";
 import { assertValidNotificationType } from "./types.js";
 import { isNotificationAlreadyExistsError } from "./dedupe.js";
+import { sanitizeNotificationPayload } from "./payloadValidation.js";
 
 // Purpose: Persist user notifications with idempotent doc ids.
 // Responsibility: Firestore write + safe push dispatch handoff.
@@ -55,6 +56,8 @@ export async function createNotification({
         .collection("notifications")
         .doc(dedupeKey);
 
+    const sanitizedPayload = sanitizeNotificationPayload(type, payload);
+
     const doc = {
         type,
         actorUid: actorUid || null,
@@ -62,7 +65,7 @@ export async function createNotification({
             type: resourceType,
             id: resourceId,
         },
-        payload: payload && typeof payload === "object" ? payload : {},
+        payload: sanitizedPayload,
         createdAt: FieldValue.serverTimestamp(),
         readAt: null,
         isRead: false,
@@ -96,6 +99,7 @@ export async function createNotification({
         resourceId,
         notificationId: dedupeKey,
         payload: doc.payload,
+        locale: targetUser?.appLanguage ?? null,
     });
     await sendPushToUser(targetUid, pushPayload);
     return {

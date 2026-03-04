@@ -9,6 +9,7 @@ import eventsRouter from "./events.js";
 import adminRouter from "./admin.js";
 import collectionsRouter from "./collections.js";
 import analyticsRouter from "./analytics.js";
+import shareRouter from "./share.js";
 
 const router = Router();
 
@@ -22,5 +23,6 @@ router.use("/events", eventsRouter);
 router.use("/collections", collectionsRouter);
 router.use("/analytics", analyticsRouter);
 router.use("/admin", adminRouter);
+router.use("/share", shareRouter);
 
 export default router;

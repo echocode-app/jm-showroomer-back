@@ -21,6 +21,7 @@ import {
     updateShowroom,
     deleteShowroom,
     submitShowroomForReviewController,
+    getShowroomSharePayload,
 } from "../controllers/showroomController.js";
 
 const router = Router();
@@ -36,6 +37,9 @@ router.get("/counters", optionalAuth, loadUserIfExists, getShowroomCounters);
 
 // GET BY ID
 router.get("/:id", optionalAuth, loadUserIfExists, getShowroomById);
+
+// SHARE METADATA
+router.get("/:id/share", getShowroomSharePayload);
 
 // CREATE
 router.post(

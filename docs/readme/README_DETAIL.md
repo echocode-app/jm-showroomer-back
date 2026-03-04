@@ -398,6 +398,7 @@ Sync behavior:
 
 - showroom approved
 - showroom rejected
+- showroom deleted by admin
 - showroom favorited
 - lookbook favorited
 - event want-to-visit
@@ -416,6 +417,8 @@ Push:
 - запускається після create notification;
 - йде тільки якщо notification newly created;
 - поважає user/device opt-out;
+- backend localizes push title/body by `users.appLanguage` (`uk|en`, fallback `en`);
+- payload is sanitized by notification type before storage/push (unknown fields dropped);
 - поважає env guard;
 - fail-safe (не валить бізнес flow).
 
@@ -680,6 +683,8 @@ Notification policy (`MVP_MODE`):
 | `GET /users/me/notifications/unread-count`    | `users/notificationsController.getMyUnreadNotificationsCount` | `notifications/read.getUnreadNotificationsCount`                                               | `users/{uid}/notifications/*`                                                                     |
 | `GET /showrooms`                              | `showroomController.listShowrooms`                            | `showrooms/listShowrooms.listShowroomsService`                                                 | `showrooms/*`                                                                                     |
 | `GET /showrooms/{id}`                         | `showroomController.getShowroomById`                          | `showrooms/getShowroomById.getShowroomByIdService`                                             | `showrooms/{id}`                                                                                  |
+| `GET /showrooms/{id}/share`                   | `showroomController.getShowroomSharePayload`                  | `showrooms/shareShowroom.getShowroomSharePayloadService`                                       | `showrooms/{id}`                                                                                  |
+| `GET /share/showrooms/{id}`                   | `showroomController.redirectShowroomShare`                    | `showrooms/shareShowroom.resolveShowroomShareRedirectService`                                  | `showrooms/{id}`                                                                                  |
 | `POST /showrooms/create`                      | `showroomController.createShowroomController`                 | `showrooms/createShowroom.createShowroom`                                                      | `showrooms/*`                                                                                     |
 | `POST /showrooms/draft`                       | `showroomController.createDraftShowroomController`            | `showrooms/createDraftShowroom.createDraftShowroom`                                            | `showrooms/*`                                                                                     |
 | `PATCH /showrooms/{id}`                       | `showroomController.updateShowroom`                           | `showrooms/updateShowroom.updateShowroomService`                                               | `showrooms/{id}`                                                                                  |
@@ -723,6 +728,8 @@ Notification policy (`MVP_MODE`):
 | GET    | `/showrooms/suggestions`                        | showroom suggestions       |
 | GET    | `/showrooms/counters`                           | showroom counters          |
 | GET    | `/showrooms/{id}`                               | showroom detail            |
+| GET    | `/showrooms/{id}/share`                         | showroom share payload     |
+| GET    | `/share/showrooms/{id}`                         | showroom share redirect    |
 | POST   | `/showrooms/create`                             | create showroom            |
 | POST   | `/showrooms/draft`                              | create draft               |
 | PATCH  | `/showrooms/{id}`                               | update showroom            |

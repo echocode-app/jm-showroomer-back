@@ -138,7 +138,13 @@ components:
         payload:
           type: object
           additionalProperties: true
-          description: Compact metadata for UI rendering (for example showroomName).
+          description: |
+            Compact metadata for UI rendering.
+            Backend sanitizes payload per notification type:
+            - SHOWROOM_APPROVED / SHOWROOM_REJECTED / SHOWROOM_DELETED_BY_ADMIN / SHOWROOM_FAVORITED:
+              `showroomName`, optional `reason`, optional `deletedAt` (ISO)
+            - LOOKBOOK_FAVORITED: `lookbookName`
+            - EVENT_WANT_TO_VISIT: `eventName`
         createdAt:
           type: string
           format: date-time
