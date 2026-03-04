@@ -300,6 +300,19 @@ paths:
                   - properties:
                       data:
                         $ref: '#/components/schemas/User'
+              examples:
+                ok:
+                  value:
+                    success: true
+                    data:
+                      uid: "user_123"
+                      role: "owner"
+                      roles: ["owner"]
+                      status: "active"
+                      onboardingState: "completed"
+                      country: "Ukraine"
+                      appLanguage: "uk"
+                      notificationsEnabled: true
         "401":
           description: Unauthorized
           content:
@@ -487,6 +500,14 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/DeviceRegisterRequest'
+            examples:
+              ios_device:
+                value:
+                  deviceId: "ios-prod-device-1"
+                  fcmToken: "fake-fcm-token"
+                  platform: "ios"
+                  appVersion: "1.0.0"
+                  locale: "uk-UA"
       responses:
         "200":
           description: Device upserted
@@ -561,6 +582,10 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CompleteOnboardingInput'
+            examples:
+              onboarding_complete:
+                value:
+                  country: "Ukraine"
       responses:
         "200":
           description: Onboarding completed
@@ -614,6 +639,13 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CompleteOwnerProfileInput'
+            examples:
+              owner_profile:
+                value:
+                  name: "Owner Test"
+                  position: "Owner"
+                  country: "Ukraine"
+                  instagram: "https://instagram.com/owner_test"
       responses:
         "200":
           description: Owner profile completed
@@ -670,6 +702,15 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UserProfileUpdateInput'
+            examples:
+              language_and_notifications:
+                value:
+                  appLanguage: "uk"
+                  notificationsEnabled: true
+              owner_fields:
+                value:
+                  instagram: "https://instagram.com/owner_profile"
+                  position: "Founder"
       responses:
         "200":
           description: Profile updated
@@ -702,6 +743,13 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+              examples:
+                owner_only_field_forbidden:
+                  value:
+                    success: false
+                    error:
+                      code: FORBIDDEN
+                      message: Access denied
         "404":
           description: User not found
           content:
@@ -714,6 +762,13 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+              examples:
+                country_change_blocked:
+                  value:
+                    success: false
+                    error:
+                      code: USER_COUNTRY_CHANGE_BLOCKED
+                      message: Country change is blocked for active owner content
 
   /collections/favorites/showrooms:
     get:

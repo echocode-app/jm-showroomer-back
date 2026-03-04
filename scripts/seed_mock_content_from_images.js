@@ -94,9 +94,9 @@ function isImageFile(filename) {
 }
 
 function compareByNumericSuffix(a, b) {
-    const ai = Number((a.match(/(\d+)/g) || []).pop() || Number.MAX_SAFE_INTEGER);
-    const bi = Number((b.match(/(\d+)/g) || []).pop() || Number.MAX_SAFE_INTEGER);
-    if (ai !== bi) return ai - bi;
+    const aNum = Number((a.match(/(\d+)/g) || []).pop() || Number.MAX_SAFE_INTEGER);
+    const bNum = Number((b.match(/(\d+)/g) || []).pop() || Number.MAX_SAFE_INTEGER);
+    if (aNum !== bNum) return aNum - bNum;
     return a.localeCompare(b);
 }
 

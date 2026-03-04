@@ -1,0 +1,3593 @@
+{
+  "info": {
+    "_postman_id": "2a712779-2024-4ebb-95b2-6d14f2a4d74c",
+    "name": "JM Showroomer - All Scenarios",
+    "description": "Full API regression collection for smoke, role-based access, business flows, idempotency, and negative checks.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3005/api/v1"
+    },
+    {
+      "key": "idToken_user",
+      "value": ""
+    },
+    {
+      "key": "idToken_owner",
+      "value": ""
+    },
+    {
+      "key": "idToken_admin",
+      "value": ""
+    },
+    {
+      "key": "auth_user",
+      "value": ""
+    },
+    {
+      "key": "auth_owner",
+      "value": ""
+    },
+    {
+      "key": "auth_admin",
+      "value": ""
+    },
+    {
+      "key": "showroom_id",
+      "value": ""
+    },
+    {
+      "key": "lookbook_id",
+      "value": ""
+    },
+    {
+      "key": "event_id",
+      "value": ""
+    },
+    {
+      "key": "notification_id",
+      "value": ""
+    },
+    {
+      "key": "next_cursor",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "00 Smoke",
+      "item": [
+        {
+          "name": "Health",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "OAuth user (set auth_user)",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});",
+                    "if (json && json && json.data && json.data.idToken) { pm.environment.set(\"auth_user\", 'Bearer ' + json.data.idToken); }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/oauth",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "oauth"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idToken\": \"{{idToken_user}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "OAuth owner (set auth_owner)",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});",
+                    "if (json && json && json.data && json.data.idToken) { pm.environment.set(\"auth_owner\", 'Bearer ' + json.data.idToken); }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/oauth",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "oauth"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idToken\": \"{{idToken_owner}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "OAuth admin (set auth_admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});",
+                    "if (json && json && json.data && json.data.idToken) { pm.environment.set(\"auth_admin\", 'Bearer ' + json.data.idToken); }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/oauth",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "oauth"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idToken\": \"{{idToken_admin}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Showrooms list",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});",
+                    "if (json && json.meta && json.meta.nextCursor) { pm.environment.set('next_cursor', json.meta.nextCursor); }",
+                    "if (json && json && json.data && Array.isArray(json.data.items) && json.data.items[0] && json.data.items[0].id) { pm.environment.set(\"showroom_id\", json.data.items[0].id); }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/showrooms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "showrooms"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Lookbooks list",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});",
+                    "if (json && json.meta && json.meta.nextCursor) { pm.environment.set('next_cursor', json.meta.nextCursor); }",
+                    "if (json && json && json.data && Array.isArray(json.data.items) && json.data.items[0] && json.data.items[0].id) { pm.environment.set(\"lookbook_id\", json.data.items[0].id); }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/lookbooks?country=Ukraine&limit=2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lookbooks"
+              ],
+              "query": [
+                {
+                  "key": "country",
+                  "value": "Ukraine"
+                },
+                {
+                  "key": "limit",
+                  "value": "2"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Events list",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});",
+                    "if (json && json.meta && json.meta.nextCursor) { pm.environment.set('next_cursor', json.meta.nextCursor); }",
+                    "if (json && json && json.data && Array.isArray(json.data.items) && json.data.items[0] && json.data.items[0].id) { pm.environment.set(\"event_id\", json.data.items[0].id); }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "01 Auth + Users",
+      "item": [
+        {
+          "name": "OAuth missing token",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 400\", function () { pm.expect([400]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/oauth",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "oauth"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get my profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update profile valid",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "profile"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"appLanguage\": \"uk\",\n  \"notificationsEnabled\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Complete onboarding",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/complete-onboarding",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "complete-onboarding"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Complete owner profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/complete-owner-profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "complete-owner-profile"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Owner Test\",\n  \"country\": \"Ukraine\",\n  \"instagram\": \"https://instagram.com/owner_test\",\n  \"position\": \"Owner\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register device",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/devices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "devices"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deviceId\": \"ios-docs-device-1\",\n  \"fcmToken\": \"fake-fcm-token-1\",\n  \"platform\": \"ios\",\n  \"appVersion\": \"1.0.0\",\n  \"locale\": \"uk-UA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete device",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/devices/ios-docs-device-1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "devices",
+                "ios-docs-device-1"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List notifications",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});",
+                    "if (json && json.meta && json.meta.nextCursor) { pm.environment.set('next_cursor', json.meta.nextCursor); }",
+                    "if (json && json && json.data && Array.isArray(json.data.items) && json.data.items[0] && json.data.items[0].id) { pm.environment.set(\"notification_id\", json.data.items[0].id); }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_owner}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/notifications?limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Unread notifications count",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_owner}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/notifications/unread-count",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "notifications",
+                "unread-count"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mark notification read",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_owner}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/notifications/{{notification_id}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "notifications",
+                "{{notification_id}}",
+                "read"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 Showrooms",
+      "item": [
+        {
+          "name": "Create draft showroom",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200/201\", function () { pm.expect([200,201]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});",
+                    "if (json && json && json.data && json.data.showroom && json.data.showroom.id) { pm.environment.set(\"showroom_id\", json.data.showroom.id); }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_owner}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/showrooms/draft",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "showrooms",
+                "draft"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Flow Showroom\",\n  \"country\": \"Ukraine\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update showroom",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_owner}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/showrooms/{{showroom_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "showrooms",
+                "{{showroom_id}}"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"city\": \"Kyiv\",\n  \"address\": \"Khreshchatyk 1\",\n  \"contacts\": {\n    \"phone\": \"+380501112233\",\n    \"instagram\": \"https://instagram.com/flow_showroom\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Submit showroom",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_owner}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/showrooms/{{showroom_id}}/submit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "showrooms",
+                "{{showroom_id}}",
+                "submit"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get showroom by id",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/showrooms/{{showroom_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "showrooms",
+                "{{showroom_id}}"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Showroom share payload",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/showrooms/{{showroom_id}}/share",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "showrooms",
+                "{{showroom_id}}",
+                "share"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Showroom counters",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/showrooms/counters?city=Kyiv",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "showrooms",
+                "counters"
+              ],
+              "query": [
+                {
+                  "key": "city",
+                  "value": "Kyiv"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Showroom suggestions",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/showrooms/suggestions?q=ky",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "showrooms",
+                "suggestions"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "ky"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Showrooms pagination page1",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});",
+                    "if (json && json.meta && json.meta.nextCursor) { pm.environment.set('next_cursor', json.meta.nextCursor); }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/showrooms?limit=2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "showrooms"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "2"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Showrooms pagination page2",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});",
+                    "if (json && json.meta && json.meta.nextCursor) { pm.environment.set('next_cursor', json.meta.nextCursor); }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/showrooms?limit=2&cursor={{next_cursor}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "showrooms"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "2"
+                },
+                {
+                  "key": "cursor",
+                  "value": "{{next_cursor}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Favorite showroom",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/showrooms/{{showroom_id}}/favorite",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "showrooms",
+                "{{showroom_id}}",
+                "favorite"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Favorite showroom again (idempotent)",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/showrooms/{{showroom_id}}/favorite",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "showrooms",
+                "{{showroom_id}}",
+                "favorite"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Unfavorite showroom",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/showrooms/{{showroom_id}}/favorite",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "showrooms",
+                "{{showroom_id}}",
+                "favorite"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Unfavorite showroom again (idempotent)",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/showrooms/{{showroom_id}}/favorite",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "showrooms",
+                "{{showroom_id}}",
+                "favorite"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 Admin",
+      "item": [
+        {
+          "name": "Admin overview",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/overview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "overview"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin list showrooms",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/showrooms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "showrooms"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin showroom details",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/showrooms/{{showroom_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "showrooms",
+                "{{showroom_id}}"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin showroom history",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/showrooms/{{showroom_id}}/history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "showrooms",
+                "{{showroom_id}}",
+                "history"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin showroom stats",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/showrooms/{{showroom_id}}/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "showrooms",
+                "{{showroom_id}}",
+                "stats"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin approve showroom",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/showrooms/{{showroom_id}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "showrooms",
+                "{{showroom_id}}",
+                "approve"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin analytics showrooms",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/analytics/showrooms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "analytics",
+                "showrooms"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin analytics events",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/analytics/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "analytics",
+                "events"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin analytics platform",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/analytics/platform",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "analytics",
+                "platform"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin analytics users onboarding",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/analytics/users-onboarding",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "analytics",
+                "users-onboarding"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 Lookbooks",
+      "item": [
+        {
+          "name": "Create lookbook",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200/201\", function () { pm.expect([200,201]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});",
+                    "if (json && json && json.data && json.data.lookbook && json.data.lookbook.id) { pm.environment.set(\"lookbook_id\", json.data.lookbook.id); }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_owner}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/lookbooks/create",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lookbooks",
+                "create"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"imageUrl\": \"https://example.com/lookbook.jpg\",\n  \"showroomId\": \"{{showroom_id}}\",\n  \"description\": \"Lookbook flow\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List lookbooks with pagination",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});",
+                    "if (json && json.meta && json.meta.nextCursor) { pm.environment.set('next_cursor', json.meta.nextCursor); }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/lookbooks?country=Ukraine&limit=2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lookbooks"
+              ],
+              "query": [
+                {
+                  "key": "country",
+                  "value": "Ukraine"
+                },
+                {
+                  "key": "limit",
+                  "value": "2"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Lookbooks page2",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/lookbooks?country=Ukraine&limit=2&cursor={{next_cursor}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lookbooks"
+              ],
+              "query": [
+                {
+                  "key": "country",
+                  "value": "Ukraine"
+                },
+                {
+                  "key": "limit",
+                  "value": "2"
+                },
+                {
+                  "key": "cursor",
+                  "value": "{{next_cursor}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get lookbook by id",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/lookbooks/{{lookbook_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lookbooks",
+                "{{lookbook_id}}"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Favorite lookbook",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/lookbooks/{{lookbook_id}}/favorite",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lookbooks",
+                "{{lookbook_id}}",
+                "favorite"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Favorite lookbook again (idempotent)",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/lookbooks/{{lookbook_id}}/favorite",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lookbooks",
+                "{{lookbook_id}}",
+                "favorite"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Unfavorite lookbook",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/lookbooks/{{lookbook_id}}/favorite",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lookbooks",
+                "{{lookbook_id}}",
+                "favorite"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Unfavorite lookbook again (idempotent)",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/lookbooks/{{lookbook_id}}/favorite",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lookbooks",
+                "{{lookbook_id}}",
+                "favorite"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Lookbook RSVP (MVP-limited)",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200/501\", function () { pm.expect([200,501]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/lookbooks/{{lookbook_id}}/rsvp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lookbooks",
+                "{{lookbook_id}}",
+                "rsvp"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 Events",
+      "item": [
+        {
+          "name": "List events",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});",
+                    "if (json && json.meta && json.meta.nextCursor) { pm.environment.set('next_cursor', json.meta.nextCursor); }",
+                    "if (json && json && json.data && Array.isArray(json.data.items) && json.data.items[0] && json.data.items[0].id) { pm.environment.set(\"event_id\", json.data.items[0].id); }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events?limit=2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "2"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get event by id",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{event_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events",
+                "{{event_id}}"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Want to visit",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{event_id}}/want-to-visit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events",
+                "{{event_id}}",
+                "want-to-visit"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Want to visit again (idempotent)",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{event_id}}/want-to-visit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events",
+                "{{event_id}}",
+                "want-to-visit"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Remove want-to-visit",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{event_id}}/want-to-visit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events",
+                "{{event_id}}",
+                "want-to-visit"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Remove want-to-visit again (idempotent)",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{event_id}}/want-to-visit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events",
+                "{{event_id}}",
+                "want-to-visit"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Dismiss event",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{event_id}}/dismiss",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events",
+                "{{event_id}}",
+                "dismiss"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Dismiss again (idempotent)",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{event_id}}/dismiss",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events",
+                "{{event_id}}",
+                "dismiss"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Undismiss event",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{event_id}}/dismiss",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events",
+                "{{event_id}}",
+                "dismiss"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Undismiss again (idempotent)",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{event_id}}/dismiss",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events",
+                "{{event_id}}",
+                "dismiss"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Event RSVP (MVP2-only)",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 501\", function () { pm.expect([501]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{event_id}}/rsvp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events",
+                "{{event_id}}",
+                "rsvp"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "06 Collections Sync",
+      "item": [
+        {
+          "name": "List favorite showrooms",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/collections/favorites/showrooms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "collections",
+                "favorites",
+                "showrooms"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Sync favorite showrooms",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/collections/favorites/showrooms/sync",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "collections",
+                "favorites",
+                "showrooms",
+                "sync"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"favoriteIds\": [\n    \"{{showroom_id}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List favorite lookbooks",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/collections/favorites/lookbooks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "collections",
+                "favorites",
+                "lookbooks"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Sync favorite lookbooks",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/collections/favorites/lookbooks/sync",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "collections",
+                "favorites",
+                "lookbooks",
+                "sync"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"favoriteIds\": [\n    \"{{lookbook_id}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List want-to-visit events",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/collections/want-to-visit/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "collections",
+                "want-to-visit",
+                "events"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Sync events state",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/collections/want-to-visit/events/sync",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "collections",
+                "want-to-visit",
+                "events",
+                "sync"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"wantToVisitIds\": [\n    \"{{event_id}}\"\n  ],\n  \"dismissedIds\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "07 Analytics",
+      "item": [
+        {
+          "name": "Analytics ingest valid",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }",
+                    "pm.test('Envelope success=true', function () {",
+                    "  pm.expect(json).to.be.an('object');",
+                    "  pm.expect(json.success).to.eql(true);",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/analytics/ingest",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "analytics",
+                "ingest"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"events\": [\n    {\n      \"eventName\": \"screen_view\",\n      \"timestamp\": \"2026-03-04T12:00:00.000Z\",\n      \"context\": {\n        \"screen\": \"home\",\n        \"sessionId\": \"sess-docs-1\"\n      },\n      \"resource\": {\n        \"type\": \"screen\",\n        \"id\": \"home\"\n      },\n      \"meta\": {\n        \"source\": \"postman\"\n      }\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Analytics ingest invalid event",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 400\", function () { pm.expect([400]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/analytics/ingest",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "analytics",
+                "ingest"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"events\": [\n    {\n      \"eventName\": \"invalid_event_name\",\n      \"timestamp\": \"2026-03-04T12:00:00.000Z\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "08 Negative + Security",
+      "item": [
+        {
+          "name": "Protected without token",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 401\", function () { pm.expect([401]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin endpoint with user token",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 403\", function () { pm.expect([403]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/overview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "overview"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Showrooms invalid cursor",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 400\", function () { pm.expect([400]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/showrooms?cursor=invalid",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "showrooms"
+              ],
+              "query": [
+                {
+                  "key": "cursor",
+                  "value": "invalid"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Lookbooks invalid cursor",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 400\", function () { pm.expect([400]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/lookbooks?country=Ukraine&cursor=invalid",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lookbooks"
+              ],
+              "query": [
+                {
+                  "key": "country",
+                  "value": "Ukraine"
+                },
+                {
+                  "key": "cursor",
+                  "value": "invalid"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Event not found",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 404\", function () { pm.expect([404]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events/not-existing-id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events",
+                "not-existing-id"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Lookbook not found",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 404\", function () { pm.expect([404]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/lookbooks/not-existing-id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lookbooks",
+                "not-existing-id"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Notification not found",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 404\", function () { pm.expect([404]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/notifications/not-existing-id/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "notifications",
+                "not-existing-id",
+                "read"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Showroom invalid query combination",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 400\", function () { pm.expect([400]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/showrooms?geohashPrefix=u8vxn&q=test",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "showrooms"
+              ],
+              "query": [
+                {
+                  "key": "geohashPrefix",
+                  "value": "u8vxn"
+                },
+                {
+                  "key": "q",
+                  "value": "test"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Showroom suggestions empty q",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status is 400\", function () { pm.expect([400]).to.include(pm.response.code); });",
+                    "let json = null;",
+                    "try { json = pm.response.json(); } catch (e) { json = null; }"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/showrooms/suggestions?q=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "showrooms",
+                "suggestions"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

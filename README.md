@@ -78,11 +78,17 @@ Environment files:
 ## Documentation Links
 
 - `docs/openapi.yaml` — OpenAPI spec (modular entrypoint)
-- `docs/readme/README_DETAIL.md` — detailed backend + Flutter contract
+- `docs/readme/README_DETAIL.md` — integration hub (entrypoint to detailed docs)
+- `docs/readme/INTEGRATION_API_WORKFLOWS.md` — endpoint workflows and role matrix
+- `docs/readme/INTEGRATION_ERRORS_LIMITS.md` — error codes, limits, pagination and idempotency
+- `docs/readme/API_VERSIONING_POLICY.md` — API versioning and deprecation policy
+- `docs/readme/CHANGELOG_API.md` — API change log
+- `docs/readme/OPERATIONAL_EXPECTATIONS.md` — operational expectations (timeouts/retry/rate-limit/known limitations)
+- `docs/readme/DEVELOPER_RUNBOOK.md` — developer runbook (start/test/release routine)
 - `docs/readme/ANALYTICS_CONTRACT.md` — analytics contract and client responsibilities
 - `docs/readme/SHOWROOMS_MVP1_SEARCH.md` — showroom search / geo / cursor rules
-- `docs/readme/DEV.md` — developer runbook (tests / release)
-- `docs/readme/DEV_POSTMAN_TESTS.md` — manual API verification scenarios
+- `docs/readme/POSTMAN_COLLECTION_GUIDE.md` — Postman regression execution guide
+- `docs/postman/JM_Showroomer_All_Scenarios.postman_collection.json` — importable API regression scenarios
 - `docs/readme/README_UA.md` — business logic overview (UA)
 - `docs/readme/README_BACKEND_MAP_UA.md` — backend module map (UA)
 

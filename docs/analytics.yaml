@@ -155,12 +155,27 @@ paths:
                   - properties:
                       data:
                         $ref: '#/components/schemas/AnalyticsIngestResult'
+              examples:
+                accepted:
+                  value:
+                    success: true
+                    data:
+                      accepted: 1
+                      stored: 1
+                      failed: 0
         "400":
           description: Invalid payload, batch size, or disallowed event name (`EVENT_NAME_INVALID`)
           content:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+              examples:
+                invalid_event_name:
+                  value:
+                    success: false
+                    error:
+                      code: EVENT_NAME_INVALID
+                      message: Event name is not allowed
         "429":
           description: Rate limit exceeded (analytics-specific limiter bucket)
           content:

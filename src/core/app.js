@@ -36,6 +36,42 @@ app.use(
     swaggerOptions: {
       url: "/docs/spec/openapi.yaml",
     },
+    customCss: `
+      /* Soften inline accent chips and prevent overlap in all doc sections. */
+      .swagger-ui .markdown code,
+      .swagger-ui .renderedMarkdown code,
+      .swagger-ui .opblock-description-wrapper code,
+      .swagger-ui .parameters-col_description code,
+      .swagger-ui .response-col_description code {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        color: inherit;
+        font-family: inherit;
+        font-size: 0.96em;
+        font-weight: 500;
+        padding: 0 4px;
+        border-radius: 4px;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        line-height: 1.45;
+        box-decoration-break: clone;
+      }
+      .swagger-ui .markdown p,
+      .swagger-ui .markdown li,
+      .swagger-ui .opblock-description-wrapper p,
+      .swagger-ui .opblock-description-wrapper li {
+        line-height: 1.55;
+        overflow-wrap: anywhere;
+      }
+      .swagger-ui .markdown li {
+        margin-bottom: 4px;
+      }
+      .swagger-ui .opblock-summary-path {
+        white-space: normal;
+        word-break: break-word;
+      }
+    `,
   })
 );
 

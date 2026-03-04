@@ -3,6 +3,15 @@ info:
   title: JM Showroomer API
   version: 1.0.0
   description: |
+    API lifecycle:
+    - Compatibility policy: backward-compatible within v1 by default.
+    - Breaking changes require a new major version at /api/v2.
+    - Deprecation window target: minimum 90 days.
+    - References:
+      - <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/API_VERSIONING_POLICY.md" target="_blank" rel="noopener noreferrer">API_VERSIONING_POLICY.md</a>
+      - <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/CHANGELOG_API.md" target="_blank" rel="noopener noreferrer">CHANGELOG_API.md</a>
+      - <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/OPERATIONAL_EXPECTATIONS.md" target="_blank" rel="noopener noreferrer">OPERATIONAL_EXPECTATIONS.md</a>
+
     **Docs Navigation (Flutter + Product + Backend)**
 
     - **SHOWROOMS_MVP1_SEARCH.md**  
@@ -21,9 +30,29 @@ info:
       <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/README_UA.md" target="_blank" rel="noopener noreferrer">Open document</a>
 
     - **README_DETAIL.md**  
-      For Flutter: full integration specification for routes, states, validation, error codes, and rules.  
-      Value: fewer API clarification rounds and stable integration from the first iteration.  
+      Integration hub: navigation point for all detailed integration docs.  
+      Value: fast entrypoint to modular docs by topic and role.  
       <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/README_DETAIL.md" target="_blank" rel="noopener noreferrer">Open document</a>
+
+    - **INTEGRATION_API_WORKFLOWS.md**  
+      Technical endpoint map by domain and role.  
+      Value: clear API workflow coverage for client and QA integration.  
+      <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/INTEGRATION_API_WORKFLOWS.md" target="_blank" rel="noopener noreferrer">Open document</a>
+
+    - **INTEGRATION_ERRORS_LIMITS.md**  
+      Canonical errors/limits/cursor/idempotency guide.  
+      Value: stable handling of backend constraints and failure semantics on client side.  
+      <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/INTEGRATION_ERRORS_LIMITS.md" target="_blank" rel="noopener noreferrer">Open document</a>
+
+    - **DEVELOPER_RUNBOOK.md**  
+      Backend developer runbook (setup, quality gates, API-change checklist).  
+      Value: faster onboarding and safer release discipline.  
+      <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/DEVELOPER_RUNBOOK.md" target="_blank" rel="noopener noreferrer">Open document</a>
+
+    - **POSTMAN_COLLECTION_GUIDE.md**  
+      How to run full Postman regression collection and interpret failures.  
+      Value: repeatable API verification without contract drift.  
+      <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/POSTMAN_COLLECTION_GUIDE.md" target="_blank" rel="noopener noreferrer">Open document</a>
 
     - **README_BACKEND_MAP_UA.md**  
       Detailed backend map: modules, dependencies, layers, responsibilities, key invariants.  
@@ -59,6 +88,8 @@ info:
     url: https://unlicense.org/
 servers:
   - url: /api/v1
+security:
+  - bearerAuth: []
 
 paths:
   /health:
@@ -172,18 +203,18 @@ tags:
   - name: Auth
     description: Authentication via Firebase ID token.
     externalDocs:
-      description: Full integration detail
-      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/README_DETAIL.md
+      description: Auth and users workflows
+      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/INTEGRATION_API_WORKFLOWS.md
   - name: Users
     description: User profile, onboarding, notifications, and devices.
     externalDocs:
-      description: Full integration detail
-      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/README_DETAIL.md
+      description: Users workflows and contract rules
+      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/INTEGRATION_API_WORKFLOWS.md
   - name: Collections
     description: Favorites and want-to-visit collections with guest->auth sync endpoints.
     externalDocs:
-      description: Full integration detail
-      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/README_DETAIL.md
+      description: Collections and guest sync workflows
+      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/INTEGRATION_API_WORKFLOWS.md
   - name: Showrooms
     description: Showroom lifecycle, listing, moderation state, favorites, search.
     externalDocs:
@@ -192,13 +223,13 @@ tags:
   - name: Lookbooks
     description: Lookbooks list/detail/create/update/favorites.
     externalDocs:
-      description: Full integration detail
-      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/README_DETAIL.md
+      description: Lookbooks workflows and checks
+      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/INTEGRATION_API_WORKFLOWS.md
   - name: Events
     description: Events list/detail, want-to-visit and dismiss state.
     externalDocs:
-      description: Full integration detail
-      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/README_DETAIL.md
+      description: Events workflows and checks
+      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/INTEGRATION_API_WORKFLOWS.md
   - name: Admin
     description: Admin moderation endpoints for showrooms.
     externalDocs:

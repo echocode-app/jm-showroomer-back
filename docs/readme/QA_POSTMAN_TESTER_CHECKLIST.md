@@ -6,6 +6,13 @@
 
 ## 2) Підготовка Postman
 
+Рекомендований шлях:
+1. Імпортувати `docs/postman/JM_Showroomer_All_Scenarios.postman_collection.json`.
+2. Імпортувати `docs/postman/JM_Showroomer_Environment.template.json`.
+3. Заповнити токени в environment.
+
+Альтернативно можна зібрати колекцію вручну:
+
 1. Створити Environment `JM Showroomer QA`.
 2. Додати змінні:
 - `baseUrl` = `https://<render-domain>/api/v1`

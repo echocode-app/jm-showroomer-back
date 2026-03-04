@@ -97,7 +97,9 @@
 - `/lookbooks`
 - `/events`
 - `/collections`
+- `/analytics`
 - `/admin`
+- `/share`
 
 ### `health.js`
 - `GET /health/` — health check.
@@ -109,7 +111,7 @@
 - profile, onboarding, owner profile completion;
 - notifications read API;
 - devices register/delete;
-- dev-only test routes.
+- delete my profile.
 
 ### `showrooms.js`
 - list/get/suggestions/counters;

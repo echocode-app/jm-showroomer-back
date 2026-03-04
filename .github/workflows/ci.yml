@@ -4,6 +4,12 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      staging_base_url:
+        description: "Optional override for staging base URL"
+        required: false
+        default: "https://jm-showroomer-back.onrender.com/api/v1"
 
 jobs:
   lint-and-unit:
@@ -116,3 +122,71 @@ jobs:
 
           ./src/test/run.sh smoke
           ./src/test/run.sh notifications
+
+  postman-staging-contract:
+    needs: lint-and-unit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Resolve staging base URL
+        id: resolve-base-url
+        env:
+          INPUT_BASE_URL: ${{ github.event.inputs.staging_base_url || '' }}
+          SECRET_BASE_URL: ${{ secrets.STAGING_BASE_URL || '' }}
+          DEFAULT_BASE_URL: https://jm-showroomer-back.onrender.com/api/v1
+        run: |
+          base_url="$DEFAULT_BASE_URL"
+          if [ -n "$SECRET_BASE_URL" ]; then
+            base_url="$SECRET_BASE_URL"
+          fi
+          if [ -n "$INPUT_BASE_URL" ]; then
+            base_url="$INPUT_BASE_URL"
+          fi
+          echo "base_url=$base_url" >> "$GITHUB_OUTPUT"
+          echo "Using Postman base URL: $base_url"
+
+      - name: Detect Postman auth secrets
+        id: postman-gate
+        env:
+          TEST_USER_TOKEN: ${{ secrets.TEST_USER_TOKEN || '' }}
+          TEST_ADMIN_TOKEN: ${{ secrets.TEST_ADMIN_TOKEN || '' }}
+        run: |
+          if [ -n "$TEST_USER_TOKEN" ] && [ -n "$TEST_ADMIN_TOKEN" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "Postman staging contract skipped: TEST_USER_TOKEN/TEST_ADMIN_TOKEN not configured"
+          fi
+
+      - name: Install Newman
+        if: ${{ steps.postman-gate.outputs.enabled == 'true' }}
+        run: npm install --no-save newman@^6
+
+      - name: Run Postman collection against staging
+        if: ${{ steps.postman-gate.outputs.enabled == 'true' }}
+        env:
+          STAGING_BASE_URL: ${{ steps.resolve-base-url.outputs.base_url }}
+          TEST_USER_TOKEN: ${{ secrets.TEST_USER_TOKEN }}
+          TEST_ADMIN_TOKEN: ${{ secrets.TEST_ADMIN_TOKEN }}
+        run: |
+          set -euo pipefail
+          npx newman run docs/postman/JM_Showroomer_All_Scenarios.postman_collection.json \
+            --reporters cli \
+            --env-var "baseUrl=${STAGING_BASE_URL}" \
+            --env-var "idToken_user=${TEST_USER_TOKEN}" \
+            --env-var "idToken_owner=${TEST_USER_TOKEN}" \
+            --env-var "idToken_admin=${TEST_ADMIN_TOKEN}" \
+            --env-var "auth_user=Bearer ${TEST_USER_TOKEN}" \
+            --env-var "auth_owner=Bearer ${TEST_USER_TOKEN}" \
+            --env-var "auth_admin=Bearer ${TEST_ADMIN_TOKEN}"

@@ -1057,6 +1057,17 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateShowroomInput'
+            examples:
+              draft_create:
+                summary: Minimal create payload
+                value:
+                  name: "Atelier Nova"
+                  country: "Ukraine"
+                  city: "Kyiv"
+                  category: "womenswear"
+                  type: "multibrand"
+                  contacts:
+                    instagram: "https://instagram.com/ateliernova"
       responses:
         "200":
           description: Showroom created
@@ -1071,6 +1082,19 @@ paths:
                         properties:
                           showroom:
                             $ref: '#/components/schemas/ShowroomPrivileged'
+              examples:
+                created:
+                  value:
+                    success: true
+                    data:
+                      showroom:
+                        id: "sr_123"
+                        name: "Atelier Nova"
+                        type: "multibrand"
+                        country: "Ukraine"
+                        ownerUid: "owner_123"
+                        city: "Kyiv"
+                        status: "draft"
         "400":
           description: Validation error
           content:
@@ -1204,6 +1228,13 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateShowroomInput'
+            examples:
+              update_contacts:
+                value:
+                  address: "Khreshchatyk 1"
+                  contacts:
+                    phone: "+380501112233"
+                    instagram: "https://instagram.com/ateliernova"
       responses:
         "200":
           description: Showroom updated
@@ -1248,6 +1279,13 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+              examples:
+                locked_pending:
+                  value:
+                    success: false
+                    error:
+                      code: SHOWROOM_LOCKED_PENDING
+                      message: Showroom is locked while pending moderation
 
     delete:
       tags: [Showrooms]
@@ -1437,6 +1475,18 @@ paths:
                         properties:
                           showroom:
                             $ref: '#/components/schemas/ShowroomPrivileged'
+              examples:
+                submitted:
+                  value:
+                    success: true
+                    data:
+                      showroom:
+                        id: "sr_123"
+                        name: "Atelier Nova"
+                        type: "multibrand"
+                        country: "Ukraine"
+                        ownerUid: "owner_123"
+                        status: "pending"
         "400":
           description: Validation error, incomplete, or not editable
           content:
@@ -1509,6 +1559,13 @@ paths:
                           status:
                             type: string
                             example: favorited
+              examples:
+                favorited:
+                  value:
+                    success: true
+                    data:
+                      showroomId: "sr_123"
+                      status: "favorited"
         "401":
           description: Unauthorized
           content:
@@ -1545,6 +1602,13 @@ paths:
                           status:
                             type: string
                             example: removed
+              examples:
+                removed:
+                  value:
+                    success: true
+                    data:
+                      showroomId: "sr_123"
+                      status: "removed"
         "401":
           description: Unauthorized
           content:

@@ -22,6 +22,27 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/AdminOverview'
+              examples:
+                ok:
+                  value:
+                    success: true
+                    data:
+                      showrooms:
+                        total: 124
+                        pending: 7
+                        approved: 98
+                        rejected: 9
+                        deleted: 10
+                        newLast7Days: 6
+                      events:
+                        total: 52
+                        upcoming: 15
+                        past: 37
+                        newLast7Days: 4
+                      users:
+                        total: 1250
+                        owners: 140
+                        newLast7Days: 23
         "401":
           description: Unauthorized
           content:
@@ -34,6 +55,13 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+              examples:
+                forbidden:
+                  value:
+                    success: false
+                    error:
+                      code: ACCESS_DENIED
+                      message: Access denied
 
   /admin/analytics/showrooms:
     get:
@@ -658,6 +686,10 @@ paths:
                   description: |
                     Rejection reason. Backend trims whitespace before validation/storage.
                     Empty/short (after trim) returns `VALIDATION_ERROR`.
+            examples:
+              reject_reason:
+                value:
+                  reason: "Incomplete contacts"
       responses:
         "200":
           description: Showroom rejected

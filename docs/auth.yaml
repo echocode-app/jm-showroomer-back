@@ -25,6 +25,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/OAuthLoginInput'
+            examples:
+              firebase_id_token:
+                summary: Valid Firebase token login
+                value:
+                  idToken: "eyJhbGciOiJSUzI1NiIsImtpZCI6Ii4uLiJ9.eyJ1aWQiOiJ1c2VyXzEyMyJ9.signature"
       responses:
         "200":
           description: Authenticated user
@@ -39,18 +44,44 @@ paths:
                         properties:
                           user:
                             $ref: './users.yaml#/components/schemas/User'
+              examples:
+                ok:
+                  value:
+                    success: true
+                    data:
+                      user:
+                        uid: "user_123"
+                        role: "user"
+                        roles: ["user"]
+                        status: "active"
+                        onboardingState: "completed"
+                        country: "Ukraine"
         "400":
           description: Missing idToken
           content:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+              examples:
+                id_token_required:
+                  value:
+                    success: false
+                    error:
+                      code: ID_TOKEN_REQUIRED
+                      message: idToken is required
         "401":
           description: Invalid or expired token
           content:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+              examples:
+                auth_invalid:
+                  value:
+                    success: false
+                    error:
+                      code: AUTH_INVALID
+                      message: Invalid or expired token
         "500":
           description: Auth error
           content:

@@ -163,12 +163,7 @@ paths:
         Returns published lookbooks only.
         Ordering is deterministic: ranked (`sortRank asc`) first, then unranked (`publishedAt desc`) with id tie-breaker.
         Signed URL is generated for coverPath only.
-        
-        Request examples:
-        - `GET /api/v1/lookbooks?country=Ukraine`
-        - `GET /api/v1/lookbooks?country=Ukraine&seasonKey=summer`
-        - `GET /api/v1/lookbooks?country=Ukraine&nearLat=50&nearLng=30&nearRadiusKm=5`
-        - `GET /api/v1/lookbooks?country=Ukraine&seasonKey=summer&nearLat=50&nearLng=30&nearRadiusKm=5`
+        Example query combinations are documented via parameter examples below.
       operationId: listLookbooks
       externalDocs:
         description: Flutter cursor pagination guide (all endpoints)
@@ -589,8 +584,11 @@ paths:
     post:
       tags: [Lookbooks]
       summary: Create lookbook (legacy alias)
-      description: Backward-compatible alias for `POST /lookbooks`.
+      description: |
+        Backward-compatible alias for `POST /lookbooks`.
+        Migration target: use `POST /lookbooks` for all new clients.
       operationId: createLookbookLegacyAlias
+      deprecated: true
       security: []
       requestBody:
         required: true
