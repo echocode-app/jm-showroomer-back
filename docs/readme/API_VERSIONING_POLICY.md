@@ -37,5 +37,5 @@ Breaking для `v1`:
 При кожній зміні API:
 1. Оновити `docs/*.yaml` і `docs/openapi.yaml`.
 2. Оновити технічні readme (`INTEGRATION_API_WORKFLOWS`, `INTEGRATION_ERRORS_LIMITS`).
-3. Оновити Postman collection і прогнати regression вручну.
+3. Оновити Postman collection у `postman/` (і дзеркало в `docs/postman/`) та прогнати regression вручну.
 4. Зафіксувати зміни в `docs/readme/CHANGELOG_API.md`.

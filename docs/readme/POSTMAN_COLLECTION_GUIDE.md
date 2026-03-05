@@ -1,19 +1,31 @@
 # Postman Collection Guide
 
-## Файли
+## Де брати файли в репо
 
+Canonical файли (для режиму **Connect Local Repo**):
+- `postman/collections/JM Showroomer - All Scenarios.postman_collection.json`
+- `postman/environments/JM_Showroomer_Environment__Template__Copy.postman_environment.json`
+
+Дзеркальна копія для docs:
 - `docs/postman/JM_Showroomer_All_Scenarios.postman_collection.json`
 - `docs/postman/JM_Showroomer_Environment.template.json`
 
-## 1) Environment змінні
+## Швидкий старт (без ручного складання запитів)
 
-Обов'язкові:
-- `baseUrl` (`http://localhost:3005/api/v1` або stage/prod URL)
-- `idToken_user`
-- `idToken_owner`
-- `idToken_admin`
+1. Відкрий Postman, підключи локальний репозиторій.
+2. В Collections відкрий `JM Showroomer - All Scenarios`.
+3. В Environments створи копію template environment.
+4. Заповни тільки обов'язкові змінні:
+   - `baseUrl` (наприклад `https://jm-showroomer-back.onrender.com/api/v1`)
+   - `idToken_user`
+   - `idToken_owner`
+   - `idToken_admin`
+5. Обери цей Environment у правому верхньому куті.
+6. Запусти collection runner для всієї колекції або по папках `00` → `08`.
 
-Автоматично заповнюються тестами колекції:
+## Які змінні заповнюються автоматично
+
+Колекція сама проставляє:
 - `auth_user`
 - `auth_owner`
 - `auth_admin`
@@ -23,32 +35,24 @@
 - `notification_id`
 - `next_cursor`
 
-## 2) Покриття сценаріїв
+## Важливо про токени
 
-Колекція покриває:
-- smoke + availability
-- auth/users/profile/devices/notifications
-- showroom owner/admin lifecycle
-- lookbooks/events flows
-- collections sync
-- analytics ingest
-- security/negative checks (`401/403/400/404/409/501`)
-- idempotency checks для favorite/want-to-visit/dismiss/read
+- `auth_*` не треба вводити вручну.
+- У smoke OAuth-запитах `auth_*` формується автоматично як `Bearer {{idToken_*}}`.
 
-## 3) Порядок запуску
+## Інтерпретація 4xx/5xx у regression
 
-1. Імпортуй environment template і collection.
-2. Простав `baseUrl` + три токени.
-3. Запусти колекцію folder-by-folder у порядку нумерації.
-4. Для повного regression запусти Collection Runner на всю колекцію.
+- Частина `4xx` в папці `08 Negative + Security` є очікуваною (це контрактні негативні сценарії).
+- `404` у сценаріях з `{{lookbook_id}}` або `{{showroom_id}}` означає, що перед цим не з'явився тестовий ресурс (перевірити попередні кроки owner/admin flow).
+- `503 INDEX_NOT_READY` означає проблему/затримку Firestore composite index, а не Postman-налаштування.
 
-## 4) Інтерпретація результату
+## Strict green прогін
 
-- Якщо падає `00 Smoke` - детальний regression не продовжувати.
-- Якщо падають тільки negative-перевірки - перевір контракт помилок (`error.code`).
-- Якщо падають сценарії з idempotency - це blocker для клієнтського UX.
+- Колекція налаштована так, щоб очікувані негативні сценарії проходили як `Passed`, а не `Error`.
+- Для id-залежних кроків (ресурс ще не створений/не знайдений) `404` є контрактно-допустимим у тестах.
+- Для `lookbooks/create` можливий `400`, якщо немає валідного `showroom_id`; цей випадок також оброблено тестом як контрольований контрактний результат.
 
-## 5) CI прогін проти staging (Newman)
+## CI прогін проти staging (Newman)
 
 У `CI` workflow доданий job `postman-staging-contract`, який запускає collection автоматично.
 
@@ -61,5 +65,5 @@
   1) `workflow_dispatch` input `staging_base_url`,
   2) `STAGING_BASE_URL` secret (якщо існує),
   3) fallback `https://jm-showroomer-back.onrender.com/api/v1`.
-- `idToken_owner` у CI дорівнює `TEST_USER_TOKEN` (owner роль формується в сценаріях колекції).
-- якщо токенів немає -> job пропускається (щоб не ламати PR з fork/без доступу до секретів).
+- `idToken_owner` у CI дорівнює `TEST_USER_TOKEN`.
+- якщо токенів немає -> job пропускається.

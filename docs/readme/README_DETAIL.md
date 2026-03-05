@@ -31,8 +31,4 @@
 2. Покрити domain flows по одному модулю: showrooms -> lookbooks -> events -> collections.
 3. Додати негативні сценарії: `401`, `403`, `400 QUERY_INVALID`, `400 CURSOR_INVALID`.
 4. Включити `/analytics/ingest` як best-effort канал, без блокування UX.
-5. Перед релізом прогнати Postman regression collection із `docs/postman`.
-
-## Примітка по структурі документації
-
-Мета цього рефакторингу - зменшити когнітивне навантаження: замість одного файлу ~900 рядків, тепер документація розділена за ролями та завданнями.
+5. Перед релізом прогнати Postman regression collection із `postman/` (або дзеркала `docs/postman`).

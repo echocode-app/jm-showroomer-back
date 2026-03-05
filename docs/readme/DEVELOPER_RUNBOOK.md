@@ -1,7 +1,5 @@
 # Developer Runbook
 
-Технічний runbook для нових і поточних розробників backend.
-
 ## 1) Локальний старт
 
 ```bash
@@ -62,11 +60,3 @@ npm run cleanup:mocks -- --prefix=mvp1_local_seed
 - `src/schemas` - Joi валідація.
 - `src/middlewares` - auth/role/validation/rate-limit/error.
 - `docs/` - OpenAPI та інтеграційні контракти.
-
-## 7) Коли змінюєш API
-
-1. Онови відповідний `docs/*.yaml` і, за потреби, `docs/openapi.yaml`.
-2. Онови інтеграційні readme в `docs/readme`.
-3. Онови `docs/readme/CHANGELOG_API.md` і перевір відповідність `docs/readme/API_VERSIONING_POLICY.md`.
-4. Онови Postman collection у `docs/postman`.
-5. Прожени `npm run lint` (Redocly) + релевантні тести.

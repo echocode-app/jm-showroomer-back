@@ -7,9 +7,16 @@
 ## 2) Підготовка Postman
 
 Рекомендований шлях:
-1. Імпортувати `docs/postman/JM_Showroomer_All_Scenarios.postman_collection.json`.
-2. Імпортувати `docs/postman/JM_Showroomer_Environment.template.json`.
-3. Заповнити токени в environment.
+1. Підключити локальний репозиторій у Postman (режим `Connect Local Repo`).
+2. Взяти canonical файли:
+   - `postman/collections/JM Showroomer - All Scenarios.postman_collection.json`
+   - `postman/environments/JM_Showroomer_Environment__Template__Copy.postman_environment.json`
+3. Заповнити в environment тільки:
+   - `baseUrl`
+   - `idToken_user`
+   - `idToken_owner`
+   - `idToken_admin`
+4. `auth_user/auth_owner/auth_admin` руками не заповнювати (колекція проставляє автоматично).
 
 Альтернативно можна зібрати колекцію вручну:
 
@@ -17,19 +24,17 @@
 2. Додати змінні:
 - `baseUrl` = `https://<render-domain>/api/v1`
 - `idToken_user`, `idToken_owner`, `idToken_admin`
-- `auth_user` = `Bearer {{idToken_user}}`
-- `auth_owner` = `Bearer {{idToken_owner}}`
-- `auth_admin` = `Bearer {{idToken_admin}}`
-- `showroom_id`, `lookbook_id`, `event_id`, `notification_id`, `cursor`
+- `auth_user`, `auth_owner`, `auth_admin` (можна лишити порожніми)
+- `showroom_id`, `lookbook_id`, `event_id`, `notification_id`, `next_cursor`
 
 3. Створити колекцію `JM Backend QA MVP1` з папками:
 - `00 Smoke`
 - `01 Auth + Users`
 - `02 Showrooms`
-- `03 Lookbooks`
-- `04 Events`
-- `05 Collections Sync`
-- `06 Notifications`
+- `03 Admin`
+- `04 Lookbooks`
+- `05 Events`
+- `06 Collections Sync`
 - `07 Analytics`
 - `08 Negative + Security`
 
@@ -38,7 +43,7 @@
 1. `GET {{baseUrl}}/health` -> `200`.
 2. `POST {{baseUrl}}/auth/oauth` з валідним `idToken` -> `200`.
 3. `GET {{baseUrl}}/showrooms` -> `200`.
-4. `GET {{baseUrl}}/lookbooks?country=Ukraine` -> `200`.
+4. `GET {{baseUrl}}/lookbooks?limit=2` -> `200`.
 5. `GET {{baseUrl}}/events` -> `200`.
 
 Якщо хоч один smoke падає, детальний regression не продовжувати.
@@ -67,10 +72,10 @@
 
 ## 4.3 Lookbooks
 
-1. `GET /lookbooks?country=Ukraine&limit=2` -> `200`, зберегти `lookbook_id`.
+1. `GET /lookbooks?limit=2` -> `200`, зберегти `lookbook_id`.
 2. `GET /lookbooks/{{lookbook_id}}` -> `200`.
-3. `GET /lookbooks?country=Ukraine&cursor=invalid` -> `400 CURSOR_INVALID`.
-4. Nearby: `GET /lookbooks?country=Ukraine&nearLat=50&nearLng=30&nearRadiusKm=5` -> `200`.
+3. `GET /lookbooks?cursor=invalid` -> `400 CURSOR_INVALID`.
+4. Nearby: `GET /lookbooks?nearLat=50&nearLng=30&nearRadiusKm=5` -> `200`.
 5. Favorite idempotency: POST/POST/DELETE/DELETE -> `200`.
 6. `GET /lookbooks/not-existing-id` -> `404 LOOKBOOK_NOT_FOUND`.
 
@@ -109,6 +114,7 @@
 1. без токена -> `401`.
 2. неправильна роль -> `403 FORBIDDEN`.
 3. битий payload -> `400`, не `500`.
+4. Для id-залежних сценаріїв в regression колекції `404` може бути валідним контрактним результатом, якщо тестовий ресурс ще не створився у попередніх кроках.
 
 ## 6) Що дивитись у Render logs
 
@@ -117,12 +123,3 @@
 - масові `429`;
 - `INDEX_NOT_READY` / `FAILED_PRECONDITION`;
 - систематично повільні list endpoints.
-
-## 7) Формат баг-репорту
-
-1. Endpoint + метод.
-2. Запит (headers/body/query).
-3. Очікувано vs фактично.
-4. `HTTP status` + `error.code`.
-5. Час, середовище, скрін з Postman, фрагмент Render logs.
-6. Severity: blocker/high/medium/low.
