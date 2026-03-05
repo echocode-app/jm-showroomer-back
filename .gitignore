@@ -9,6 +9,7 @@ node_modules/
 
 # Firebase / emulators / logs
 .firebase/
+.postman/
 firebase-debug.log
 firestore-debug.log
 *-debug.log
