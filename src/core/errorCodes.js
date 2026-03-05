@@ -40,6 +40,7 @@ export const ERROR_STATUS = {
     ANON_ID_INVALID: 400,
     NOTIFICATION_TYPE_INVALID: 400,
     CURSOR_INVALID: 400,
+    RATE_LIMIT_EXCEEDED: 429,
     INDEX_NOT_READY: 503,
     EVENTS_WRITE_MVP2_ONLY: 501,
     SHOWROOM_LOCKED_PENDING: 409,
@@ -50,6 +51,7 @@ export const ERROR_STATUS = {
 
     LOAD_USER_ERROR: 500,
     AUTH_ERROR: 500,
+    INTERNAL_ERROR: 500,
     NOT_IMPLEMENTED: 501,
 };
 
@@ -76,6 +78,7 @@ export const ERROR_MESSAGE = {
     ANON_ID_INVALID: "x-anonymous-id is invalid",
     NOTIFICATION_TYPE_INVALID: "Notification type is invalid",
     CURSOR_INVALID: "Cursor is invalid",
+    RATE_LIMIT_EXCEEDED: "Too many requests, please try again later",
     INDEX_NOT_READY: "Search temporarily unavailable. Please retry later.",
     EVENTS_WRITE_MVP2_ONLY: "Events write endpoints are available in MVP2",
     SHOWROOM_LOCKED_PENDING: "Showroom is under review",
@@ -88,6 +91,7 @@ export const ERROR_MESSAGE = {
         "To change country, delete your showrooms and lookbooks or create a new account",
     USER_DELETE_BLOCKED:
         "Resolve your owned business entities before deleting your account.",
+    INTERNAL_ERROR: "Internal server error",
 };
 
 // getStatusForCode

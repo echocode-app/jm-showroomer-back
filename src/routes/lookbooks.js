@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth.js";
 import { loadUser } from "../middlewares/loadUser.js";
 import { optionalAuth } from "../middlewares/optionalAuth.js";
+import { requireLookbookWriteIdentity } from "../middlewares/guestWritePolicy.js";
 import { schemaValidate } from "../middlewares/schemaValidate.js";
 import { lookbookCreateSchema } from "../schemas/lookbook.create.schema.js";
 import { lookbookUpdateSchema } from "../schemas/lookbook.update.schema.js";
@@ -22,6 +23,7 @@ const router = Router();
 router.post(
     "/",
     optionalAuth,
+    requireLookbookWriteIdentity,
     schemaValidate({ body: lookbookCreateSchema }),
     createLookbook
 );
@@ -30,6 +32,7 @@ router.post(
 router.post(
     "/create",
     optionalAuth,
+    requireLookbookWriteIdentity,
     schemaValidate({ body: lookbookCreateSchema }),
     createLookbook
 );
@@ -46,6 +49,7 @@ router.get(
 router.patch(
     "/:id",
     optionalAuth,
+    requireLookbookWriteIdentity,
     schemaValidate({ params: eventRsvpSchema, body: lookbookUpdateSchema }),
     updateLookbook
 );
@@ -53,6 +57,7 @@ router.patch(
 router.delete(
     "/:id",
     optionalAuth,
+    requireLookbookWriteIdentity,
     schemaValidate({ params: eventRsvpSchema }),
     deleteLookbook
 );

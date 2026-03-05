@@ -5,7 +5,15 @@ import pinoHttp from "pino-http";
 import routes from "../routes/index.js";
 import { errorHandler } from "../middlewares/error.js";
 import { requestLogContextMiddleware } from "../middlewares/requestLogContext.js";
-import { analyticsLimiter, rateLimiter, sanitizeInput } from "../middlewares/rateLimit.js";
+import {
+  adminLimiter,
+  analyticsLimiter,
+  authLimiter,
+  rateLimiter,
+  sanitizeInput,
+  writeLimiter,
+} from "../middlewares/rateLimit.js";
+import { securityHeadersMiddleware } from "../middlewares/securityHeaders.js";
 import { CONFIG } from "../config/index.js";
 import { log } from "../config/logger.js";
 import { buildPinoHttpConfig } from "../config/pinoHttp.js";
@@ -15,28 +23,31 @@ import path from "path";
 
 // Express
 const app = express();
+app.disable("x-powered-by");
 
 // Render / any reverse proxy setup
-app.set("trust proxy", 1);
+app.set("trust proxy", CONFIG.trustProxy);
 
 // Structured HTTP lifecycle logging (single source of truth)
 app.use(
   pinoHttp(buildPinoHttpConfig(log))
 );
+app.use(securityHeadersMiddleware);
 
 // Serve OpenAPI files for $ref resolution
 const docsPath = path.join(process.cwd(), "docs");
 app.use("/docs/spec", express.static(docsPath));
 
-// Swagger UI (loads from /docs/spec/openapi.yaml)
-app.use(
-  "/docs",
-  swaggerUi.serve,
-  swaggerUi.setup(null, {
-    swaggerOptions: {
-      url: "/docs/spec/openapi.yaml",
-    },
-    customCss: `
+if (CONFIG.enableSwagger) {
+  // Swagger UI (loads from /docs/spec/openapi.yaml)
+  app.use(
+    "/docs",
+    swaggerUi.serve,
+    swaggerUi.setup(null, {
+      swaggerOptions: {
+        url: "/docs/spec/openapi.yaml",
+      },
+      customCss: `
       /* Soften inline accent chips and prevent overlap in all doc sections. */
       .swagger-ui .markdown code,
       .swagger-ui .renderedMarkdown code,
@@ -72,11 +83,15 @@ app.use(
         word-break: break-word;
       }
     `,
-  })
-);
+    })
+  );
+}
 
-// Rate limiting (100 requests per 15 minutes)
+// Rate limiting (policy-driven and environment configurable)
 app.use("/api/v1/analytics/ingest", analyticsLimiter);
+app.use("/api/v1/admin", adminLimiter);
+app.use("/api/v1/auth/oauth", authLimiter);
+app.use("/api/v1", writeLimiter);
 app.use(rateLimiter);
 
 function normalizeOrigin(origin) {
@@ -97,7 +112,14 @@ const corsOptions = {
   },
   credentials: true,
   methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "x-anonymous-id",
+    "x-request-id",
+    "x-country-code",
+    "x-client-version",
+  ],
 };
 const corsMiddleware = cors(corsOptions);
 
@@ -107,8 +129,8 @@ app.use(corsMiddleware);
 // Express/router path parser in this stack rejects bare "*" for app.options(...).
 // Regex keeps equivalent "all paths" preflight handling without wildcard parsing issues.
 app.options(/.*/, corsMiddleware);
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: CONFIG.httpBodyLimit }));
+app.use(express.urlencoded({ extended: true, limit: CONFIG.httpUrlEncodedLimit }));
 app.use(sanitizeInput);
 app.use(requestLogContextMiddleware);
 
