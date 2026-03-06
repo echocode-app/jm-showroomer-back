@@ -36,16 +36,6 @@ function deriveApiBaseUrl() {
   return normalizeOrigin(process.env.BASE_URL);
 }
 
-function deriveWebFallbackUrl(apiBaseUrl) {
-  const explicit = normalizeOrigin(process.env.SHARE_WEB_FALLBACK_URL);
-  if (explicit) return explicit;
-
-  const webBase = normalizeOrigin(process.env.WEB_APP_BASE_URL);
-  if (webBase) return webBase;
-
-  return normalizeOrigin(apiBaseUrl.replace(/\/api\/v1$/i, ""));
-}
-
 function normalizeDeepLinkScheme(value) {
   const raw = normalizeUrl(value || "jmshowroomer://");
   if (!raw) return "jmshowroomer://";
@@ -96,7 +86,6 @@ export const CONFIG = {
   firebaseStorageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   allowedOrigins,
   shareApiBaseUrl: deriveApiBaseUrl(),
-  shareWebFallbackUrl: deriveWebFallbackUrl(deriveApiBaseUrl()),
   shareIosStoreUrl: normalizeUrl(process.env.IOS_APP_STORE_URL),
   shareAndroidStoreUrl: normalizeUrl(process.env.ANDROID_PLAY_STORE_URL),
   shareDeepLinkScheme: normalizeDeepLinkScheme(process.env.APP_DEEPLINK_SCHEME),

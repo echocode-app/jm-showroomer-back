@@ -1,5 +1,6 @@
 import { getFirestoreInstance } from "../../config/firebase.js";
 import { forbidden, notFound } from "../../core/error.js";
+import { isCountryBlocked } from "../../constants/countries.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 import { normalizeShowroomForResponse } from "./response.js";
 
@@ -11,11 +12,20 @@ function isPrivilegedViewer(showroom, user) {
     );
 }
 
+function isBlockedCountryVisibleToUser(showroom, user) {
+    if (!isCountryBlocked(showroom?.country)) return true;
+    return user?.role === "admin";
+}
+
 // getShowroomByIdService
 export async function getShowroomByIdService(id, user = null) {
     if (useDevMock) {
         const showroom = DEV_STORE.showrooms.find(s => s.id === id);
         if (!showroom) throw notFound("SHOWROOM_NOT_FOUND");
+
+        if (!isBlockedCountryVisibleToUser(showroom, user)) {
+            throw notFound("SHOWROOM_NOT_FOUND");
+        }
 
         if (
             showroom.status === "deleted" &&
@@ -43,6 +53,10 @@ export async function getShowroomByIdService(id, user = null) {
     if (!doc.exists) throw notFound("SHOWROOM_NOT_FOUND");
 
     const showroom = doc.data();
+
+    if (!isBlockedCountryVisibleToUser(showroom, user)) {
+        throw notFound("SHOWROOM_NOT_FOUND");
+    }
 
     if (
         showroom.status === "deleted" &&

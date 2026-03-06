@@ -91,7 +91,7 @@ export const ERROR_MESSAGE = {
     SHOWROOM_SUBCATEGORY_INVALID: "Subcategory is invalid",
     SHOWROOM_SUBCATEGORY_GROUP_MISMATCH: "Subcategories require clothing group",
     USER_COUNTRY_CHANGE_BLOCKED:
-        "To change country, delete your showrooms and lookbooks or create a new account",
+        "To change country, delete your showrooms or create a new account",
     USER_DELETE_BLOCKED:
         "Resolve your owned business entities before deleting your account.",
     INTERNAL_ERROR: "Internal server error",

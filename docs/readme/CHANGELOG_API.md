@@ -14,6 +14,14 @@
   - до owner registration дозволені тільки `appLanguage` і `notificationsEnabled`;
   - після owner registration дозволені також `name`, `position`, `country`, `instagram`;
   - для pre-owner identity updates додано стабільний код `USER_PROFILE_FIELDS_FORBIDDEN`.
+- Share showroom flow спрощено:
+  - прибрано `web` fallback target з контракту;
+  - `GET /share/showrooms/{id}` тепер описується тільки як mobile store fallback;
+  - документація явно фіксує, що direct open app з HTTPS-share-link потребує `universal links / app links`.
+- Total blocked-country policy посилено на public read path:
+  - blocked-country lookbooks не віддаються через public detail;
+  - blocked-country showrooms не віддаються через public detail/share;
+  - owner country change для MVP1 блокується тільки через наявні showroom-и.
 
 ## 2026-03-04
 

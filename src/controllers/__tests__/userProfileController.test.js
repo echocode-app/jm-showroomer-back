@@ -4,8 +4,6 @@ const okMock = jest.fn();
 const failMock = jest.fn();
 const updateUserProfileDocMock = jest.fn();
 const ownerHasActiveShowroomsMock = jest.fn();
-const ownerHasLookbooksMock = jest.fn();
-const ownerHasEventsMock = jest.fn();
 const normalizeInstagramUrlMock = jest.fn(value => value);
 const validateInstagramUrlMock = jest.fn();
 const normalizeAppLanguageMock = jest.fn(value => value);
@@ -25,8 +23,8 @@ jest.unstable_mockModule("../../services/users/profileService.js", () => ({
     updateOwnerProfile: jest.fn(),
     updateUserProfileDoc: updateUserProfileDocMock,
     ownerHasActiveShowrooms: ownerHasActiveShowroomsMock,
-    ownerHasLookbooks: ownerHasLookbooksMock,
-    ownerHasEvents: ownerHasEventsMock,
+    ownerHasLookbooks: jest.fn(),
+    ownerHasEvents: jest.fn(),
 }));
 
 jest.unstable_mockModule("../../services/analytics/eventNames.js", () => ({
@@ -55,8 +53,6 @@ describe("user profile controller", () => {
     beforeEach(() => {
         jest.clearAllMocks();
         ownerHasActiveShowroomsMock.mockResolvedValue(false);
-        ownerHasLookbooksMock.mockResolvedValue(false);
-        ownerHasEventsMock.mockResolvedValue(false);
     });
 
     it("blocks identity fields before owner profile registration", async () => {
@@ -123,5 +119,24 @@ describe("user profile controller", () => {
             })
         );
         expect(okMock).toHaveBeenCalledWith(res, { message: "Profile updated" });
+    });
+
+    it("blocks owner country change only when owner has showrooms", async () => {
+        ownerHasActiveShowroomsMock.mockResolvedValue(true);
+        const req = {
+            body: { country: "Poland" },
+            user: { uid: "owner-1", role: "owner", country: "Ukraine" },
+            auth: { uid: "owner-1" },
+        };
+
+        await updateUserProfile(req, {}, undefined);
+
+        expect(failMock).toHaveBeenCalledWith(
+            {},
+            "USER_COUNTRY_CHANGE_BLOCKED",
+            "To change country, delete your showrooms or create a new account",
+            409
+        );
+        expect(updateUserProfileDocMock).not.toHaveBeenCalled();
     });
 });

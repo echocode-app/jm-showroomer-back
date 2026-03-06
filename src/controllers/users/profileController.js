@@ -9,8 +9,6 @@ import {
     updateOwnerProfile,
     updateUserProfileDoc,
     ownerHasActiveShowrooms,
-    ownerHasLookbooks,
-    ownerHasEvents,
 } from "../../services/users/profileService.js";
 import { ANALYTICS_EVENTS } from "../../services/analytics/eventNames.js";
 import { buildAnalyticsEvent } from "../../services/analytics/analyticsEventBuilder.js";
@@ -198,17 +196,13 @@ export async function updateUserProfile(req, res) {
             normalizeCountry(trimmedCountry) !== normalizeCountry(currentCountry)
         ) {
             const ownerUid = req.auth?.uid || req.user?.uid;
-            const [hasShowrooms, hasLookbooks, hasEvents] = await Promise.all([
-                ownerHasActiveShowrooms(ownerUid),
-                ownerHasLookbooks(req.user.uid),
-                ownerHasEvents(req.user.uid),
-            ]);
+            const hasShowrooms = await ownerHasActiveShowrooms(ownerUid);
 
-            if (hasShowrooms || hasLookbooks || hasEvents) {
+            if (hasShowrooms) {
                 return fail(
                     res,
                     "USER_COUNTRY_CHANGE_BLOCKED",
-                    "To change country, delete your showrooms and lookbooks or create a new account",
+                    "To change country, delete your showrooms or create a new account",
                     409
                 );
             }

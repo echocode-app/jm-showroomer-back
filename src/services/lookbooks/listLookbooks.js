@@ -2,10 +2,22 @@ import { encodeListCursor, parseLookbookListFilters } from "./parse.js";
 import { fetchRanked, fetchUnranked } from "./list/queryFetch.js";
 import { fetchWithInMemoryFallback } from "./list/fallback.js";
 import { fetchNearby, mapNearbyIndexError } from "./list/nearby.js";
+import { isCountryBlocked } from "../../constants/countries.js";
 
 export async function listLookbooksService(filters = {}) {
     const parsed = parseLookbookListFilters(filters);
     const maxItems = parsed.limit + 1;
+
+    if (isCountryBlocked(parsed.countryNormalized)) {
+        return {
+            lookbooks: [],
+            meta: {
+                hasMore: false,
+                nextCursor: null,
+                paging: "end",
+            },
+        };
+    }
 
     let items;
     if (parsed.nearbyGeohashPrefixes.length > 0) {

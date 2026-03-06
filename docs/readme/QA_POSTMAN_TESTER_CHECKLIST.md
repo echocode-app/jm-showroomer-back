@@ -62,7 +62,7 @@
 6. `POST /users/complete-owner-profile` (user token) -> `200`, роль owner.
 7. `PATCH /users/profile` після owner registration:
    - `name` / `position` / `country` / `instagram` -> `200`
-   - `country` при наявному owner контенті -> `409 USER_COUNTRY_CHANGE_BLOCKED`
+   - `country` при наявних showroom -> `409 USER_COUNTRY_CHANGE_BLOCKED`
 
 ## 4.2 Showrooms
 

@@ -32,6 +32,8 @@ npm run test:full
 ```bash
 npm run test:cleanup:dry
 npm run test:cleanup
+npm run cleanup:notifications:dry
+npm run cleanup:notifications
 npm run seed:mocks -- --prefix=mvp1_local_seed
 npm run cleanup:mocks:dry -- --prefix=mvp1_local_seed
 npm run cleanup:mocks -- --prefix=mvp1_local_seed
@@ -60,3 +62,7 @@ npm run cleanup:mocks -- --prefix=mvp1_local_seed
 - `src/schemas` - Joi валідація.
 - `src/middlewares` - auth/role/validation/rate-limit/error.
 - `docs/` - OpenAPI та інтеграційні контракти.
+
+## 7) Передпрод чеклист
+
+- `docs/readme/DEPLOY_PREP_CHECKLIST.md`

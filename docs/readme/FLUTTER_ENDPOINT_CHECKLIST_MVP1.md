@@ -170,15 +170,16 @@ Base URL:
 2. Unhappy:
 
 - `404 SHOWROOM_NOT_FOUND` -> showroom недоступний для публічного share (видалений/не approved);
+  також сюди входить blocked-country showroom;
 - `400 QUERY_INVALID` -> помилка параметра `platform`.
 
 3. Платформна поведінка (must-have):
 
 - Flutter не повинен вручну підставляти App Store/Play URL у share payload;
-- backend вже повертає fallback targets (`targets.ios/android/web`);
+- backend повертає fallback targets (`targets.ios/android`);
 - якщо юзер відкрив `shareUrl`:
   - app встановлено + налаштовані universal/app links -> система відкриває app;
-  - app не встановлено -> backend redirect на store/web fallback через `GET /share/showrooms/{id}`.
+  - без такого OS-level налаштування backend може тільки редіректити на App Store / Play Store через `GET /share/showrooms/{id}`.
 
 ## 4.3 Lookbooks list/detail/favorite
 
@@ -198,6 +199,7 @@ Ready-to-use запити для Flutter кнопки "Шукати поблиз
 - невалідний cursor -> `400 CURSOR_INVALID`;
 - відсутні/невалідні query-параметри -> `400` (`QUERY_INVALID`/`VALIDATION_ERROR`);
 - lookbook не знайдено -> `404 LOOKBOOK_NOT_FOUND`;
+  також сюди входить blocked-country lookbook;
 - без auth на favorite -> `401`.
 
 ## 4.4 Events list/detail/state

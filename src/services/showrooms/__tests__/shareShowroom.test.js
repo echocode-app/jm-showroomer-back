@@ -9,7 +9,6 @@ jest.unstable_mockModule("../../../config/firebase.js", () => ({
 jest.unstable_mockModule("../../../config/index.js", () => ({
     CONFIG: {
         shareApiBaseUrl: "https://api.example.com/api/v1",
-        shareWebFallbackUrl: "https://jm-showroomer.app/download",
         shareIosStoreUrl: "https://apps.apple.com/app/id123456",
         shareAndroidStoreUrl: "https://play.google.com/store/apps/details?id=com.jm.showroomer",
         shareDeepLinkScheme: "jmshowroomer://",
@@ -68,13 +67,21 @@ describe("showroom share service", () => {
         seedShowroom({ status: "pending" });
 
         await expect(
-            getShowroomSharePayloadService("sr-share-1", { platform: "web" })
+            getShowroomSharePayloadService("sr-share-1", { platform: "ios" })
+        ).rejects.toMatchObject({ code: "SHOWROOM_NOT_FOUND" });
+    });
+
+    it("throws SHOWROOM_NOT_FOUND when showroom country is blocked", async () => {
+        seedShowroom({ country: "Russia" });
+
+        await expect(
+            getShowroomSharePayloadService("sr-share-1", { platform: "ios" })
         ).rejects.toMatchObject({ code: "SHOWROOM_NOT_FOUND" });
     });
 
     it("throws QUERY_INVALID for unknown platform", async () => {
         await expect(
-            getShowroomSharePayloadService("sr-share-1", { platform: "windows-phone" })
+            getShowroomSharePayloadService("sr-share-1", { platform: "web" })
         ).rejects.toMatchObject({ code: "QUERY_INVALID" });
     });
 });

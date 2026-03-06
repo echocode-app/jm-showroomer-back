@@ -1,9 +1,10 @@
 import { CONFIG } from "../../config/index.js";
 import { getFirestoreInstance } from "../../config/firebase.js";
+import { isCountryBlocked } from "../../constants/countries.js";
 import { badRequest, notFound } from "../../core/error.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 
-const PLATFORM_SET = new Set(["auto", "ios", "android", "web"]);
+const PLATFORM_SET = new Set(["auto", "ios", "android"]);
 
 function normalizePlatform(value) {
     const normalized = String(value || "auto").trim().toLowerCase();
@@ -15,10 +16,10 @@ function normalizePlatform(value) {
 
 function detectPlatformFromUserAgent(userAgent) {
     const ua = String(userAgent || "").toLowerCase();
-    if (!ua) return "web";
+    if (!ua) return "ios";
     if (ua.includes("android")) return "android";
     if (ua.includes("iphone") || ua.includes("ipad") || ua.includes("ipod")) return "ios";
-    return "web";
+    return "ios";
 }
 
 function resolvePlatform(platform, userAgent) {
@@ -52,7 +53,7 @@ async function getApprovedShowroomOrThrow(showroomId) {
 
     if (useDevMock) {
         const showroom = DEV_STORE.showrooms.find(s => s.id === showroomId);
-        if (!showroom || showroom.status !== "approved") {
+        if (!showroom || showroom.status !== "approved" || isCountryBlocked(showroom.country)) {
             throw notFound("SHOWROOM_NOT_FOUND");
         }
         return showroom;
@@ -63,7 +64,7 @@ async function getApprovedShowroomOrThrow(showroomId) {
     if (!snap.exists) throw notFound("SHOWROOM_NOT_FOUND");
 
     const showroom = snap.data();
-    if (showroom?.status !== "approved") {
+    if (showroom?.status !== "approved" || isCountryBlocked(showroom?.country)) {
         throw notFound("SHOWROOM_NOT_FOUND");
     }
 
@@ -74,7 +75,6 @@ function buildTargets(showroomId, platform) {
     return {
         ios: appendShareParams(CONFIG.shareIosStoreUrl, showroomId, platform),
         android: appendShareParams(CONFIG.shareAndroidStoreUrl, showroomId, platform),
-        web: appendShareParams(CONFIG.shareWebFallbackUrl, showroomId, platform),
     };
 }
 
@@ -106,11 +106,9 @@ export async function getShowroomSharePayloadService(showroomId, options = {}) {
 export async function resolveShowroomShareRedirectService(showroomId, options = {}) {
     const payload = await getShowroomSharePayloadService(showroomId, options);
 
-    let redirectUrl = payload.targets.web || payload.shareUrl;
-    if (payload.platform === "ios") {
-        redirectUrl = payload.targets.ios || payload.targets.web || payload.shareUrl;
-    } else if (payload.platform === "android") {
-        redirectUrl = payload.targets.android || payload.targets.web || payload.shareUrl;
+    let redirectUrl = payload.targets.ios || payload.targets.android;
+    if (payload.platform === "android") {
+        redirectUrl = payload.targets.android || payload.targets.ios;
     }
 
     return {

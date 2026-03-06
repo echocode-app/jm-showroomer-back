@@ -28,6 +28,36 @@ ADMIN_HEADER=(-H "$(auth_header "${TEST_ADMIN_TOKEN}")")
 JSON_HEADER=(-H "$(json_header)")
 NOW=$(now_ns)
 SHORT_NOW="${NOW: -6}"
+APPROVED_ID=""
+REJECTED_ID=""
+DELETED_ID=""
+LOOKBOOK_ID=""
+EVENT_ID=""
+
+cleanup_firestore_fixture() {
+  local collection_name=$1
+  local doc_id=$2
+  if [[ -z "$doc_id" ]]; then
+    return
+  fi
+
+  node --input-type=module - "$collection_name" "$doc_id" <<'NODE'
+import { getFirestoreInstance } from "./src/config/firebase.js";
+
+const [collectionName, docId] = process.argv.slice(2);
+await getFirestoreInstance().collection(collectionName).doc(docId).delete();
+NODE
+}
+
+cleanup_seeded_data() {
+  cleanup_firestore_fixture "events" "$EVENT_ID"
+  cleanup_firestore_fixture "lookbooks" "$LOOKBOOK_ID"
+  cleanup_firestore_fixture "showrooms" "$APPROVED_ID"
+  cleanup_firestore_fixture "showrooms" "$REJECTED_ID"
+  cleanup_firestore_fixture "showrooms" "$DELETED_ID"
+}
+
+trap cleanup_seeded_data EXIT
 
 ensure_owner_role() {
   local me_response

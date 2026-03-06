@@ -28,6 +28,7 @@ const db = getFirestoreInstance();
 const ID_PREFIXES = [
     "events_mvp1_",
     "events_guest_sync_",
+    "events_notif_",
     "lookbooks_mvp1_",
     "evt_",
 ];

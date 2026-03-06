@@ -764,7 +764,7 @@ paths:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "409":
-          description: Country change blocked (owner has active showrooms/lookbooks/events)
+          description: Country change blocked (owner has active showrooms)
           content:
             application/json:
               schema:
@@ -775,7 +775,7 @@ paths:
                     success: false
                     error:
                       code: USER_COUNTRY_CHANGE_BLOCKED
-                      message: Country change is blocked for active owner content
+                      message: To change country, delete your showrooms or create a new account
 
   /collections/favorites/showrooms:
     get:

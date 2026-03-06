@@ -523,7 +523,7 @@ components:
           nullable: true
         platform:
           type: string
-          enum: [ios, android, web]
+          enum: [ios, android]
           description: Final platform used by backend (query platform or auto-detected from User-Agent).
         shareUrl:
           type: string
@@ -544,10 +544,6 @@ components:
               type: string
               nullable: true
               description: Android fallback target (usually Play Store URL).
-            web:
-              type: string
-              nullable: true
-              description: Web/desktop fallback target.
         recommendedText:
           type: string
           description: Optional backend-generated share text template. Flutter may localize/override.
@@ -1181,6 +1177,8 @@ paths:
         Authorization header is optional.
         Public viewers receive the minimized public DTO.
         Owner/admin viewers receive a privileged DTO with moderation/audit fields and exact coordinates.
+        Showrooms from blocked countries are hidden from public and owner contexts.
+        Admin can still access them for moderation/support workflows.
       operationId: getShowroomById
       security: []
       responses:
@@ -1357,7 +1355,7 @@ paths:
         required: false
         schema:
           type: string
-          enum: [auto, ios, android, web]
+          enum: [auto, ios, android]
           default: auto
         description: |
           Platform override for link packaging.
@@ -1368,6 +1366,7 @@ paths:
       description: |
         Returns share metadata for native share sheet integration.
         Only approved showrooms are shareable via public links.
+        Showrooms from blocked countries are not shareable.
       operationId: getShowroomSharePayload
       security: []
       responses:
@@ -1391,7 +1390,7 @@ paths:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "404":
-          description: Showroom not found or not shareable
+          description: Showroom not found, blocked by country policy, or not shareable
           content:
             application/json:
               schema:
@@ -1410,22 +1409,22 @@ paths:
         required: false
         schema:
           type: string
-          enum: [auto, ios, android, web]
+          enum: [auto, ios, android]
           default: auto
         description: Optional platform override. `auto` uses User-Agent detection.
     get:
       tags: [Showrooms]
-      summary: Redirect showroom share link to platform fallback target
+      summary: Redirect showroom share link to mobile store target
       description: |
         Public redirect endpoint used as final shared URL.
         Expected behavior:
-        - App installed + universal/app links configured => OS opens app directly.
-        - App not installed => backend redirects to App Store / Play Store / web fallback.
+        - Opening the app directly from the shared HTTPS link requires configured universal links / app links on the final share domain.
+        - Without OS-level link association, this endpoint can only redirect to App Store / Play Store fallback.
       operationId: redirectShowroomShare
       security: []
       responses:
         "302":
-          description: Redirect to platform-specific fallback target
+          description: Redirect to platform-specific mobile store target
         "400":
           description: Invalid query params
           content:
@@ -1433,7 +1432,7 @@ paths:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "404":
-          description: Showroom not found or not shareable
+          description: Showroom not found, blocked by country policy, or not shareable
           content:
             application/json:
               schema:
