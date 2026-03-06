@@ -165,9 +165,9 @@ function buildLookbookDoc({ id, filename, index }) {
                 instagram: "https://instagram.com/svitlana_stylist",
             },
             items: [
-                { name: "Coat", link: "https://example.com/item/coat" },
-                { name: "Jeans", link: "https://example.com/item/jeans" },
-                { name: "Bag", link: "https://example.com/item/bag" },
+                { name: "Coat", brand: "Bazhane", link: "https://example.com/item/coat" },
+                { name: "Jeans", brand: "Coat", link: "https://example.com/item/jeans" },
+                { name: "Bag", brand: "Kocharovska", link: "https://example.com/item/bag" },
             ],
             source: "seed",
             seedBatchPrefix: prefix,

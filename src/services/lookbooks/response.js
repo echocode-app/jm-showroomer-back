@@ -175,6 +175,7 @@ function normalizeItems(doc) {
     return doc.items
         .map(item => ({
             name: firstNonEmpty(item?.name),
+            brand: firstNonEmpty(item?.brand),
             link: firstNonEmpty(item?.link, item?.url),
         }))
         .filter(item => Boolean(item.name && item.link));

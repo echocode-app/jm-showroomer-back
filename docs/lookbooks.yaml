@@ -31,6 +31,9 @@ components:
       properties:
         name:
           type: string
+        brand:
+          type: string
+          nullable: true
         link:
           type: string
           format: uri

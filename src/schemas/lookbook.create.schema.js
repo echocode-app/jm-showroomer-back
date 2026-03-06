@@ -9,6 +9,7 @@ const lookbookAuthorSchema = Joi.object({
 
 const lookbookItemSchema = Joi.object({
     name: Joi.string().trim().min(1).max(120).required(),
+    brand: Joi.string().trim().min(1).max(120).optional(),
     link: Joi.string().trim().uri({ scheme: ["http", "https"] }).required(),
 }).unknown(false);
 

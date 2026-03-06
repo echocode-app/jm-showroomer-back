@@ -153,10 +153,11 @@ export function normalizeItems(value) {
             if (!item || typeof item !== "object") return null;
 
             const name = parseOptionalString(item.name);
+            const brand = parseOptionalString(item.brand);
             const link = parseOptionalString(item.link);
             if (!name || !link) return null;
 
-            return { name, link };
+            return { name, brand, link };
         })
         .filter(Boolean);
 }
