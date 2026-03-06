@@ -509,6 +509,60 @@
           "response": []
         },
         {
+          "name": "Update profile identity fields before owner registration",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 403\", function () { pm.expect([403]).to.include(pm.response.code); });",
+                  "let json = null;",
+                  "try { json = pm.response.json(); } catch (e) { json = null; }",
+                  "pm.test('Forbidden code is stable', function () {",
+                  "  pm.expect(json).to.be.an('object');",
+                  "  pm.expect(json.error.code).to.eql('USER_PROFILE_FIELDS_FORBIDDEN');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{auth_user}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "profile"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Pre Owner Name\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Complete onboarding",
           "event": [
             {

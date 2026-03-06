@@ -24,18 +24,24 @@ Base URL:
 - `error.code` (головний сигнал);
 - `HTTP status` (другий сигнал).
 
-3. Cursor pagination:
+3. `PATCH /users/profile` має state-aware поведінку:
+
+- до owner registration дозволені тільки `appLanguage` і `notificationsEnabled`;
+- після owner registration дозволені також `name`, `position`, `country`, `instagram`;
+- при спробі змінити identity-поля до owner registration backend повертає `403 USER_PROFILE_FIELDS_FORBIDDEN`.
+
+4. Cursor pagination:
 
 - не генерувати cursor вручну;
 - брати тільки `meta.nextCursor` з попередньої відповіді;
 - при зміні фільтра/запиту курсор скидати.
 
-4. Idempotent дії:
+5. Idempotent дії:
 
 - favorite/want-to-visit/dismiss/read можуть викликатися повторно без падіння;
 - UI має лишатися консистентним після повторного tap.
 
-5. Notifications type handling (обов'язково):
+6. Notifications type handling (обов'язково):
 
 - Flutter має коректно відображати всі поточні типи:
   - `SHOWROOM_APPROVED`

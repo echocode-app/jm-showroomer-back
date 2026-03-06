@@ -158,6 +158,22 @@ export async function updateUserProfile(req, res) {
 
     const updates = {};
     const now = new Date().toISOString();
+    const isOwner = req.user?.role === "owner";
+    const hasIdentityFieldPatch = [
+        name,
+        country,
+        instagram,
+        position,
+    ].some(value => value !== undefined);
+
+    if (!isOwner && hasIdentityFieldPatch) {
+        return fail(
+            res,
+            "USER_PROFILE_FIELDS_FORBIDDEN",
+            "Only language and notification settings can be changed before owner profile registration",
+            403
+        );
+    }
 
     if (name !== undefined) {
         const trimmedName = String(name ?? "").trim();
@@ -178,7 +194,7 @@ export async function updateUserProfile(req, res) {
 
         const currentCountry = req.user?.country ?? null;
         if (
-            req.user?.role === "owner" &&
+            isOwner &&
             normalizeCountry(trimmedCountry) !== normalizeCountry(currentCountry)
         ) {
             const ownerUid = req.auth?.uid || req.user?.uid;
@@ -205,7 +221,7 @@ export async function updateUserProfile(req, res) {
     }
 
     if (instagram !== undefined || position !== undefined) {
-        if (req.user?.role !== "owner") {
+        if (!isOwner) {
             return fail(res, "FORBIDDEN", "Access denied", 403);
         }
     }
@@ -237,7 +253,7 @@ export async function updateUserProfile(req, res) {
         updates.notificationsEnabled = notificationsEnabled;
     }
 
-    if (updates.name && req.user?.role === "owner") {
+    if (updates.name && isOwner) {
         updates["ownerProfile.name"] = updates.name;
     }
 

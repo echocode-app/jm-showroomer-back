@@ -10,6 +10,10 @@
   - прибрано нестабільний smoke-фільтр `country=Ukraine` для lookbooks;
   - у id-залежних сценаріях додано контрактно-валідний `404` fallback (без false-fail у runner).
 - Оновлено документацію для QA/розробки під canonical `postman/` workflow.
+- `PATCH /users/profile` приведено до state-aware контракту:
+  - до owner registration дозволені тільки `appLanguage` і `notificationsEnabled`;
+  - після owner registration дозволені також `name`, `position`, `country`, `instagram`;
+  - для pre-owner identity updates додано стабільний код `USER_PROFILE_FIELDS_FORBIDDEN`.
 
 ## 2026-03-04
 

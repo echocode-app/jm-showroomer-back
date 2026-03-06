@@ -115,16 +115,17 @@ components:
       properties:
         name:
           type: string
+          description: Owner-only field after owner profile registration. Before that, only appLanguage and notificationsEnabled can be updated.
         country:
           type: string
-          description: Full country name (e.g., Ukraine). Not ISO2. russia/belarus blocked.
+          description: Full country name (e.g., Ukraine). Not ISO2. russia/belarus blocked. Owner-only field after owner profile registration.
         instagram:
           type: string
-          description: Owner-only field (role=owner). Non-owners get 403 FORBIDDEN.
+          description: Owner-only field after owner profile registration. Pre-owner updates return 403 USER_PROFILE_FIELDS_FORBIDDEN.
         position:
           type: string
           nullable: true
-          description: Owner-only field (role=owner). Non-owners get 403 FORBIDDEN.
+          description: Owner-only field after owner profile registration. Pre-owner updates return 403 USER_PROFILE_FIELDS_FORBIDDEN.
         appLanguage:
           type: string
           enum: [uk, en]
@@ -692,7 +693,11 @@ paths:
     patch:
       tags: [Users]
       summary: Update user profile
-      description: Requires Bearer auth. Fields instagram/position are owner-only; non-owners receive 403 FORBIDDEN.
+      description: |
+        Requires Bearer auth.
+        Before owner profile registration, only `appLanguage` and `notificationsEnabled` can be updated.
+        After owner registration, `name`, `position`, `country`, and `instagram` can also be updated.
+        Changing country is blocked when the owner already has showrooms/lookbooks/events.
       operationId: updateUserProfile
       security:
         - bearerAuth: []
@@ -709,8 +714,10 @@ paths:
                   notificationsEnabled: true
               owner_fields:
                 value:
+                  name: "Victoria"
                   instagram: "https://instagram.com/owner_profile"
                   position: "Founder"
+                  country: "Ukraine"
       responses:
         "200":
           description: Profile updated
@@ -738,18 +745,18 @@ paths:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "403":
-          description: Forbidden (owner-only fields) or country blocked
+          description: Forbidden (identity fields before owner registration) or country blocked
           content:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
               examples:
-                owner_only_field_forbidden:
+                pre_owner_identity_fields_forbidden:
                   value:
                     success: false
                     error:
-                      code: FORBIDDEN
-                      message: Access denied
+                      code: USER_PROFILE_FIELDS_FORBIDDEN
+                      message: Only language and notification settings can be changed before owner profile registration
         "404":
           description: User not found
           content:

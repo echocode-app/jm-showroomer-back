@@ -39,6 +39,8 @@ Canonical файли (для режиму **Connect Local Repo**):
 
 - `auth_*` не треба вводити вручну.
 - У smoke OAuth-запитах `auth_*` формується автоматично як `Bearer {{idToken_*}}`.
+- У `PATCH /users/profile` pre-owner сценарій перевіряє тільки `appLanguage` і `notificationsEnabled`.
+- Identity-поля (`name`, `country`, `position`, `instagram`) потрібно тестувати вже owner-токеном або після `POST /users/complete-owner-profile`.
 
 ## Інтерпретація 4xx/5xx у regression
 

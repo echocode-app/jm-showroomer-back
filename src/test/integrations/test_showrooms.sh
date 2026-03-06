@@ -38,6 +38,19 @@ if [[ "$USER_ROLE" == "admin" ]]; then
 fi
 
 if [[ "$USER_ROLE" != "owner" ]]; then
+  print_section "Pre-owner profile restrictions"
+  http_request "PATCH /users/profile (pre-owner settings)" 200 "" \
+    -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+    -d '{"appLanguage":"uk","notificationsEnabled":true}' \
+    "${BASE_URL}/users/profile"
+
+  http_request "PATCH /users/profile (pre-owner name forbidden)" 403 "USER_PROFILE_FIELDS_FORBIDDEN" \
+    -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+    -d "{\"name\":\"Pre Owner ${NOW}\"}" \
+    "${BASE_URL}/users/profile"
+fi
+
+if [[ "$USER_ROLE" != "owner" ]]; then
   http_request "POST /users/complete-owner-profile (upgrade)" 200 "" \
     -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
     -d "{\"name\":\"Owner ${NOW}\",\"position\":\"Founder\",\"country\":\"Ukraine\",\"instagram\":\"https://instagram.com/owner${NOW}\"}" \

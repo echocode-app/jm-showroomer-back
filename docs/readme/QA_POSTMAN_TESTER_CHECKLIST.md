@@ -55,9 +55,14 @@
 1. `POST /auth/oauth` без idToken -> `400 ID_TOKEN_REQUIRED`.
 2. `GET /users/me` без auth -> `401`.
 3. `GET /users/me` з auth -> `200`.
-4. `PATCH /users/profile` valid -> `200`; invalid -> `400 VALIDATION_ERROR`.
+4. `PATCH /users/profile` до owner registration:
+   - `appLanguage` / `notificationsEnabled` -> `200`
+   - `name` / `country` / `position` / `instagram` -> `403 USER_PROFILE_FIELDS_FORBIDDEN`
 5. `POST /users/complete-onboarding` двічі -> стабільно, без 500.
 6. `POST /users/complete-owner-profile` (user token) -> `200`, роль owner.
+7. `PATCH /users/profile` після owner registration:
+   - `name` / `position` / `country` / `instagram` -> `200`
+   - `country` при наявному owner контенті -> `409 USER_COUNTRY_CHANGE_BLOCKED`
 
 ## 4.2 Showrooms
 
