@@ -16,6 +16,10 @@ function inferIndexCollection(req, err) {
   return "unknown";
 }
 
+function getFullRequestUrl(req) {
+  return String(req?.originalUrl || req?.url || "");
+}
+
 // errorHandler
 export const errorHandler = (err, req, res, next) => {
   if (req?._anonymousIdForResponse) {
@@ -33,12 +37,16 @@ export const errorHandler = (err, req, res, next) => {
   const errorLogPayload = {
     requestId: req?.id,
     method: req?.method,
-    path: String(req?.originalUrl || req?.url || "").split("?")[0],
+    path: getFullRequestUrl(req).split("?")[0],
+    originalUrl: getFullRequestUrl(req),
     status,
     code,
     message,
     userId: req?.user?.uid ?? req?.auth?.uid ?? undefined,
   };
+  if (code === "INDEX_NOT_READY" && err?.meta?.firestoreMessage) {
+    errorLogPayload.firestoreMessage = err.meta.firestoreMessage;
+  }
   if (isDev && err?.stack) {
     errorLogPayload.stack = err.stack;
   }
@@ -51,6 +59,8 @@ export const errorHandler = (err, req, res, next) => {
       status: "infra",
       meta: {
         collection: inferIndexCollection(req, err),
+        originalUrl: getFullRequestUrl(req),
+        firestoreMessage: err?.meta?.firestoreMessage ?? null,
       },
     }, level, err);
   }

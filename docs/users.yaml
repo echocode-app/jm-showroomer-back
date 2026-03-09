@@ -697,7 +697,7 @@ paths:
         Requires Bearer auth.
         Before owner profile registration, only `appLanguage` and `notificationsEnabled` can be updated.
         After owner registration, `name`, `position`, `country`, and `instagram` can also be updated.
-        Changing country is blocked when the owner already has showrooms/lookbooks/events.
+        Changing country is blocked when the owner already has showrooms.
       operationId: updateUserProfile
       security:
         - bearerAuth: []

@@ -50,9 +50,8 @@ export async function listAdminModerationQueueService(filters = {}) {
         };
     } catch (err) {
         if (isIndexNotReadyError(err)) {
-            throw buildDomainError("INDEX_NOT_READY", { collection: "showrooms" });
+            throw buildDomainError("INDEX_NOT_READY", { collection: "showrooms" }, err);
         }
         throw err;
     }
 }
-

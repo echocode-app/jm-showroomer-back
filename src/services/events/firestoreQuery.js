@@ -27,7 +27,7 @@ export function applyEventsOrdering(query) {
 
 export function mapIndexError(err) {
     if (isIndexNotReadyError(err)) {
-        throw buildDomainError("INDEX_NOT_READY", { collection: "events" });
+        throw buildDomainError("INDEX_NOT_READY", { collection: "events" }, err);
     }
     throw err;
 }

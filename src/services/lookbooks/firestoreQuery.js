@@ -38,7 +38,7 @@ export function applyPublishedOrdering(query) {
 // Map Firestore index errors to stable API-level domain errors.
 export function mapIndexError(err) {
     if (isIndexNotReadyError(err)) {
-        throw buildDomainError("INDEX_NOT_READY", { collection: "lookbooks" });
+        throw buildDomainError("INDEX_NOT_READY", { collection: "lookbooks" }, err);
     }
     throw err;
 }
