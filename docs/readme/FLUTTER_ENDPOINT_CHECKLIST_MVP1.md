@@ -94,6 +94,7 @@ Base URL:
 | Collections | POST   | `/collections/favorites/showrooms/sync`         | MVP1 Required | Guest -> auth sync                           |
 | Lookbooks   | GET    | `/lookbooks`                                    | MVP1 Required | Каталог lookbooks + nearby (`nearLat`,`nearLng`,`nearRadiusKm`) |
 | Lookbooks   | GET    | `/lookbooks/{id}`                               | MVP1 Required | Деталь lookbook                              |
+| Lookbooks   | GET    | `/lookbooks/{id}/share`                         | MVP1 Required | Share payload (url/text/platform targets)    |
 | Lookbooks   | POST   | `/lookbooks/create`                             | MVP1 Skip     | У mobile MVP1 не створюємо контент           |
 | Lookbooks   | POST   | `/lookbooks`                                    | MVP1 Skip     | У mobile MVP1 не створюємо контент           |
 | Lookbooks   | PATCH  | `/lookbooks/{id}`                               | MVP1 Skip     | Не потрібен у mobile MVP1                    |
@@ -101,15 +102,18 @@ Base URL:
 | Lookbooks   | POST   | `/lookbooks/{id}/favorite`                      | MVP1 Required | Favorite toggle                              |
 | Lookbooks   | DELETE | `/lookbooks/{id}/favorite`                      | MVP1 Required | Favorite toggle                              |
 | Lookbooks   | POST   | `/lookbooks/{id}/rsvp`                          | MVP1 Skip     | Stub endpoint, не бізнес-критично            |
+| Lookbooks   | GET    | `/share/lookbooks/{id}`                         | MVP1 Required | Final public share URL (redirect/fallback)   |
 | Collections | GET    | `/collections/favorites/lookbooks`              | MVP1 Required | Список favorite lookbooks                    |
 | Collections | POST   | `/collections/favorites/lookbooks/sync`         | MVP1 Required | Guest -> auth sync                           |
 | Events      | GET    | `/events`                                       | MVP1 Required | Каталог events                               |
 | Events      | GET    | `/events/{id}`                                  | MVP1 Required | Деталь event                                 |
+| Events      | GET    | `/events/{id}/share`                            | MVP1 Required | Share payload (url/text/platform targets)    |
 | Events      | POST   | `/events/{id}/want-to-visit`                    | MVP1 Required | State toggle                                 |
 | Events      | DELETE | `/events/{id}/want-to-visit`                    | MVP1 Required | State toggle                                 |
 | Events      | POST   | `/events/{id}/dismiss`                          | MVP1 Required | State toggle                                 |
 | Events      | DELETE | `/events/{id}/dismiss`                          | MVP1 Required | State toggle                                 |
 | Events      | POST   | `/events/{id}/rsvp`                             | MVP1 Skip     | У MVP1 повертає `501 EVENTS_WRITE_MVP2_ONLY` |
+| Events      | GET    | `/share/events/{id}`                            | MVP1 Required | Final public share URL (redirect/fallback)   |
 | Collections | GET    | `/collections/want-to-visit/events`             | MVP1 Required | Список want-to-visit                         |
 | Collections | POST   | `/collections/want-to-visit/events/sync`        | MVP1 Required | Guest -> auth sync                           |
 | Analytics   | POST   | `/analytics/ingest`                             | MVP1 Required | Клієнтські аналітичні події                  |
@@ -202,6 +206,28 @@ Ready-to-use запити для Flutter кнопки "Шукати поблиз
   також сюди входить blocked-country lookbook;
 - без auth на favorite -> `401`.
 
+## 4.3.1 Lookbook share (обов'язково)
+
+1. Happy:
+
+- для тапу на "Share" викликати `GET /lookbooks/{id}/share?platform=auto`;
+- з відповіді брати `data.share.shareUrl` як головний URL для native share sheet;
+- текст:
+  - мінімум: використовувати `data.share.recommendedText`;
+  - або локалізувати власний текст Flutter і додати `shareUrl`.
+
+2. Unhappy:
+
+- `404 LOOKBOOK_NOT_FOUND` -> lookbook недоступний для публічного share (видалений/не published);
+  також сюди входить blocked-country lookbook;
+- `400 QUERY_INVALID` -> помилка параметра `platform`.
+
+3. Платформна поведінка:
+
+- backend повертає fallback targets (`targets.ios/android`);
+- фінальне відкриття app по HTTPS-share-link потребує `universal links / app links`;
+- без OS-level налаштування backend може тільки редіректити на App Store / Play Store через `GET /share/lookbooks/{id}`.
+
 ## 4.4 Events list/detail/state
 
 1. Happy:
@@ -215,6 +241,28 @@ Ready-to-use запити для Flutter кнопки "Шукати поблиз
 - невалідний cursor -> `400 CURSOR_INVALID`;
 - неіснуючий event -> `404 EVENT_NOT_FOUND`;
 - `POST /events/{id}/rsvp` у MVP1 -> `501 EVENTS_WRITE_MVP2_ONLY`.
+
+## 4.4.1 Event share (обов'язково)
+
+1. Happy:
+
+- для тапу на "Share" викликати `GET /events/{id}/share?platform=auto`;
+- з відповіді брати `data.share.shareUrl` як головний URL для native share sheet;
+- текст:
+  - мінімум: використовувати `data.share.recommendedText`;
+  - або локалізувати власний текст Flutter і додати `shareUrl`.
+
+2. Unhappy:
+
+- `404 EVENT_NOT_FOUND` -> event недоступний для публічного share (видалений/не published);
+  також сюди входить blocked-country event;
+- `400 QUERY_INVALID` -> помилка параметра `platform`.
+
+3. Платформна поведінка:
+
+- backend повертає fallback targets (`targets.ios/android`);
+- фінальне відкриття app по HTTPS-share-link потребує `universal links / app links`;
+- без OS-level налаштування backend може тільки редіректити на App Store / Play Store через `GET /share/events/{id}`.
 
 ## 4.5 Collections sync (guest -> auth)
 

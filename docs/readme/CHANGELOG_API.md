@@ -2,6 +2,12 @@
 
 ## 2026-03-05
 
+- Додано share flow для lookbooks та events:
+  - `GET /lookbooks/{id}/share` + `GET /share/lookbooks/{id}`
+  - `GET /events/{id}/share` + `GET /share/events/{id}`
+  - контракт симетричний до showroom share payload / redirect flow;
+  - blocked-country та unpublished entities не віддаються в публічний share.
+
 - Фіналізовано Postman regression для режиму `Connect Local Repo`:
   - canonical колекція: `postman/collections/JM Showroomer - All Scenarios.postman_collection.json`
   - canonical environment: `postman/environments/JM_Showroomer_Environment__Template__Copy.postman_environment.json`

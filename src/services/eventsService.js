@@ -10,3 +10,7 @@ export {
     listWantToVisitEvents as listWantToVisitEventsService,
 } from "./events/userEventState.js";
 export { syncGuestEventsState as syncGuestEventsStateService } from "./events/syncGuestState.js";
+export {
+    getEventSharePayloadService,
+    resolveEventShareRedirectService,
+} from "./events/shareEvent.js";

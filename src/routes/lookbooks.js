@@ -11,6 +11,7 @@ import {
     createLookbook,
     deleteLookbook,
     favoriteLookbook,
+    getLookbookSharePayload,
     getLookbookById,
     listLookbooks,
     rsvpLookbook,
@@ -44,6 +45,12 @@ router.get(
     optionalAuth,
     schemaValidate({ params: eventRsvpSchema }),
     getLookbookById
+);
+
+router.get(
+    "/:id/share",
+    schemaValidate({ params: eventRsvpSchema }),
+    getLookbookSharePayload
 );
 
 router.patch(

@@ -154,6 +154,42 @@ components:
           format: date-time
           nullable: true
 
+    LookbookShare:
+      type: object
+      required: [lookbookId, platform, shareUrl, deepLinkUrl, targets, recommendedText]
+      properties:
+        lookbookId:
+          type: string
+        lookbookTitle:
+          type: string
+          nullable: true
+        platform:
+          type: string
+          enum: [ios, android]
+          description: Final platform used by backend (query platform or auto-detected from User-Agent).
+        shareUrl:
+          type: string
+          description: Stable URL for native share sheet. Points to backend redirect endpoint.
+          example: https://jm-showroomer-back.onrender.com/api/v1/share/lookbooks/abc123
+        deepLinkUrl:
+          type: string
+          description: App deep link route.
+          example: jmshowroomer://lookbooks/abc123
+        targets:
+          type: object
+          properties:
+            ios:
+              type: string
+              nullable: true
+              description: iOS fallback target (usually App Store URL).
+            android:
+              type: string
+              nullable: true
+              description: Android fallback target (usually Play Store URL).
+        recommendedText:
+          type: string
+          description: Optional backend-generated share text template. Flutter may localize/override.
+
 paths:
   /lookbooks:
     get:
@@ -384,6 +420,59 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+  /lookbooks/{id}/share:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Lookbook ID
+      - name: platform
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: [auto, ios, android]
+          default: auto
+        description: |
+          Platform override for link packaging.
+          `auto` detects platform from User-Agent.
+    get:
+      tags: [Lookbooks]
+      summary: Get share payload for lookbook
+      description: |
+        Returns share metadata for native share sheet integration.
+        Only published lookbooks are shareable via public links.
+        Lookbooks from blocked countries are not shareable.
+      operationId: getLookbookSharePayload
+      security: []
+      responses:
+        "200":
+          description: Share payload
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          share:
+                            $ref: '#/components/schemas/LookbookShare'
+        "400":
+          description: Invalid query params
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "404":
+          description: Lookbook not found, blocked by country policy, or not shareable
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
     patch:
       tags: [Lookbooks]
       summary: Update lookbook
@@ -527,18 +616,6 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
-        "400":
-          description: Validation error
-          content:
-            application/json:
-              schema:
-                $ref: './common.yaml#/components/schemas/ApiError'
-        "401":
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: './common.yaml#/components/schemas/ApiError'
     delete:
       tags: [Lookbooks]
       summary: Remove lookbook from favorites
@@ -579,6 +656,48 @@ paths:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "401":
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
+  /share/lookbooks/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Lookbook ID
+      - name: platform
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: [auto, ios, android]
+          default: auto
+        description: Optional platform override. `auto` uses User-Agent detection.
+    get:
+      tags: [Lookbooks]
+      summary: Redirect lookbook share link to mobile store target
+      description: |
+        Public redirect endpoint used as final shared URL.
+        Expected behavior:
+        - Opening the app directly from the shared HTTPS link requires configured universal links / app links on the final share domain.
+        - Without OS-level link association, this endpoint can only redirect to App Store / Play Store fallback.
+      operationId: redirectLookbookShare
+      security: []
+      responses:
+        "302":
+          description: Redirect to platform-specific mobile store target
+        "400":
+          description: Invalid query params
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "404":
+          description: Lookbook not found, blocked by country policy, or not shareable
           content:
             application/json:
               schema:

@@ -7,6 +7,7 @@ import { schemaValidate } from "../middlewares/schemaValidate.js";
 import { eventRsvpSchema } from "../schemas/event.rsvp.schema.js";
 import {
     dismissEvent,
+    getEventSharePayload,
     getEventById,
     listEvents,
     markWantToVisit,
@@ -20,6 +21,7 @@ const router = Router();
 // Public events endpoints with optional auth context for user-state enrichment.
 router.get("/", optionalAuth, loadUserIfExists, listEvents);
 router.get("/:id", optionalAuth, loadUserIfExists, schemaValidate({ params: eventRsvpSchema }), getEventById);
+router.get("/:id/share", schemaValidate({ params: eventRsvpSchema }), getEventSharePayload);
 
 // Mutating endpoints are auth-only and operate on per-user event state.
 router.post(

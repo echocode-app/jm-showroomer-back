@@ -2210,6 +2210,56 @@
           "response": []
         },
         {
+          "name": "Get lookbook share payload",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/lookbooks/{{lookbook_id}}/share?platform=auto",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lookbooks",
+                "{{lookbook_id}}",
+                "share"
+              ],
+              "query": [
+                {
+                  "key": "platform",
+                  "value": "auto"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Open lookbook share redirect",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/share/lookbooks/{{lookbook_id}}?platform=auto",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "share",
+                "lookbooks",
+                "{{lookbook_id}}"
+              ],
+              "query": [
+                {
+                  "key": "platform",
+                  "value": "auto"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Favorite lookbook",
           "event": [
             {
@@ -2548,6 +2598,56 @@
                 "{{event_id}}"
               ],
               "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get event share payload",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{event_id}}/share?platform=auto",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events",
+                "{{event_id}}",
+                "share"
+              ],
+              "query": [
+                {
+                  "key": "platform",
+                  "value": "auto"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Open event share redirect",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/share/events/{{event_id}}?platform=auto",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "share",
+                "events",
+                "{{event_id}}"
+              ],
+              "query": [
+                {
+                  "key": "platform",
+                  "value": "auto"
+                }
+              ]
             }
           },
           "response": []

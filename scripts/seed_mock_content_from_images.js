@@ -21,10 +21,19 @@ const skipUpload = args.has("--skip-upload");
 const onlyLookbooks = args.has("--only-lookbooks");
 const onlyEvents = args.has("--only-events");
 const prefixArg = process.argv.find(v => v.startsWith("--prefix="));
+const lookbookCountArg = process.argv.find(v => v.startsWith("--lookbook-count="));
 const prefix = prefixArg ? prefixArg.split("=").slice(1).join("=") : `mvp1_mock_${Date.now()}`;
+const lookbookCount = lookbookCountArg
+    ? Number(lookbookCountArg.split("=").slice(1).join("="))
+    : null;
 
 if (onlyLookbooks && onlyEvents) {
     console.error("Use either --only-lookbooks or --only-events, not both.");
+    process.exit(1);
+}
+
+if (lookbookCount !== null && (!Number.isInteger(lookbookCount) || lookbookCount < 1 || lookbookCount > 200)) {
+    console.error("--lookbook-count must be an integer between 1 and 200.");
     process.exit(1);
 }
 
@@ -60,19 +69,107 @@ const COUNTRY_PRESETS = [
         lat: 48.8566,
         lng: 2.3522,
     },
+    {
+        country: "Spain",
+        countryNormalized: "spain",
+        city: "Barcelona",
+        cityNormalized: "barcelona",
+        lat: 41.3851,
+        lng: 2.1734,
+    },
+    {
+        country: "Germany",
+        countryNormalized: "germany",
+        city: "Berlin",
+        cityNormalized: "berlin",
+        lat: 52.52,
+        lng: 13.405,
+    },
+    {
+        country: "Portugal",
+        countryNormalized: "portugal",
+        city: "Lisbon",
+        cityNormalized: "lisbon",
+        lat: 38.7223,
+        lng: -9.1393,
+    },
+    {
+        country: "Poland",
+        countryNormalized: "poland",
+        city: "Warsaw",
+        cityNormalized: "warsaw",
+        lat: 52.2297,
+        lng: 21.0122,
+    },
 ];
 
-const LOOKBOOK_TITLE_PRESETS = [
-    "Street Layer",
-    "Soft Volume",
-    "Urban Capsule",
-    "Cozy Contrast",
-    "Neutral Tailoring",
-    "Weekend Motion",
-    "Evening Texture",
-    "Casual Power",
-    "Minimal Edit",
-    "Monochrome Mood",
+const LOOKBOOK_VARIANTS = [
+    { title: "Street Layer", seasonKey: "summer", seasonLabel: "Summer" },
+    { title: "Soft Volume", seasonKey: "winter", seasonLabel: "Winter" },
+    { title: "Urban Capsule", seasonKey: "spring", seasonLabel: "Spring" },
+    { title: "Cozy Contrast", seasonKey: "autumn", seasonLabel: "Autumn" },
+    { title: "Neutral Tailoring", seasonKey: "autumn-winter", seasonLabel: "Autumn-Winter" },
+    { title: "Weekend Motion", seasonKey: "spring-summer", seasonLabel: "Spring-Summer" },
+    { title: "Evening Texture", seasonKey: "demi-season", seasonLabel: "Demi-season" },
+    { title: "Casual Power", seasonKey: "pre-fall", seasonLabel: "Pre-Fall" },
+    { title: "Minimal Edit", seasonKey: "resort", seasonLabel: "Resort" },
+    { title: "Monochrome Mood", seasonKey: "winter", seasonLabel: "Winter" },
+    { title: "A", seasonKey: "spring", seasonLabel: "Spring" },
+    { title: "After the Last Tram Leaves the City", seasonKey: "autumn", seasonLabel: "Autumn" },
+    { title: "Quiet Utility for Loud Days", seasonKey: "summer", seasonLabel: "Summer" },
+    { title: "Officecore, But Make It Tender", seasonKey: "spring-summer", seasonLabel: "Spring-Summer" },
+    { title: "Velvet Static", seasonKey: "autumn-winter", seasonLabel: "Autumn-Winter" },
+    { title: "Noon in Milan, 14:37", seasonKey: "summer", seasonLabel: "Summer" },
+    { title: "A Little Too Sharp for Sunday", seasonKey: "pre-fall", seasonLabel: "Pre-Fall" },
+    { title: "Barely Formal", seasonKey: "demi-season", seasonLabel: "Demi-season" },
+    { title: "The Coat Was the Whole Plan", seasonKey: "winter", seasonLabel: "Winter" },
+    { title: "Postcards From a Grey Morning", seasonKey: "autumn", seasonLabel: "Autumn" },
+    { title: "Layer 03", seasonKey: "spring", seasonLabel: "Spring" },
+    { title: "Almost Minimal, Actually Not", seasonKey: "resort", seasonLabel: "Resort" },
+    { title: "City Proof / Soft Proof", seasonKey: "demi-season", seasonLabel: "Demi-season" },
+    { title: "The Longest Coffee Run in Paris", seasonKey: "spring-summer", seasonLabel: "Spring-Summer" },
+    { title: "Soft Armor", seasonKey: "autumn-winter", seasonLabel: "Autumn-Winter" },
+    { title: "One White Shirt and a Bad Intention", seasonKey: "spring", seasonLabel: "Spring" },
+    { title: "Late Checkout Look", seasonKey: "resort", seasonLabel: "Resort" },
+    { title: "Transit Romance", seasonKey: "autumn", seasonLabel: "Autumn" },
+    { title: "Workwear for People Who Hate Workwear", seasonKey: "pre-fall", seasonLabel: "Pre-Fall" },
+    { title: "Night Bus Elegance", seasonKey: "winter", seasonLabel: "Winter" },
+];
+
+const LOOKBOOK_AUTHOR_PRESETS = [
+    { name: "Svitlana", position: "Stylist", instagram: "https://instagram.com/svitlana_stylist" },
+    { name: "Marta", position: "Fashion Editor", instagram: "https://instagram.com/marta.edit" },
+    { name: "Iryna", position: "Creative Producer", instagram: "https://instagram.com/iryna.producer" },
+    { name: "Lina", position: "Image Maker", instagram: "https://instagram.com/lina.image" },
+    { name: "Daria", position: "Personal Stylist", instagram: "https://instagram.com/daria.style.notes" },
+];
+
+const LOOKBOOK_ITEMS_PRESETS = [
+    [
+        { name: "Coat", brand: "Bazhane", link: "https://example.com/item/coat" },
+        { name: "Jeans", brand: "Coat", link: "https://example.com/item/jeans" },
+        { name: "Bag", brand: "Kocharovska", link: "https://example.com/item/bag" },
+    ],
+    [
+        { name: "Blazer", brand: "The Coat", link: "https://example.com/item/blazer" },
+        { name: "Trousers", brand: "Bazhane", link: "https://example.com/item/trousers" },
+        { name: "Shoes", brand: "Kocharovska", link: "https://example.com/item/shoes" },
+    ],
+    [
+        { name: "Top", brand: "Woolhappen", link: "https://example.com/item/top" },
+        { name: "Skirt", brand: "Coat", link: "https://example.com/item/skirt" },
+        { name: "Bag", brand: "Kocharovska", link: "https://example.com/item/bag-2" },
+    ],
+    [
+        { name: "Shirt", brand: "The Coat", link: "https://example.com/item/shirt" },
+        { name: "Belt", brand: "Coat", link: "https://example.com/item/belt" },
+        { name: "Boots", brand: "Kocharovska", link: "https://example.com/item/boots" },
+    ],
+    [
+        { name: "Dress", brand: "Bazhane", link: "https://example.com/item/dress" },
+        { name: "Cardigan", brand: "Woolhappen", link: "https://example.com/item/cardigan" },
+        { name: "Shoes", brand: "Kocharovska", link: "https://example.com/item/shoes-2" },
+    ],
 ];
 
 const EVENT_TITLE_PRESETS = [
@@ -122,27 +219,28 @@ function pickPreset(index) {
 
 function buildLookbookDoc({ id, filename, index }) {
     const preset = pickPreset(index);
+    const variant = LOOKBOOK_VARIANTS[index % LOOKBOOK_VARIANTS.length];
+    const author = LOOKBOOK_AUTHOR_PRESETS[index % LOOKBOOK_AUTHOR_PRESETS.length];
+    const items = LOOKBOOK_ITEMS_PRESETS[index % LOOKBOOK_ITEMS_PRESETS.length];
     const nowMs = Date.now();
     const publishedAt = new Date(nowMs - index * 60 * 60 * 1000);
-    const seasonKey = index % 2 === 0 ? "ss-2026" : "fw-2026";
-    const seasonLabel = seasonKey === "ss-2026" ? "SS 2026" : "FW 2026";
     const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
     const coverPath = `lookbooks/${id}/cover/${safeName}`;
     const pagePath = `lookbooks/${id}/pages/1-${safeName}`;
-    const title = LOOKBOOK_TITLE_PRESETS[index % LOOKBOOK_TITLE_PRESETS.length];
+    const title = variant.title;
 
     return {
         id,
         doc: {
             title,
             name: title,
-            description: `${title} editorial set for ${preset.city}.`,
+            description: `${title} editorial set for ${preset.city}. Built for filter and layout coverage.`,
             country: preset.country,
             countryNormalized: preset.countryNormalized,
             city: preset.city,
             cityNormalized: preset.cityNormalized,
-            seasonLabel,
-            seasonKey,
+            seasonLabel: variant.seasonLabel,
+            seasonKey: variant.seasonKey,
             sortRank: index < 4 ? index + 1 : null,
             coverPath,
             images: [
@@ -159,16 +257,8 @@ function buildLookbookDoc({ id, filename, index }) {
                 },
                 geohash: ngeohash.encode(preset.lat, preset.lng, 7),
             },
-            author: {
-                name: "Svitlana",
-                position: "Stylist",
-                instagram: "https://instagram.com/svitlana_stylist",
-            },
-            items: [
-                { name: "Coat", brand: "Bazhane", link: "https://example.com/item/coat" },
-                { name: "Jeans", brand: "Coat", link: "https://example.com/item/jeans" },
-                { name: "Bag", brand: "Kocharovska", link: "https://example.com/item/bag" },
-            ],
+            author,
+            items,
             source: "seed",
             seedBatchPrefix: prefix,
             seedSource: "images",
@@ -222,10 +312,13 @@ function buildEventDoc({ id, filename, index }) {
 
 async function upsertCollectionFromImages({ collectionName, dirPath, buildDoc }) {
     const files = await listImageFiles(dirPath);
+    const targetCount = collectionName === "lookbooks" && lookbookCount !== null
+        ? lookbookCount
+        : files.length;
     const result = [];
 
-    for (let index = 0; index < files.length; index += 1) {
-        const filename = files[index];
+    for (let index = 0; index < targetCount; index += 1) {
+        const filename = files[index % files.length];
         const id = `${prefix}_${collectionName}_${index + 1}`;
         const localPath = path.join(dirPath, filename);
         const built = buildDoc({ id, filename, index });
@@ -241,7 +334,7 @@ async function upsertCollectionFromImages({ collectionName, dirPath, buildDoc })
         result.push({ id, filename, country: built.doc.country, city: built.doc.city });
     }
 
-    return { count: files.length, items: result };
+    return { count: targetCount, sourceImages: files.length, items: result };
 }
 
 async function main() {

@@ -3,9 +3,11 @@ import {
     createLookbookService,
     deleteLookbookService,
     getLookbookByIdCrudService,
+    getLookbookSharePayloadService,
     listLookbooksService,
     likeLookbookService,
     listLookbooksCrudService,
+    resolveLookbookShareRedirectService,
     unlikeLookbookService,
     updateLookbookService,
 } from "../services/lookbooksService.js";
@@ -170,6 +172,30 @@ export async function rsvpLookbook(req, res, next) {
     try {
         const { id } = req.params;
         return ok(res, { lookbookId: id, user: req.user.uid, status: "RSVPed" });
+    } catch (err) {
+        next(err);
+    }
+}
+
+export async function getLookbookSharePayload(req, res, next) {
+    try {
+        const share = await getLookbookSharePayloadService(req.params.id, {
+            platform: req.query?.platform,
+            userAgent: req.headers["user-agent"],
+        });
+        return ok(res, { share });
+    } catch (err) {
+        next(err);
+    }
+}
+
+export async function redirectLookbookShare(req, res, next) {
+    try {
+        const { httpStatus, redirectUrl } = await resolveLookbookShareRedirectService(req.params.id, {
+            platform: req.query?.platform,
+            userAgent: req.headers["user-agent"],
+        });
+        return res.redirect(httpStatus, redirectUrl);
     } catch (err) {
         next(err);
     }

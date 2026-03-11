@@ -1,10 +1,12 @@
 import { fail, ok } from "../utils/apiResponse.js";
 import {
     dismissEventService,
+    getEventSharePayloadService,
     getEventByIdService,
     listEventsService,
     markEventWantToVisitService,
     removeEventWantToVisitService,
+    resolveEventShareRedirectService,
     undismissEventService,
 } from "../services/eventsService.js";
 import { attachAnonymousIdHeader, resolveActorIdentity } from "../utils/actorIdentity.js";
@@ -128,4 +130,28 @@ export async function undismissEvent(req, res, next) {
 // rsvpEvent
 export async function rsvpEvent(req, res) {
     return fail(res, "EVENTS_WRITE_MVP2_ONLY", "Events write endpoints are MVP2 only", 501);
+}
+
+export async function getEventSharePayload(req, res, next) {
+    try {
+        const share = await getEventSharePayloadService(req.params.id, {
+            platform: req.query?.platform,
+            userAgent: req.headers["user-agent"],
+        });
+        return ok(res, { share });
+    } catch (err) {
+        next(err);
+    }
+}
+
+export async function redirectEventShare(req, res, next) {
+    try {
+        const { httpStatus, redirectUrl } = await resolveEventShareRedirectService(req.params.id, {
+            platform: req.query?.platform,
+            userAgent: req.headers["user-agent"],
+        });
+        return res.redirect(httpStatus, redirectUrl);
+    } catch (err) {
+        next(err);
+    }
 }

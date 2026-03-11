@@ -178,22 +178,30 @@ paths:
     $ref: './lookbooks.yaml#/paths/~1lookbooks'
   /lookbooks/{id}:
     $ref: './lookbooks.yaml#/paths/~1lookbooks~1{id}'
+  /lookbooks/{id}/share:
+    $ref: './lookbooks.yaml#/paths/~1lookbooks~1{id}~1share'
   /lookbooks/create:
     $ref: './lookbooks.yaml#/paths/~1lookbooks~1create'
   /lookbooks/{id}/favorite:
     $ref: './lookbooks.yaml#/paths/~1lookbooks~1{id}~1favorite'
   /lookbooks/{id}/rsvp:
     $ref: './lookbooks.yaml#/paths/~1lookbooks~1{id}~1rsvp'
+  /share/lookbooks/{id}:
+    $ref: './lookbooks.yaml#/paths/~1share~1lookbooks~1{id}'
   /events:
     $ref: './events.yaml#/paths/~1events'
   /events/{id}:
     $ref: './events.yaml#/paths/~1events~1{id}'
+  /events/{id}/share:
+    $ref: './events.yaml#/paths/~1events~1{id}~1share'
   /events/{id}/want-to-visit:
     $ref: './events.yaml#/paths/~1events~1{id}~1want-to-visit'
   /events/{id}/dismiss:
     $ref: './events.yaml#/paths/~1events~1{id}~1dismiss'
   /events/{id}/rsvp:
     $ref: './events.yaml#/paths/~1events~1{id}~1rsvp'
+  /share/events/{id}:
+    $ref: './events.yaml#/paths/~1share~1events~1{id}'
   /analytics/ingest:
     $ref: './analytics.yaml#/paths/~1analytics~1ingest'
 

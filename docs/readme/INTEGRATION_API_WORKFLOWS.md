@@ -68,6 +68,7 @@
 
 - `GET /lookbooks`
 - `GET /lookbooks/{id}`
+- `GET /lookbooks/{id}/share` + `GET /share/lookbooks/{id}` - share payload / redirect entry.
 - `POST /lookbooks` (alias `POST /lookbooks/create`)
 - `PATCH /lookbooks/{id}`
 - `DELETE /lookbooks/{id}`
@@ -78,6 +79,7 @@
 
 - `GET /events`
 - `GET /events/{id}`
+- `GET /events/{id}/share` + `GET /share/events/{id}` - share payload / redirect entry.
 - `POST|DELETE /events/{id}/want-to-visit`
 - `POST|DELETE /events/{id}/dismiss`
 - `POST /events/{id}/rsvp` (MVP2-only, очікувано `501` у MVP1)
