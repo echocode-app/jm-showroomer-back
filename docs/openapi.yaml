@@ -19,6 +19,11 @@ info:
       Value: correct client-side search implementation aligned with backend behavior.  
       <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_MVP1_SEARCH.md" target="_blank" rel="noopener noreferrer">Open document</a>
 
+    - **SHOWROOMS_OWNER_FLOW_FLUTTER_UA.md**  
+      Для Flutter: короткий owner flow по showroom-ах українською, без двозначностей по `create`, `patch`, `submit` і статусах.  
+      Value: one canonical step-by-step guide for showroom creation and moderation handoff.  
+      <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_OWNER_FLOW_FLUTTER_UA.md" target="_blank" rel="noopener noreferrer">Open document</a>
+
     - **CURSOR_PAGINATION_FLUTTER.md**  
       For Flutter: universal cursor pagination rules for all backend list endpoints (opaque token, reset rules, error handling).  
       Value: correct infinite scroll implementation without duplicates/skips/cursor misuse.  
@@ -226,8 +231,8 @@ tags:
   - name: Showrooms
     description: Showroom lifecycle, listing, moderation state, favorites, search.
     externalDocs:
-      description: Showrooms search and geo rules (Flutter)
-      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_MVP1_SEARCH.md
+      description: Showrooms owner flow for Flutter (UA)
+      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_OWNER_FLOW_FLUTTER_UA.md
   - name: Lookbooks
     description: Lookbooks list/detail/create/update/favorites.
     externalDocs:

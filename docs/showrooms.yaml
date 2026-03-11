@@ -1044,6 +1044,9 @@ paths:
         Owner recreation cooldown applies after soft delete: the same owner cannot recreate the same showroom
         (same normalized name) for 3 calendar months after deletion (`SHOWROOM_RECREATE_COOLDOWN`, 409).
       operationId: createShowroom
+      externalDocs:
+        description: Flutter owner flow guide (UA)
+        url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_OWNER_FLOW_FLUTTER_UA.md
       security:
         - bearerAuth: []
       x-roles: [owner, manager]
@@ -1138,6 +1141,9 @@ paths:
       summary: Create or reuse draft showroom
       description: Showroom country must match owner country.
       operationId: createDraftShowroom
+      externalDocs:
+        description: Flutter owner flow guide (UA)
+        url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_OWNER_FLOW_FLUTTER_UA.md
       security:
         - bearerAuth: []
       x-roles: [owner]
@@ -1226,6 +1232,9 @@ paths:
         When `geo` is patched, backend recomputes search fields and updates legacy compatibility mirrors (`city`, `location`) from canonical `geo`.
         Error codes: SHOWROOM_LOCKED_PENDING (409), SHOWROOM_NOT_EDITABLE (400), NO_FIELDS_TO_UPDATE (400).
       operationId: updateShowroom
+      externalDocs:
+        description: Flutter owner flow guide (UA)
+        url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_OWNER_FLOW_FLUTTER_UA.md
       security:
         - bearerAuth: []
       x-roles: [owner]
@@ -1467,6 +1476,9 @@ paths:
         Error codes: SHOWROOM_INCOMPLETE (400), SHOWROOM_NAME_ALREADY_EXISTS (400), SHOWROOM_DUPLICATE (400), SHOWROOM_LOCKED_PENDING (409), SHOWROOM_NOT_EDITABLE (400), SHOWROOM_RECREATE_COOLDOWN (409).
         `SHOWROOM_RECREATE_COOLDOWN` may include `error.meta.nextAvailableAt` (ISO timestamp).
       operationId: submitShowroom
+      externalDocs:
+        description: Flutter owner flow guide (UA)
+        url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_OWNER_FLOW_FLUTTER_UA.md
       security:
         - bearerAuth: []
       x-roles: [owner]
