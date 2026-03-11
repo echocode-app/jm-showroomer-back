@@ -43,15 +43,10 @@ Base URL:
 
 6. Notifications type handling (обов'язково):
 
-- Flutter має коректно відображати всі поточні типи:
+- Для mobile MVP1 backend доставляє тільки такі типи:
   - `SHOWROOM_APPROVED`
   - `SHOWROOM_REJECTED`
-  - `SHOWROOM_DELETED_BY_ADMIN`
-  - `SHOWROOM_FAVORITED`
-  - `LOOKBOOK_FAVORITED`
-  - `EVENT_WANT_TO_VISIT`
-- Для `SHOWROOM_DELETED_BY_ADMIN` показувати, який showroom видалено, та час з `payload.deletedAt` (якщо присутній).
-- На цьому етапі причина видалення не передається і не очікується.
+- Інші notification type-и існують у backend infrastructure, але в MVP1 не повинні доставлятися юзерам.
 - Push-текст від бекенду локалізується за `users.appLanguage` (`uk|en`) з fallback `en`.
 - In-app текст нотифікацій у Flutter має бути локалізований локально по `type + payload` (не покладатися тільки на push title/body).
 

@@ -117,11 +117,8 @@ describe("notification policy gating", () => {
         expect(sendPushToUserMock).toHaveBeenCalledTimes(1);
     });
 
-    it("keeps SHOWROOM_DELETED_BY_ADMIN enabled when MVP_MODE=true", async () => {
+    it("skips SHOWROOM_DELETED_BY_ADMIN when MVP_MODE=true", async () => {
         process.env.MVP_MODE = "true";
-        const { db, docRef } = buildDb();
-        getFirestoreInstanceMock.mockReturnValue(db);
-        sendPushToUserMock.mockResolvedValue({ skipped: false, successCount: 1, failureCount: 0 });
 
         const result = await createNotification({
             targetUid: "owner-4",
@@ -134,12 +131,34 @@ describe("notification policy gating", () => {
         });
 
         expect(result).toEqual({
-            skippedByPolicy: false,
-            created: true,
-            pushed: true,
+            skippedByPolicy: true,
+            created: false,
+            pushed: false,
         });
-        expect(docRef.create).toHaveBeenCalledTimes(1);
-        expect(sendPushToUserMock).toHaveBeenCalledTimes(1);
+        expect(getFirestoreInstanceMock).not.toHaveBeenCalled();
+        expect(sendPushToUserMock).not.toHaveBeenCalled();
+    });
+
+    it("skips SHOWROOM_FAVORITED when MVP_MODE=true", async () => {
+        process.env.MVP_MODE = "true";
+
+        const result = await createNotification({
+            targetUid: "owner-5",
+            actorUid: "user-5",
+            type: "SHOWROOM_FAVORITED",
+            resourceType: "showroom",
+            resourceId: "sr-5",
+            payload: { showroomName: "Showroom E" },
+            dedupeKey: "showroom:sr-5:favorited:user-5",
+        });
+
+        expect(result).toEqual({
+            skippedByPolicy: true,
+            created: false,
+            pushed: false,
+        });
+        expect(getFirestoreInstanceMock).not.toHaveBeenCalled();
+        expect(sendPushToUserMock).not.toHaveBeenCalled();
     });
 
     it("skips deleted target in tx mode (future tx callers safe)", async () => {

@@ -96,7 +96,10 @@ components:
     NotificationType:
       type: string
       description: |
-        Allowed notification types for Firestore storage layer (MVP).
+        Supported notification types in storage/push infrastructure.
+        Runtime delivery is additionally gated by backend policy.
+        With `MVP_MODE=true`, only `SHOWROOM_APPROVED` and `SHOWROOM_REJECTED`
+        are delivered to users.
       enum:
         - SHOWROOM_APPROVED
         - SHOWROOM_REJECTED
@@ -145,6 +148,8 @@ components:
               `showroomName`, optional `reason`, optional `deletedAt` (ISO)
             - LOOKBOOK_FAVORITED: `lookbookName`
             - EVENT_WANT_TO_VISIT: `eventName`
+            When `MVP_MODE=true`, backend currently emits only
+            `SHOWROOM_APPROVED` and `SHOWROOM_REJECTED`.
         createdAt:
           type: string
           format: date-time

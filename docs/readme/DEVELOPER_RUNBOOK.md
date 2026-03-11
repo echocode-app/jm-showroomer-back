@@ -48,6 +48,11 @@ npm run cleanup:mocks -- --prefix=mvp1_local_seed
 - `MVP_MODE`
 - Firebase credentials (`FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `FIREBASE_STORAGE_BUCKET`)
 
+`MVP_MODE=true`:
+
+- showroom notifications delivered to users: only `SHOWROOM_APPROVED`, `SHOWROOM_REJECTED`
+- other notification types are skipped by backend policy before storage/push dispatch
+
 ## 5.1 CI secrets для staging Postman contract
 
 - `TEST_USER_TOKEN`
