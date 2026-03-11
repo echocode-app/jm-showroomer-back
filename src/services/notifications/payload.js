@@ -34,9 +34,9 @@ const PUSH_TEXTS = Object.freeze({
         DEFAULT: "New notification",
     }),
     [APP_LANGUAGES.UK]: Object.freeze({
-        SHOWROOM_APPROVED: "Ваш шоурум схвалено",
-        SHOWROOM_REJECTED: "Ваш шоурум відхилено",
-        SHOWROOM_DELETED_BY_ADMIN: "Ваш шоурум видалено модератором",
+        SHOWROOM_APPROVED: "Ваш шоурум схвалено модератором",
+        SHOWROOM_REJECTED: "Ваш шоурум відхилено модератором",
+        SHOWROOM_DELETED_BY_ADMIN: "Ваш шоурум було видалено модератором",
         SHOWROOM_FAVORITED: "Новий підписник шоуруму",
         LOOKBOOK_FAVORITED: "Ваш лукбук вподобали",
         EVENT_WANT_TO_VISIT: "Хтось зацікавився вашою подією",

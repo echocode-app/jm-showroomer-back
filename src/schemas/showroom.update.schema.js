@@ -3,6 +3,9 @@
 // Joi schema: showroom update (PATCH) validation rules.
 import Joi from "joi";
 
+const SHOWROOM_TYPES = ["multibrand", "unique"];
+const SHOWROOM_AVAILABILITY = ["open", "appointment"];
+
 // Contacts are optional, but if provided must include at least one field.
 const contactsSchema = Joi.object({
     phone: Joi.string().allow("", null),
@@ -38,9 +41,9 @@ const geoSchema = Joi.object({
 // Patch allows partial updates; system/derived fields are forbidden.
 export const showroomUpdateSchema = Joi.object({
     name: Joi.string(),
-    type: Joi.string(),
+    type: Joi.string().valid(...SHOWROOM_TYPES),
     country: Joi.string(),
-    availability: Joi.any(),
+    availability: Joi.string().valid(...SHOWROOM_AVAILABILITY),
     category: Joi.any(),
     categoryGroup: Joi.string(),
     subcategories: Joi.array().unique(),

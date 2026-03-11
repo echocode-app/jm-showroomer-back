@@ -67,12 +67,14 @@ export function validatePhone(phone, userCountry = null) {
 // assertShowroomComplete
 export function assertShowroomComplete(showroom) {
     const missing = [];
+    const geoCity = showroom?.geo?.city ?? null;
+    const geoCoords = showroom?.geo?.coords ?? null;
 
     if (!showroom?.name) missing.push("name");
     if (!showroom?.type) missing.push("type");
     if (!showroom?.country) missing.push("country");
     if (!showroom?.address) missing.push("address");
-    if (!showroom?.city) missing.push("city");
+    if (!(showroom?.city || geoCity)) missing.push("geo.city");
     if (showroom?.availability === undefined || showroom?.availability === null) {
         missing.push("availability");
     }
@@ -80,13 +82,13 @@ export function assertShowroomComplete(showroom) {
     if (!showroom?.contacts?.phone) missing.push("contacts.phone");
     if (!showroom?.contacts?.instagram) missing.push("contacts.instagram");
 
-    const lat = showroom?.location?.lat;
-    const lng = showroom?.location?.lng;
+    const lat = showroom?.location?.lat ?? geoCoords?.lat;
+    const lng = showroom?.location?.lng ?? geoCoords?.lng;
     if (lat === undefined || lat === null || Number.isNaN(Number(lat))) {
-        missing.push("location.lat");
+        missing.push("geo.coords.lat");
     }
     if (lng === undefined || lng === null || Number.isNaN(Number(lng))) {
-        missing.push("location.lng");
+        missing.push("geo.coords.lng");
     }
 
     if (missing.length > 0) {

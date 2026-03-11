@@ -103,12 +103,12 @@ export async function createShowroom(data, ownerUid, options = {}) {
             addressNormalized: normalized.addressNormalized,
             country: data.country,
             // COMPATIBILITY FIELD (kept for API stability; canonical source is `geo.city`)
-            city: data.city ?? null,
+            city: normalized.city,
             // CANONICAL FIELD
             geo: normalized.geo,
             contacts: normalized.contacts,
             // COMPATIBILITY FIELD (kept for API stability; canonical source is `geo.coords`)
-            location: data.location ?? null,
+            location: normalized.location,
             status: "draft",
             editCount: 0,
             editHistory: [],

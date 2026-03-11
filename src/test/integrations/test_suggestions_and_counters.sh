@@ -122,12 +122,16 @@ http_request "GET /showrooms/counters?city=Kyiv&brand=BrandTest" 200 "" \
 
 TOTAL_CITY=$(json_get "$LAST_BODY" '.data.total // 0')
 assert_eq "$TOTAL_CITY" "2" "Kyiv total"
+COUNTRY_CITY=$(json_get "$LAST_BODY" '.data.country')
+assert_eq "$COUNTRY_CITY" "null" "Kyiv country echo when country filter absent"
 
 print_section "Counters blocked country (public/admin/owner)"
 http_request "GET /showrooms/counters?country=Russia (public)" 200 "" \
   "${BASE_URL}/showrooms/counters?country=Russia"
 BLOCKED_TOTAL_PUBLIC=$(json_get "$LAST_BODY" '.data.total // 0')
 assert_eq "$BLOCKED_TOTAL_PUBLIC" "0" "blocked country total (public)"
+BLOCKED_COUNTRY_PUBLIC=$(json_get "$LAST_BODY" '.data.country')
+assert_eq "$BLOCKED_COUNTRY_PUBLIC" "Russia" "blocked country echo (public)"
 
 http_request "GET /showrooms/counters?country=Russia (owner)" 200 "" \
   "${AUTH_HEADER[@]}" \

@@ -31,7 +31,7 @@ components:
     GeoLocation:
       type: object
       required: [city, country, coords]
-      description: Canonical geo block. geo.city + geo.coords are source-of-truth.
+      description: Canonical geo block. geo.city + geo.coords are source-of-truth and backend mirrors them into legacy top-level city/location compatibility fields.
       properties:
         city:
           type: string
@@ -378,6 +378,10 @@ components:
               properties:
                 total:
                   type: integer
+                country:
+                  type: string
+                  nullable: true
+                  description: Echo of the applied country filter from request query, or null when country filter is absent.
             meta:
               type: object
               properties:
@@ -993,6 +997,7 @@ paths:
                     success: true
                     data:
                       total: 2
+                      country: null
                     meta:
                       mode: no_geo
                       prefixesCount: 0
@@ -1002,6 +1007,7 @@ paths:
                     success: true
                     data:
                       total: 12
+                      country: "Ukraine"
                     meta:
                       mode: multi_prefix
                       prefixesCount: 9
@@ -1034,6 +1040,7 @@ paths:
         Creates a showroom (status=draft).
         Draft mode is supported via body {"draft": true} or query mode=draft.
         Showroom country must match owner country.
+        Backend validates `type` (`multibrand|unique`) and `availability` (`open|appointment`) when provided.
         Owner recreation cooldown applies after soft delete: the same owner cannot recreate the same showroom
         (same normalized name) for 3 calendar months after deletion (`SHOWROOM_RECREATE_COOLDOWN`, 409).
       operationId: createShowroom
@@ -1215,6 +1222,8 @@ paths:
       description: |
         Only owner can edit, only for draft/rejected/approved. Pending is locked.
         Showroom country must match owner country.
+        Backend validates `type` (`multibrand|unique`) and `availability` (`open|appointment`) against the documented contract.
+        When `geo` is patched, backend recomputes search fields and updates legacy compatibility mirrors (`city`, `location`) from canonical `geo`.
         Error codes: SHOWROOM_LOCKED_PENDING (409), SHOWROOM_NOT_EDITABLE (400), NO_FIELDS_TO_UPDATE (400).
       operationId: updateShowroom
       security:
@@ -1454,6 +1463,7 @@ paths:
         Status becomes pending and submittedAt is set.
         Resubmission from `approved` and `rejected` back to `pending` is intentionally allowed.
         Showroom country must match owner country.
+        Completeness is evaluated against canonical owner-facing fields; `geo.city` and `geo.coords` are accepted as the source-of-truth for city/location requirements.
         Error codes: SHOWROOM_INCOMPLETE (400), SHOWROOM_NAME_ALREADY_EXISTS (400), SHOWROOM_DUPLICATE (400), SHOWROOM_LOCKED_PENDING (409), SHOWROOM_NOT_EDITABLE (400), SHOWROOM_RECREATE_COOLDOWN (409).
         `SHOWROOM_RECREATE_COOLDOWN` may include `error.meta.nextAvailableAt` (ISO timestamp).
       operationId: submitShowroom

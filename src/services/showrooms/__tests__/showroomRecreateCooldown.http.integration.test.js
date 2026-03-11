@@ -87,7 +87,7 @@ function makeCreatePayload(overrides = {}) {
         name: "Atelier Nova",
         type: "unique",
         country: "Ukraine",
-        availability: "offline",
+        availability: "open",
         category: "fashion",
         categoryGroup: "clothing",
         subcategories: ["dresses"],

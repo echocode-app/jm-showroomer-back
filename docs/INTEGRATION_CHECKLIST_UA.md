@@ -123,6 +123,8 @@ Checklist:
 - pagination йде тільки через backend cursor;
 - owner flow не завершений без submit на модерацію;
 - pending showroom має contract-level lock на edit.
+- `geo.city` + `geo.coords` є canonical для owner flow; backend сам синхронізує compatibility-поля `city` і `location`.
+- `type` та `availability` валідовуються бекендом строго по контрактних enum.
 
 Checklist:
 
@@ -269,4 +271,3 @@ Checklist:
 - [ ] Не залишилось фронтових припущень, які суперечать backend контракту
 - [ ] Projection / pagination / sync / aggregation використані коректно
 - [ ] Пройдено end-to-end перевірку ключових флоу на реальному середовищі
-

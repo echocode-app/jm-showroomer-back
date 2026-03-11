@@ -89,5 +89,7 @@ export function normalizePatchData(data, user) {
     // `geo.cityNormalized` + `geo.geohash` are recomputed from canonical geo payload.
     if (data.geo !== undefined) {
         data.geo = deriveGeoFields(data.geo);
+        data.city = data.geo?.city ?? null;
+        data.location = data.geo?.coords ?? null;
     }
 }

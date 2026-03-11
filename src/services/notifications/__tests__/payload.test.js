@@ -38,7 +38,7 @@ describe("notification push localization", () => {
             locale: "ua",
         });
 
-        expect(push.notification.title).toBe("Ваш шоурум видалено модератором");
+        expect(push.notification.title).toBe("Ваш шоурум було видалено модератором");
     });
 
     it("falls back to en localization for unknown locale", () => {

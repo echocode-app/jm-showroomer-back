@@ -160,6 +160,8 @@ Base URL:
 - favorite без auth -> `401`;
 - favorite для недоступного showroom -> `404 SHOWROOM_NOT_FOUND`;
 - submit/update у неправильному статусі -> `400 SHOWROOM_NOT_EDITABLE` або `409 SHOWROOM_LOCKED_PENDING`.
+- `type` або `availability` поза enum -> `400 VALIDATION_ERROR`;
+- `geo.city` + `geo.coords` є canonical для owner flow; backend сам дзеркалить їх у compatibility-поля `city` і `location`.
 
 ## 4.2.1 Showroom share (обов'язково)
 

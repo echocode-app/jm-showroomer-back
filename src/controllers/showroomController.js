@@ -134,11 +134,11 @@ export async function listShowroomSuggestions(req, res, next) {
 // COUNTERS
 export async function getShowroomCounters(req, res, next) {
     try {
-        const { total, meta } = await countShowroomsService(
+        const { total, country, meta } = await countShowroomsService(
             req.query,
             req.user ?? null
         );
-        return ok(res, { total }, meta);
+        return ok(res, { total, country }, meta);
     } catch (err) {
         next(err);
     }

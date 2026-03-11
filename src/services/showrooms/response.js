@@ -65,7 +65,7 @@ export function mapShowroomToPublicDTO(showroomDoc, options = {}) {
         address: showroomDoc.address,
         addressNormalized: showroomDoc.addressNormalized,
         country: showroomDoc.country,
-        city: showroomDoc.city,
+        city: showroomDoc.city ?? showroomDoc.geo?.city ?? null,
         geo: pickPublicGeo(showroomDoc.geo, { includeCoords: includeGeoCoords }),
         contacts,
         status: showroomDoc.status,
@@ -76,7 +76,7 @@ export function mapShowroomToPublicDTO(showroomDoc, options = {}) {
     };
     if (includeInternal) {
         dto.ownerUid = showroomDoc.ownerUid;
-        dto.location = showroomDoc.location;
+        dto.location = showroomDoc.location ?? showroomDoc.geo?.coords ?? null;
         dto.editHistory = showroomDoc.editHistory;
         dto.pendingSnapshot = showroomDoc.pendingSnapshot;
         dto.deletedAt = showroomDoc.deletedAt;

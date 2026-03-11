@@ -13,8 +13,9 @@ import { parseCountersFilters } from "./list/parse/counters.js";
  */
 export async function countShowroomsService(filters = {}, user = null) {
     const parsed = parseCountersFilters(filters);
+    const country = parsed.raw?.country ?? null;
     // Fast exit: blocked country filter is known-empty and does not require DB scans.
-    if (parsed.raw?.country && isCountryBlocked(parsed.raw.country)) {
+    if (country && isCountryBlocked(country)) {
         const mode =
             parsed.geohashPrefixes.length > 1
                 ? "multi_prefix"
@@ -23,6 +24,7 @@ export async function countShowroomsService(filters = {}, user = null) {
                   : "no_geo";
         return {
             total: 0,
+            country,
             meta: {
                 mode,
                 prefixesCount: parsed.geohashPrefixes.length,
@@ -45,6 +47,7 @@ export async function countShowroomsService(filters = {}, user = null) {
         const total = totals.reduce((sum, v) => sum + v, 0);
         return {
             total,
+            country,
             meta: { mode: "multi_prefix", prefixesCount: parsed.geohashPrefixes.length },
         };
     }
@@ -58,6 +61,7 @@ export async function countShowroomsService(filters = {}, user = null) {
 
     return {
         total,
+        country,
         meta: {
             mode: parsed.geohashPrefixes.length === 1 ? "single_prefix" : "no_geo",
             prefixesCount: parsed.geohashPrefixes.length,
@@ -69,6 +73,7 @@ export async function countShowroomsService(filters = {}, user = null) {
  * Runs counter logic against DEV_STORE to mirror production behavior locally.
  */
 function countShowroomsDev(parsed, user) {
+    const country = parsed.raw?.country ?? null;
     // Reuse shared base filters so dev counter semantics match production.
     const items = filterDevShowroomsBase(parsed, user);
 
@@ -78,6 +83,7 @@ function countShowroomsDev(parsed, user) {
         }, 0);
         return {
             total,
+            country,
             meta: { mode: "multi_prefix", prefixesCount: parsed.geohashPrefixes.length },
         };
     }
@@ -85,6 +91,7 @@ function countShowroomsDev(parsed, user) {
     const total = countItems(items, parsed, parsed.geohashPrefixes[0] ?? null);
     return {
         total,
+        country,
         meta: {
             mode: parsed.geohashPrefixes.length === 1 ? "single_prefix" : "no_geo",
             prefixesCount: parsed.geohashPrefixes.length,

@@ -35,6 +35,8 @@ export function normalizeCreatePayload(data, options = {}) {
     // DERIVED FIELD (persisted for Firestore query/index performance)
     // `geo.cityNormalized` + `geo.geohash` are recomputed server-side from canonical geo input.
     const geo = deriveGeoFields(data.geo);
+    const city = geo?.city ?? data.city ?? null;
+    const location = geo?.coords ?? data.location ?? null;
 
     // CANONICAL FIELD
     // `brands` is the source-of-truth list.
@@ -72,7 +74,9 @@ export function normalizeCreatePayload(data, options = {}) {
         nameNormalized,
         address,
         addressNormalized,
+        city,
         geo,
+        location,
         brandsNormalized,
         brandsMap,
         categoryGroup: categoryGroup ?? null,

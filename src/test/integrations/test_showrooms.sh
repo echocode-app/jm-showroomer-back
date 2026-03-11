@@ -148,6 +148,7 @@ http_request "GET after geo (initial)" 200 "" \
   "${BASE_URL}/showrooms/$SHOWROOM_ID"
 
 assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.city')" "$GEO_CITY_1" "geo.city"
+assert_eq "$(json_get "$LAST_BODY" '.data.showroom.city')" "$GEO_CITY_1" "city mirror from geo"
 assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.cityNormalized')" "cherkasy" "geo.cityNormalized"
 assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.coords.lat')" "49.4444" "geo.coords.lat"
 assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.coords.lng')" "32.0598" "geo.coords.lng"
@@ -164,8 +165,11 @@ http_request "GET after geo (update)" 200 "" \
 
 assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.city')" "$GEO_CITY_2" "geo.city updated"
 assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.cityNormalized')" "zaporizhzhia" "geo.cityNormalized updated"
+assert_eq "$(json_get "$LAST_BODY" '.data.showroom.city')" "$GEO_CITY_2" "city mirror updated"
 assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.coords.lat')" "47.8388" "geo.coords.lat updated"
 assert_eq "$(json_get "$LAST_BODY" '.data.showroom.geo.coords.lng')" "35.1396" "geo.coords.lng updated"
+assert_eq "$(json_get "$LAST_BODY" '.data.showroom.location.lat')" "47.8388" "location.lat mirror updated"
+assert_eq "$(json_get "$LAST_BODY" '.data.showroom.location.lng')" "35.1396" "location.lng mirror updated"
 assert_non_empty "$(json_get "$LAST_BODY" '.data.showroom.geo.geohash')" "geo.geohash updated"
 
 print_section "Submit incomplete"
@@ -247,6 +251,16 @@ http_request "PATCH invalid phone" 400 "PHONE_INVALID" \
   -d '{"contacts":{"phone":"0999999999"}}' \
   "${BASE_URL}/showrooms/$SHOWROOM_ID"
 
+http_request "PATCH invalid type" 400 "VALIDATION_ERROR" \
+  -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+  -d '{"type":"concept"}' \
+  "${BASE_URL}/showrooms/$SHOWROOM_ID"
+
+http_request "PATCH invalid availability" 400 "VALIDATION_ERROR" \
+  -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+  -d '{"availability":"sometimes"}' \
+  "${BASE_URL}/showrooms/$SHOWROOM_ID"
+
 request_allow_status "PATCH blocked country (RU)" 403 400 "COUNTRY_BLOCKED" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
   -d '{"country":"Russia"}' \
@@ -315,6 +329,24 @@ http_request "POST /showrooms/{id}/submit (owner duplicate name)" 400 "SHOWROOM_
   -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
   -d '{}' \
   "${BASE_URL}/showrooms/$SECOND_ID/submit"
+
+print_section "Geo-only canonical create"
+GEO_ONLY_NAME="Geo Only ${SAFE_SUFFIX}"
+http_request "POST /showrooms/create (geo only)" 200 "" \
+  -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+  -d "{\"name\":\"${GEO_ONLY_NAME}\",\"type\":\"unique\",\"country\":\"Ukraine\",\"availability\":\"open\",\"address\":\"Geo street ${NOW}\",\"contacts\":{\"phone\":\"+380999111224\",\"instagram\":\"https://instagram.com/geoonly${NOW}\"},\"geo\":{\"city\":\"Lviv\",\"country\":\"Ukraine\",\"coords\":{\"lat\":49.8397,\"lng\":24.0297}}}" \
+  "${BASE_URL}/showrooms/create"
+
+GEO_ONLY_ID=$(json_get "$LAST_BODY" '.data.showroom.id // empty')
+assert_non_empty "$GEO_ONLY_ID" "geo-only showroom id"
+assert_eq "$(json_get "$LAST_BODY" '.data.showroom.city')" "Lviv" "geo-only city mirror"
+
+http_request "POST /showrooms/{id}/submit (geo only canonical)" 200 "" \
+  -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+  -d '{}' \
+  "${BASE_URL}/showrooms/$GEO_ONLY_ID/submit"
+
+assert_eq "$(json_get "$LAST_BODY" '.data.showroom.status // empty')" "pending" "geo-only submit status"
 
 OWNER2_ENABLED=false
 if [[ -n "${TEST_OWNER_TOKEN_2:-}" ]]; then
