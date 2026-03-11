@@ -282,6 +282,12 @@ components:
         category:
           type: string
           nullable: true
+        city:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
         geo:
           type: object
           nullable: true
@@ -747,6 +753,8 @@ paths:
                           name: "Atelier Nova"
                           type: "multibrand"
                           category: "womenswear"
+                          city: "Kyiv"
+                          country: "Ukraine"
                           geo:
                             coords:
                               lat: 50.4501

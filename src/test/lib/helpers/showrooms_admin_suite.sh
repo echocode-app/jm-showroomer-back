@@ -41,10 +41,14 @@ run_showrooms_admin_suite() {
   MARKER_LAT=$(echo "$LIST_RESPONSE" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms[] | select(.id == $id) | .geo.coords.lat // empty')
   MARKER_TYPE=$(echo "$LIST_RESPONSE" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms[] | select(.id == $id) | .type // empty')
   MARKER_CATEGORY=$(echo "$LIST_RESPONSE" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms[] | select(.id == $id) | .category // empty')
+  MARKER_CITY=$(echo "$LIST_RESPONSE" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms[] | select(.id == $id) | .city // empty')
+  MARKER_COUNTRY=$(echo "$LIST_RESPONSE" | jq -r --arg id "$SHOWROOM_ID" '.data.showrooms[] | select(.id == $id) | .country // empty')
   assert_non_empty "$MARKER_NAME" "marker name"
   assert_non_empty "$MARKER_LAT" "marker geo.coords.lat"
   assert_non_empty "$MARKER_TYPE" "marker type"
   assert_eq "$MARKER_CATEGORY" "womenswear" "marker category"
+  assert_eq "$MARKER_CITY" "$GEO_CITY_2" "marker city"
+  assert_eq "$MARKER_COUNTRY" "Ukraine" "marker country"
 
   print_section "Geohash paging (public)"
   PAGE1=$(curl -s "${BASE_URL}/showrooms?geohashPrefix=${GEO_PREFIX}&limit=2")

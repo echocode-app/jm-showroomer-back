@@ -11,6 +11,8 @@ export function applyFieldMode(showroom, mode) {
         name: normalized.name ?? null,
         type: normalized.type ?? null,
         category: normalized.category ?? null,
+        city: normalized.city ?? null,
+        country: normalized.country ?? null,
         // Marker mode remains map-compatible even after public DTO geo hardening.
         geo: rawCoords ? { coords: rawCoords } : null,
     };
