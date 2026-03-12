@@ -24,6 +24,11 @@ info:
       Value: one canonical step-by-step guide for showroom creation and moderation handoff.  
       <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_OWNER_FLOW_FLUTTER_UA.md" target="_blank" rel="noopener noreferrer">Open document</a>
 
+    - **PUSH_NOTIFICATIONS_FLUTTER_UA.md**  
+      Для Flutter: короткий покроковий flow по push/in-app notifications, device registration і MVP1 scope.  
+      Value: no-ambiguity checklist for `POST /users/me/devices` and notifications center integration.  
+      <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/PUSH_NOTIFICATIONS_FLUTTER_UA.md" target="_blank" rel="noopener noreferrer">Open document</a>
+
     - **CURSOR_PAGINATION_FLUTTER.md**  
       For Flutter: universal cursor pagination rules for all backend list endpoints (opaque token, reset rules, error handling).  
       Value: correct infinite scroll implementation without duplicates/skips/cursor misuse.  
@@ -221,8 +226,8 @@ tags:
   - name: Users
     description: User profile, onboarding, notifications, and devices.
     externalDocs:
-      description: Users workflows and contract rules
-      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/INTEGRATION_API_WORKFLOWS.md
+      description: Push notifications and devices flow for Flutter (UA)
+      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/PUSH_NOTIFICATIONS_FLUTTER_UA.md
   - name: Collections
     description: Favorites and want-to-visit collections with guest->auth sync endpoints.
     externalDocs:
