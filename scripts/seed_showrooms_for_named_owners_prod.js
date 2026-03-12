@@ -4,6 +4,7 @@
 
 import "../src/config/index.js";
 import { initFirebase, getFirestoreInstance } from "../src/config/firebase.js";
+import { Timestamp } from "firebase-admin/firestore";
 import {
     normalizeShowroomName,
     normalizeBrands,
@@ -170,6 +171,10 @@ function isoDaysAgo(days, hourOffset = 0) {
     return d.toISOString();
 }
 
+function toTimestamp(value) {
+    return value ? Timestamp.fromDate(new Date(value)) : null;
+}
+
 function localizedShowroomName(locale, city, index, type) {
     const variants = {
         it: [
@@ -208,13 +213,13 @@ function makeApprovedHistory(submittedAt, reviewedAt) {
     return [
         {
             action: "submit",
-            at: submittedAt,
+            at: toTimestamp(submittedAt),
             statusBefore: "draft",
             statusAfter: "pending",
         },
         {
             action: "approve",
-            at: reviewedAt,
+            at: toTimestamp(reviewedAt),
             statusBefore: "pending",
             statusAfter: "approved",
         },
@@ -225,13 +230,13 @@ function makeRejectedHistory(submittedAt, reviewedAt) {
     return [
         {
             action: "submit",
-            at: submittedAt,
+            at: toTimestamp(submittedAt),
             statusBefore: "draft",
             statusAfter: "pending",
         },
         {
             action: "reject",
-            at: reviewedAt,
+            at: toTimestamp(reviewedAt),
             statusBefore: "pending",
             statusAfter: "rejected",
         },
@@ -304,8 +309,8 @@ function buildShowroomDoc({
     const base = {
         ownerUid: owner.uid,
         status,
-        createdAt,
-        updatedAt: status === "pending" ? submittedAt : reviewedAt,
+        createdAt: toTimestamp(createdAt),
+        updatedAt: toTimestamp(status === "pending" ? submittedAt : reviewedAt),
         name,
         nameNormalized: normalizeShowroomName(name),
         type,
@@ -334,8 +339,8 @@ function buildShowroomDoc({
     if (status === "approved") {
         return {
             ...base,
-            submittedAt,
-            reviewedAt,
+            submittedAt: toTimestamp(submittedAt),
+            reviewedAt: toTimestamp(reviewedAt),
             reviewedBy: ADMIN_REVIEWER,
             reviewReason: null,
             pendingSnapshot: null,
@@ -347,8 +352,8 @@ function buildShowroomDoc({
     if (status === "rejected") {
         return {
             ...base,
-            submittedAt,
-            reviewedAt,
+            submittedAt: toTimestamp(submittedAt),
+            reviewedAt: toTimestamp(reviewedAt),
             reviewedBy: ADMIN_REVIEWER,
             reviewReason: owner.locale === "uk"
                 ? "Потрібно уточнити контакти та опис шоуруму"
@@ -363,15 +368,15 @@ function buildShowroomDoc({
     const pendingBase = {
         ...base,
         status: "pending",
-        submittedAt,
-        updatedAt: submittedAt,
+        submittedAt: toTimestamp(submittedAt),
+        updatedAt: toTimestamp(submittedAt),
         reviewReason: null,
         pendingSnapshot: null,
         editCount: 1,
         editHistory: [
             {
                 action: "submit",
-                at: submittedAt,
+                at: toTimestamp(submittedAt),
                 statusBefore: "draft",
                 statusAfter: "pending",
             },

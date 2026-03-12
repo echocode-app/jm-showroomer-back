@@ -5,6 +5,7 @@
 
 import "../src/config/index.js";
 import { initFirebase, getFirestoreInstance } from "../src/config/firebase.js";
+import { Timestamp } from "firebase-admin/firestore";
 import {
     normalizeAddress,
     normalizeBrands,
@@ -83,6 +84,10 @@ function isoDaysAgo(days, minuteOffset = 0) {
     return d.toISOString();
 }
 
+function toTimestamp(value) {
+    return value ? Timestamp.fromDate(new Date(value)) : null;
+}
+
 function slugify(value) {
     return String(value)
         .toLowerCase()
@@ -103,7 +108,7 @@ function makeHistory(status, submittedAt, reviewedAt) {
     const history = [
         {
             action: "submit",
-            at: submittedAt,
+            at: toTimestamp(submittedAt),
             actor: { uid: null, role: "owner" },
             statusBefore: "draft",
             statusAfter: "pending",
@@ -114,7 +119,7 @@ function makeHistory(status, submittedAt, reviewedAt) {
     if (status === "approved") {
         history.push({
             action: "approve",
-            at: reviewedAt,
+            at: toTimestamp(reviewedAt),
             actor: ADMIN_REVIEWER,
             statusBefore: "pending",
             statusAfter: "approved",
@@ -125,7 +130,7 @@ function makeHistory(status, submittedAt, reviewedAt) {
     if (status === "rejected") {
         history.push({
             action: "reject",
-            at: reviewedAt,
+            at: toTimestamp(reviewedAt),
             actor: ADMIN_REVIEWER,
             statusBefore: "pending",
             statusAfter: "rejected",
@@ -209,10 +214,10 @@ function buildShowroom(owner, ownerIndex, citySeed, cityIndex) {
         location: { lat, lng },
         status: citySeed.status,
         editCount: citySeed.status === "draft" ? 0 : 1,
-        createdAt,
-        updatedAt: reviewedAt ?? submittedAt ?? createdAt,
-        submittedAt,
-        reviewedAt,
+        createdAt: toTimestamp(createdAt),
+        updatedAt: toTimestamp(reviewedAt ?? submittedAt ?? createdAt),
+        submittedAt: toTimestamp(submittedAt),
+        reviewedAt: toTimestamp(reviewedAt),
         reviewedBy: reviewedAt ? ADMIN_REVIEWER : null,
         reviewReason: citySeed.status === "rejected" ? "Seeded rejection for moderation QA" : null,
         pendingSnapshot: citySeed.status === "pending" ? buildPendingSnapshot({
