@@ -45,6 +45,28 @@
           "order": "ASCENDING"
         },
         {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "showrooms",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "geo.cityNormalized",
+          "order": "ASCENDING"
+        },
+        {
           "fieldPath": "nameNormalized",
           "order": "ASCENDING"
         },
