@@ -31,6 +31,7 @@ export function toShowroomSuggestion(showroom) {
         payload: {
             id: showroom.id,
             name: showroom.name ?? "",
+            address: showroom.address ?? null,
             city: showroom.geo?.city ?? showroom.city ?? null,
             country: showroom.country ?? null,
         },

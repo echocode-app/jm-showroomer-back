@@ -282,6 +282,9 @@ components:
         category:
           type: string
           nullable: true
+        address:
+          type: string
+          nullable: true
         city:
           type: string
           nullable: true
@@ -318,6 +321,9 @@ components:
                   type: string
                 name:
                   type: string
+                address:
+                  type: string
+                  nullable: true
                 city:
                   type: string
                   nullable: true
@@ -753,6 +759,7 @@ paths:
                           name: "Atelier Nova"
                           type: "multibrand"
                           category: "womenswear"
+                          address: "Khreshchatyk 1"
                           city: "Kyiv"
                           country: "Ukraine"
                           geo:
@@ -897,6 +904,7 @@ paths:
                           payload:
                             id: "abc123"
                             name: "Total White"
+                            address: "Khreshchatyk 1"
                             city: "Kyiv"
                             country: "Ukraine"
                 q_short:
