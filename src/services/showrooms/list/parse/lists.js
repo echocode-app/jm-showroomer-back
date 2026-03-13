@@ -20,12 +20,12 @@ export function parseLimit(value) {
 }
 
 export function parseFields(value) {
-    // `marker` keeps payload small for map pins, `card` keeps full list card data.
+    // `marker` keeps payload small for map pins, `geo` is ultra-light map payload, `card` keeps list card data.
     if (value === undefined || value === null || value === "") {
         return "card";
     }
     const mode = String(value).toLowerCase();
-    if (mode === "marker" || mode === "card") return mode;
+    if (mode === "marker" || mode === "geo" || mode === "card") return mode;
     throw badRequest("QUERY_INVALID");
 }
 

@@ -298,10 +298,105 @@ components:
             coords:
               $ref: '#/components/schemas/GeoCoords'
 
+    ShowroomGeo:
+      type: object
+      description: Minimal geo payload returned by `GET /showrooms?fields=geo`.
+      required: [id, geo]
+      properties:
+        id:
+          type: string
+        geo:
+          type: object
+          nullable: true
+          required: [coords]
+          properties:
+            coords:
+              $ref: '#/components/schemas/GeoCoords'
+
+    ShowroomMapPin:
+      type: object
+      description: Viewport point payload returned by `GET /showrooms/map`.
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          nullable: true
+        type:
+          type: string
+          nullable: true
+        category:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+        status:
+          type: string
+          nullable: true
+        geo:
+          type: object
+          nullable: true
+          properties:
+            coords:
+              $ref: '#/components/schemas/GeoCoords'
+
+    ShowroomMapResponse:
+      allOf:
+        - $ref: './common.yaml#/components/schemas/ApiSuccess'
+        - properties:
+            data:
+              type: object
+              required: [showrooms]
+              properties:
+                showrooms:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ShowroomMapPin'
+            meta:
+              type: object
+              properties:
+                zoom:
+                  type: number
+                queryPrecision:
+                  type: integer
+                prefixesCount:
+                  type: integer
+                total:
+                  type: integer
+                  nullable: true
+                scanned:
+                  type: integer
+                  nullable: true
+                truncated:
+                  type: boolean
+
     Showroom:
       allOf:
         - $ref: '#/components/schemas/ShowroomPublic'
       description: Backward-compatible alias to public showroom DTO.
+
+    ShowroomDetailPublic:
+      allOf:
+        - $ref: '#/components/schemas/ShowroomPublic'
+        - type: object
+          description: |
+            Public showroom detail DTO returned by `GET /showrooms/{id}`.
+            Unlike baseline list/card payloads, detail includes exact `geo.coords`.
+          properties:
+            geo:
+              allOf:
+                - $ref: '#/components/schemas/PublicGeoLocation'
+                - type: object
+                  properties:
+                    coords:
+                      $ref: '#/components/schemas/GeoCoords'
 
     ShowroomSuggestion:
       oneOf:
@@ -583,6 +678,7 @@ paths:
         Public baseline (`fields=card`) uses a whitelist DTO and excludes internal moderation metadata,
         owner identifiers, exact geo coordinates, and phone contact.
         `fields=marker` returns a minimal map payload and may include `geo.coords`.
+        `fields=geo` returns only `id` + `geo.coords`.
       operationId: listShowrooms
       externalDocs:
         description: Flutter cursor pagination guide (all endpoints)
@@ -714,7 +810,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [marker, card]
+            enum: [geo, marker, card]
           description: Payload mode for list/map rendering.
       responses:
         "200":
@@ -731,7 +827,8 @@ paths:
                           showrooms:
                             type: array
                             items:
-                              oneOf:
+                              anyOf:
+                                - $ref: '#/components/schemas/ShowroomGeo'
                                 - $ref: '#/components/schemas/ShowroomPublic'
                                 - $ref: '#/components/schemas/ShowroomMarker'
                       meta:
@@ -749,6 +846,21 @@ paths:
                             type: string
                             nullable: true
               examples:
+                geo:
+                  summary: Geo payload (fields=geo)
+                  value:
+                    success: true
+                    data:
+                      showrooms:
+                        - id: "abc123"
+                          geo:
+                            coords:
+                              lat: 50.4501
+                              lng: 30.5234
+                    meta:
+                      hasMore: false
+                      nextCursor: null
+                      paging: end
                 marker:
                   summary: Marker payload (fields=marker)
                   value:
@@ -1048,6 +1160,156 @@ paths:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
 
+  /showrooms/map:
+    get:
+      tags: [Showrooms]
+      summary: Showroom map viewport
+      description: |
+        Dedicated map endpoint for viewport-driven showroom rendering.
+
+        Client sends current map bounds (`north/south/east/west`) and `zoom`.
+        Backend returns showroom points inside the current viewport.
+        Clustering is intentionally delegated to the client map SDK.
+
+        The endpoint is not cursor-paginated.
+        Backend applies hard caps and reports `meta.truncated=true` when viewport data was limited.
+        Bounds crossing the international date line are not supported in MVP1.
+      operationId: getShowroomMap
+      security: []
+      parameters:
+        - name: north
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: south
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: east
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: west
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: zoom
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: country
+          in: query
+          schema:
+            type: string
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [multibrand, unique]
+        - name: availability
+          in: query
+          schema:
+            type: string
+            enum: [open, appointment]
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: categories
+          in: query
+          schema:
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
+        - name: categoryGroup
+          in: query
+          schema:
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
+        - name: subcategories
+          in: query
+          schema:
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
+        - name: brand
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Map viewport result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShowroomMapResponse'
+              examples:
+                viewport_points:
+                  summary: Viewport points
+                  value:
+                    success: true
+                    data:
+                      showrooms:
+                        - id: sr_123
+                          name: Atelier Nova
+                          type: multibrand
+                          category: womenswear
+                          address: Kyiv, Khreshchatyk 1
+                          city: Kyiv
+                          country: Ukraine
+                          status: approved
+                          geo:
+                            coords:
+                              lat: 50.4501
+                              lng: 30.5234
+                        - id: sr_124
+                          name: Atelier Nova
+                          type: multibrand
+                          category: womenswear
+                          address: Kyiv, Khreshchatyk 1
+                          city: Kyiv
+                          country: Ukraine
+                          status: approved
+                          geo:
+                            coords:
+                              lat: 50.4501
+                              lng: 30.5234
+                    meta:
+                      zoom: 12
+                      queryPrecision: 5
+                      prefixesCount: 4
+                      total: 2
+                      scanned: 2
+                      truncated: false
+        "400":
+          description: Invalid map query
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "503":
+          description: Search index is not ready yet
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
   /showrooms/create:
     post:
       tags: [Showrooms]
@@ -1061,8 +1323,8 @@ paths:
         (same normalized name) for 3 calendar months after deletion (`SHOWROOM_RECREATE_COOLDOWN`, 409).
       operationId: createShowroom
       externalDocs:
-        description: Flutter owner flow guide (UA)
-        url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_OWNER_FLOW_FLUTTER_UA.md
+        description: Showrooms Flutter guide (UA)
+        url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_FLUTTER_UA.md
       security:
         - bearerAuth: []
       x-roles: [owner, manager]
@@ -1158,8 +1420,8 @@ paths:
       description: Showroom country must match owner country.
       operationId: createDraftShowroom
       externalDocs:
-        description: Flutter owner flow guide (UA)
-        url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_OWNER_FLOW_FLUTTER_UA.md
+        description: Showrooms Flutter guide (UA)
+        url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_FLUTTER_UA.md
       security:
         - bearerAuth: []
       x-roles: [owner]
@@ -1204,7 +1466,7 @@ paths:
       description: |
         Public for approved showrooms. For non-approved, owner/admin only.
         Authorization header is optional.
-        Public viewers receive the minimized public DTO.
+        Public viewers receive a public detail DTO with `geo.coords`.
         Owner/admin viewers receive a privileged DTO with moderation/audit fields and exact coordinates.
         Showrooms from blocked countries are hidden from public and owner contexts.
         Admin can still access them for moderation/support workflows.
@@ -1224,7 +1486,7 @@ paths:
                         properties:
                           showroom:
                             oneOf:
-                              - $ref: '#/components/schemas/ShowroomPublic'
+                              - $ref: '#/components/schemas/ShowroomDetailPublic'
                               - $ref: '#/components/schemas/ShowroomPrivileged'
         "403":
           description: Access denied
@@ -1249,8 +1511,8 @@ paths:
         Error codes: SHOWROOM_LOCKED_PENDING (409), SHOWROOM_NOT_EDITABLE (400), NO_FIELDS_TO_UPDATE (400).
       operationId: updateShowroom
       externalDocs:
-        description: Flutter owner flow guide (UA)
-        url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_OWNER_FLOW_FLUTTER_UA.md
+        description: Showrooms Flutter guide (UA)
+        url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_FLUTTER_UA.md
       security:
         - bearerAuth: []
       x-roles: [owner]
@@ -1493,8 +1755,8 @@ paths:
         `SHOWROOM_RECREATE_COOLDOWN` may include `error.meta.nextAvailableAt` (ISO timestamp).
       operationId: submitShowroom
       externalDocs:
-        description: Flutter owner flow guide (UA)
-        url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_OWNER_FLOW_FLUTTER_UA.md
+        description: Showrooms Flutter guide (UA)
+        url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_FLUTTER_UA.md
       security:
         - bearerAuth: []
       x-roles: [owner]

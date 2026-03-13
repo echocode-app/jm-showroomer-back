@@ -11,6 +11,7 @@ import { showroomCreateSchema } from "../schemas/showroom.create.schema.js";
 import { showroomUpdateSchema } from "../schemas/showroom.update.schema.js";
 import {
     listShowrooms,
+    mapShowrooms,
     listShowroomSuggestions,
     getShowroomCounters,
     createShowroomController,
@@ -28,6 +29,9 @@ const router = Router();
 
 // LIST
 router.get("/", optionalAuth, loadUserIfExists, listShowrooms);
+
+// MAP
+router.get("/map", optionalAuth, loadUserIfExists, mapShowrooms);
 
 // SUGGESTIONS
 router.get("/suggestions", optionalAuth, loadUserIfExists, listShowroomSuggestions);

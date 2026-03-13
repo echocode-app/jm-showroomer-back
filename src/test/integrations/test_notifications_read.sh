@@ -40,6 +40,8 @@ create_submittable_showroom() {
   local suffix=$1
   local draft_id
   local unique="${SHORT_NOW}${suffix}"
+  local instagram_suffix
+  instagram_suffix=$(echo "${suffix}" | tr -c '[:alnum:]_.' '_' | tr '[:upper:]' '[:lower:]')
 
   http_request "POST /showrooms/draft (${suffix})" 200 "" \
     -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
@@ -51,7 +53,7 @@ create_submittable_showroom() {
 
   http_request "PATCH /showrooms/{id} (${suffix})" 200 "" \
     -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-    -d "{\"name\":\"Notif Read ${unique}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"address\":\"Kyiv, Notif Read St ${unique}\",\"city\":\"Kyiv\",\"availability\":\"open\",\"brands\":[\"BrandNotifRead${SHORT_NOW}\"],\"contacts\":{\"phone\":\"+380501112233\",\"instagram\":\"https://instagram.com/notifread${SHORT_NOW}${suffix}\"},\"location\":{\"lat\":50.4501,\"lng\":30.5234}}" \
+    -d "{\"name\":\"Notif Read ${unique}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"address\":\"Kyiv, Notif Read St ${unique}\",\"city\":\"Kyiv\",\"availability\":\"open\",\"brands\":[\"BrandNotifRead${SHORT_NOW}\"],\"contacts\":{\"phone\":\"+380501112233\",\"instagram\":\"https://instagram.com/notifread_${SHORT_NOW}_${instagram_suffix}\"},\"location\":{\"lat\":50.4501,\"lng\":30.5234}}" \
     "${BASE_URL}/showrooms/${draft_id}"
 
   http_request "PATCH /showrooms/{id} geo (${suffix})" 200 "" \

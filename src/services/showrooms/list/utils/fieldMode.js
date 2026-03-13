@@ -1,11 +1,17 @@
-// Field selection for marker vs full card payloads.
+// Field selection for geo/marker/full card payloads.
 
 import { normalizeShowroomForResponse } from "../../response.js";
 
 export function applyFieldMode(showroom, mode) {
     const normalized = normalizeShowroomForResponse(showroom);
-    if (mode !== "marker") return normalized;
     const rawCoords = showroom?.geo?.coords ?? null;
+    if (mode === "geo") {
+        return {
+            id: normalized.id,
+            geo: rawCoords ? { coords: rawCoords } : null,
+        };
+    }
+    if (mode !== "marker") return normalized;
     return {
         id: normalized.id,
         name: normalized.name ?? null,

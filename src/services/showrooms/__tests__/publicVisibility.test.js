@@ -49,4 +49,18 @@ describe("showrooms public visibility", () => {
 
         expect(showroom.id).toBe("sr-1");
     });
+
+    it("returns geo.coords in public showroom detail", async () => {
+        seedShowroom({
+            geo: {
+                city: "Kyiv",
+                country: "Ukraine",
+                coords: { lat: 50.4501, lng: 30.5234 },
+            },
+        });
+
+        const showroom = await getShowroomByIdService("sr-1", null);
+
+        expect(showroom.geo.coords).toEqual({ lat: 50.4501, lng: 30.5234 });
+    });
 });

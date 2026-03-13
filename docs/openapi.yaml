@@ -19,10 +19,10 @@ info:
       Value: correct client-side search implementation aligned with backend behavior.  
       <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_MVP1_SEARCH.md" target="_blank" rel="noopener noreferrer">Open document</a>
 
-    - **SHOWROOMS_OWNER_FLOW_FLUTTER_UA.md**  
-      Для Flutter: короткий owner flow по showroom-ах українською, без двозначностей по `create`, `patch`, `submit` і статусах.  
-      Value: one canonical step-by-step guide for showroom creation and moderation handoff.  
-      <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_OWNER_FLOW_FLUTTER_UA.md" target="_blank" rel="noopener noreferrer">Open document</a>
+    - **SHOWROOMS_FLUTTER_UA.md**  
+      Для Flutter: єдиний showroom guide українською, який об’єднує owner flow, list modes, detail response, pagination і map viewport flow.  
+      Value: one canonical showroom integration document for Flutter.  
+      <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_FLUTTER_UA.md" target="_blank" rel="noopener noreferrer">Open document</a>
 
     - **PUSH_NOTIFICATIONS_FLUTTER_UA.md**  
       Для Flutter: короткий покроковий flow по push/in-app notifications, device registration і MVP1 scope.  
@@ -129,6 +129,8 @@ paths:
 
   /showrooms:
     $ref: './showrooms.yaml#/paths/~1showrooms'
+  /showrooms/map:
+    $ref: './showrooms.yaml#/paths/~1showrooms~1map'
   /showrooms/suggestions:
     $ref: './showrooms.yaml#/paths/~1showrooms~1suggestions'
   /showrooms/counters:
@@ -236,8 +238,8 @@ tags:
   - name: Showrooms
     description: Showroom lifecycle, listing, moderation state, favorites, search.
     externalDocs:
-      description: Showrooms owner flow for Flutter (UA)
-      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_OWNER_FLOW_FLUTTER_UA.md
+      description: Showrooms Flutter guide (UA)
+      url: https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_FLUTTER_UA.md
   - name: Lookbooks
     description: Lookbooks list/detail/create/update/favorites.
     externalDocs:

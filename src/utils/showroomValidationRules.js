@@ -47,6 +47,17 @@ export function validateInstagramUrl(url) {
 
     const segments = parsed.pathname.split("/").filter(Boolean);
     if (segments.length < 1) throw badRequest("INSTAGRAM_INVALID");
+    if (segments.length !== 1) throw badRequest("INSTAGRAM_INVALID");
+
+    const handle = segments[0];
+    const length = Array.from(handle).length;
+
+    if (length < 1 || length > 30) throw badRequest("INSTAGRAM_INVALID");
+    if (!/^[A-Za-z0-9._]+$/.test(handle)) throw badRequest("INSTAGRAM_INVALID");
+    if (handle.startsWith(".") || handle.endsWith(".")) {
+        throw badRequest("INSTAGRAM_INVALID");
+    }
+    if (handle.includes("..")) throw badRequest("INSTAGRAM_INVALID");
 }
 
 // validatePhone

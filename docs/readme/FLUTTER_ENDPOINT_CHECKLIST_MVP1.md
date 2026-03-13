@@ -77,7 +77,7 @@ Base URL:
 | Showrooms   | GET    | `/showrooms/counters`                           | MVP1 Required | Лічильники фільтрів                          |
 | Showrooms   | POST   | `/showrooms/create`                             | MVP1 Required | Owner flow                                   |
 | Showrooms   | POST   | `/showrooms/draft`                              | MVP1 Required | Owner flow                                   |
-| Showrooms   | GET    | `/showrooms/{id}`                               | MVP1 Required | Деталь showroom                              |
+| Showrooms   | GET    | `/showrooms/{id}`                               | MVP1 Required | Деталь showroom (`geo.coords` available)     |
 | Showrooms   | GET    | `/showrooms/{id}/share`                         | MVP1 Required | Share payload (url/text/platform targets)    |
 | Showrooms   | PATCH  | `/showrooms/{id}`                               | MVP1 Required | Owner flow                                   |
 | Showrooms   | DELETE | `/showrooms/{id}`                               | MVP1 Required | Owner flow                                   |

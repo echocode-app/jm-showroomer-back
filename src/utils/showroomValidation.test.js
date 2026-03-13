@@ -41,6 +41,27 @@ expectThrows(
     "INSTAGRAM_INVALID"
 );
 
+// Invalid instagram profile path (extra segments)
+expectThrows(
+    () => validateInstagramUrl("https://instagram.com/test/reel"),
+    "INSTAGRAM_INVALID"
+);
+
+// Invalid instagram handle chars
+expectThrows(
+    () => validateInstagramUrl("https://instagram.com/test-name"),
+    "INSTAGRAM_INVALID"
+);
+
+// Invalid instagram handle length
+expectThrows(
+    () => validateInstagramUrl(`https://instagram.com/${"a".repeat(31)}`),
+    "INSTAGRAM_INVALID"
+);
+
+// Valid instagram handle with dots and underscores
+validateInstagramUrl("https://instagram.com/test.user_1");
+
 // Phone normalization to E.164
 const { e164 } = validatePhone("+38 050 555 55 87");
 assert.equal(e164, "+380505555587");

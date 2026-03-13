@@ -79,6 +79,8 @@ create_submittable_showroom() {
   local city=$2
   local draft_id
   local unique="${SHORT_NOW}${suffix}"
+  local instagram_suffix
+  instagram_suffix=$(echo "${suffix}" | tr -c '[:alnum:]_.' '_' | tr '[:upper:]' '[:lower:]')
   local lat="49.8397"
   local lng="24.0297"
   if [[ "$city" == "Kyiv" ]]; then
@@ -96,7 +98,7 @@ create_submittable_showroom() {
 
   http_request "PATCH /showrooms/{id} (${suffix})" 200 "" \
     -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-    -d "{\"name\":\"Notif ${unique}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"address\":\"${city}, Notif St ${unique}\",\"city\":\"${city}\",\"availability\":\"open\",\"brands\":[\"BrandNotif${SHORT_NOW}\"],\"contacts\":{\"phone\":\"+380501112233\",\"instagram\":\"https://instagram.com/notif${SHORT_NOW}${suffix}\"},\"location\":{\"lat\":${lat},\"lng\":${lng}}}" \
+    -d "{\"name\":\"Notif ${unique}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"address\":\"${city}, Notif St ${unique}\",\"city\":\"${city}\",\"availability\":\"open\",\"brands\":[\"BrandNotif${SHORT_NOW}\"],\"contacts\":{\"phone\":\"+380501112233\",\"instagram\":\"https://instagram.com/notif_${SHORT_NOW}_${instagram_suffix}\"},\"location\":{\"lat\":${lat},\"lng\":${lng}}}" \
     "${BASE_URL}/showrooms/${draft_id}"
 
   http_request "PATCH /showrooms/{id} geo (${suffix})" 200 "" \

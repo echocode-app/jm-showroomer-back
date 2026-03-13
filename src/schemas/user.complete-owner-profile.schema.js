@@ -7,5 +7,5 @@ export const completeOwnerProfileSchema = Joi.object({
     name: Joi.string().min(2).max(60).required(),
     position: Joi.string().allow("", null),
     country: Joi.string().required(),
-    instagram: Joi.string().required(),
+    instagram: Joi.string().trim().min(2).max(200).required(),
 }).unknown(false);

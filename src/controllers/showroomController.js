@@ -3,6 +3,7 @@ import {
     createDraftShowroom,
     submitShowroomForReviewService,
     listShowroomsService,
+    mapShowroomsService,
     suggestShowroomsService,
     countShowroomsService,
     getShowroomByIdService,
@@ -112,6 +113,16 @@ export async function listShowrooms(req, res, next) {
             req.query,
             req.user ?? null
         );
+        return ok(res, { showrooms }, meta);
+    } catch (err) {
+        next(err);
+    }
+}
+
+// MAP
+export async function mapShowrooms(req, res, next) {
+    try {
+        const { showrooms, meta } = await mapShowroomsService(req.query, req.user ?? null);
         return ok(res, { showrooms }, meta);
     } catch (err) {
         next(err);

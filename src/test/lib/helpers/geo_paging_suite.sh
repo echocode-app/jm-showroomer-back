@@ -6,6 +6,8 @@ seed_geo_showroom() {
   local suffix=$3
   local ts
   ts=$(date +%s)
+  local instagram_suffix
+  instagram_suffix=$(echo "${suffix}" | tr -c '[:alnum:]_.' '_' | tr '[:upper:]' '[:lower:]')
 
   local body
   body=$(jq -n \
@@ -17,7 +19,7 @@ seed_geo_showroom() {
     --arg availability "open" \
     --arg address "Kyiv, Khreshchatyk ${suffix} ${ts}" \
     --arg phone "+380999111223" \
-    --arg instagram "https://instagram.com/geo-seed-${suffix}-${ts}" \
+    --arg instagram "https://instagram.com/geo_seed_${instagram_suffix}_${ts}" \
     --argjson lat "$lat" \
     --argjson lng "$lng" \
     '{

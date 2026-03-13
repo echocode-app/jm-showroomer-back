@@ -142,6 +142,11 @@ app.get("/", (req, res) => {
   res.json({ service: "JM Showroomer API", status: "🚀running" });
 });
 
+// Quiet browser/Swagger favicon probing to avoid noisy 404 logs in production.
+app.get("/favicon.ico", (req, res) => {
+  res.status(204).end();
+});
+
 // Error handler
 app.use(errorHandler);
 
