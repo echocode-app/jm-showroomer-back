@@ -225,6 +225,11 @@ GET /showrooms/map?north=<...>&south=<...>&east=<...>&west=<...>&zoom=<...>
 ```
 
 Це viewport-based endpoint.
+Для плашки exact count по тому самому viewport використовуйте:
+
+```http
+GET /showrooms/map/counters?north=<...>&south=<...>&east=<...>&west=<...>&zoom=<...>
+```
 
 Flutter має:
 
@@ -236,6 +241,7 @@ Flutter має:
    - `west`
    - `zoom`
 3. викликати `GET /showrooms/map`
+4. для badge `знайдено N шоурумів` окремо викликати `GET /showrooms/map/counters`
 
 Опційно можна додавати фільтри:
 
@@ -290,6 +296,7 @@ Flutter має:
 - backend повертає точки у поточному viewport
 - Flutter / map SDK сам кластеризує ці точки
 - на tap по pin використовується `id` для `GET /showrooms/{id}`
+- для exact count у плашці треба використовувати `data.total` з `GET /showrooms/map/counters`, не `meta.total` з `GET /showrooms/map`
 
 ### Що важливо
 
@@ -307,9 +314,11 @@ Flutter має:
 1. користувач відкрив карту
 2. Flutter бере current bounds + zoom
 3. викликає `GET /showrooms/map`
-4. рендерить showroom точки
-5. локально кластеризує їх через map SDK
-6. при `cameraIdle` після pan/zoom повторює запит з новими bounds + zoom
+4. викликає `GET /showrooms/map/counters`
+5. рендерить showroom точки
+6. показує `data.total` у плашці `знайдено N шоурумів`
+7. локально кластеризує точки через map SDK
+8. при `cameraIdle` після pan/zoom повторює обидва запити з новими bounds + zoom
 
 ---
 
@@ -342,3 +351,4 @@ Flutter має:
 - не будувати карту через один великий paged list feed
 - не використовувати `nearRadiusKm` як заміну viewport map query, якщо вже є `visibleRegion / bounds`
 - не змішувати list cursor pagination з `/showrooms/map`
+- не брати число для map badge із `/showrooms/map`; для цього є `/showrooms/map/counters`

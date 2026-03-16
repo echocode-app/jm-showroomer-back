@@ -377,6 +377,28 @@ components:
                 truncated:
                   type: boolean
 
+    ShowroomMapCountersResponse:
+      allOf:
+        - $ref: './common.yaml#/components/schemas/ApiSuccess'
+        - properties:
+            data:
+              type: object
+              required: [total]
+              properties:
+                total:
+                  type: integer
+            meta:
+              type: object
+              properties:
+                zoom:
+                  type: number
+                queryPrecision:
+                  type: integer
+                prefixesCount:
+                  type: integer
+                exact:
+                  type: boolean
+
     Showroom:
       allOf:
         - $ref: '#/components/schemas/ShowroomPublic'
@@ -1299,6 +1321,126 @@ paths:
                       truncated: false
         "400":
           description: Invalid map query
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "503":
+          description: Search index is not ready yet
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+
+  /showrooms/map/counters:
+    get:
+      tags: [Showrooms]
+      summary: Showroom map viewport counters
+      description: |
+        Exact showroom count for the current visible map viewport.
+
+        Client sends the same `north/south/east/west` bounds and `zoom` as for `GET /showrooms/map`.
+        Use this endpoint for map badge / overlay counters such as `знайдено N шоурумів`.
+
+        Unlike `GET /showrooms/map`, this endpoint is intended for exact count only and does not return point payload.
+      operationId: getShowroomMapCounters
+      security: []
+      parameters:
+        - name: north
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: south
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: east
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: west
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: zoom
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: country
+          in: query
+          schema:
+            type: string
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [multibrand, unique]
+        - name: availability
+          in: query
+          schema:
+            type: string
+            enum: [open, appointment]
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: categories
+          in: query
+          schema:
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
+        - name: categoryGroup
+          in: query
+          schema:
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
+        - name: subcategories
+          in: query
+          schema:
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
+        - name: brand
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Exact viewport count for map badge
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShowroomMapCountersResponse'
+              examples:
+                count_in_viewport:
+                  value:
+                    success: true
+                    data:
+                      total: 856
+                    meta:
+                      zoom: 12
+                      queryPrecision: 5
+                      prefixesCount: 4
+                      exact: true
+        "400":
+          description: Invalid viewport query
           content:
             application/json:
               schema:

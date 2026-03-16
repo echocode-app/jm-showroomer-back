@@ -12,6 +12,7 @@ import { showroomUpdateSchema } from "../schemas/showroom.update.schema.js";
 import {
     listShowrooms,
     mapShowrooms,
+    getShowroomMapCounters,
     listShowroomSuggestions,
     getShowroomCounters,
     createShowroomController,
@@ -32,6 +33,7 @@ router.get("/", optionalAuth, loadUserIfExists, listShowrooms);
 
 // MAP
 router.get("/map", optionalAuth, loadUserIfExists, mapShowrooms);
+router.get("/map/counters", optionalAuth, loadUserIfExists, getShowroomMapCounters);
 
 // SUGGESTIONS
 router.get("/suggestions", optionalAuth, loadUserIfExists, listShowroomSuggestions);

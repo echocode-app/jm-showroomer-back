@@ -81,6 +81,10 @@ create_submittable_showroom() {
   local unique="${SHORT_NOW}${suffix}"
   local instagram_suffix
   instagram_suffix=$(echo "${suffix}" | tr -c '[:alnum:]_.' '_' | tr '[:upper:]' '[:lower:]')
+  local instagram_handle="notif_${SHORT_NOW}_${instagram_suffix}"
+  instagram_handle="${instagram_handle:0:30}"
+  instagram_handle="${instagram_handle%.}"
+  instagram_handle="${instagram_handle%_}"
   local lat="49.8397"
   local lng="24.0297"
   if [[ "$city" == "Kyiv" ]]; then
@@ -98,7 +102,7 @@ create_submittable_showroom() {
 
   http_request "PATCH /showrooms/{id} (${suffix})" 200 "" \
     -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-    -d "{\"name\":\"Notif ${unique}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"address\":\"${city}, Notif St ${unique}\",\"city\":\"${city}\",\"availability\":\"open\",\"brands\":[\"BrandNotif${SHORT_NOW}\"],\"contacts\":{\"phone\":\"+380501112233\",\"instagram\":\"https://instagram.com/notif_${SHORT_NOW}_${instagram_suffix}\"},\"location\":{\"lat\":${lat},\"lng\":${lng}}}" \
+    -d "{\"name\":\"Notif ${unique}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"address\":\"${city}, Notif St ${unique}\",\"city\":\"${city}\",\"availability\":\"open\",\"brands\":[\"BrandNotif${SHORT_NOW}\"],\"contacts\":{\"phone\":\"+380501112233\",\"instagram\":\"https://instagram.com/${instagram_handle}\"},\"location\":{\"lat\":${lat},\"lng\":${lng}}}" \
     "${BASE_URL}/showrooms/${draft_id}"
 
   http_request "PATCH /showrooms/{id} geo (${suffix})" 200 "" \
@@ -269,7 +273,11 @@ http_request "DELETE /admin/showrooms/{id}" 200 "" \
   -X DELETE "${ADMIN_HEADER[@]}" \
   "${BASE_URL}/admin/showrooms/${DELETED_ID}"
 DELETED_DEDUPE="showroom:${DELETED_ID}:deleted_by_admin"
-assert_notification_exists "$USER_UID" "$DELETED_DEDUPE" "SHOWROOM_DELETED_BY_ADMIN" "showroom" "$DELETED_ID" "$ADMIN_UID"
+if [[ "${MVP_MODE:-}" == "true" ]]; then
+  assert_notification_absent "$USER_UID" "$DELETED_DEDUPE"
+else
+  assert_notification_exists "$USER_UID" "$DELETED_DEDUPE" "SHOWROOM_DELETED_BY_ADMIN" "showroom" "$DELETED_ID" "$ADMIN_UID"
+fi
 
 print_section "Showroom favorite notifications"
 http_request "POST /showrooms/{id}/favorite (admin first)" 200 "" \
@@ -277,13 +285,19 @@ http_request "POST /showrooms/{id}/favorite (admin first)" 200 "" \
   "${BASE_URL}/showrooms/${APPROVED_ID}/favorite"
 
 SHOWROOM_FAV_DEDUPE="showroom:${APPROVED_ID}:favorited:${ADMIN_UID}"
-assert_notification_exists "$USER_UID" "$SHOWROOM_FAV_DEDUPE" "SHOWROOM_FAVORITED" "showroom" "$APPROVED_ID" "$ADMIN_UID"
-assert_notification_count_by_dedupe "$USER_UID" "$SHOWROOM_FAV_DEDUPE" "1"
+if [[ "${MVP_MODE:-}" == "true" ]]; then
+  assert_notification_absent "$USER_UID" "$SHOWROOM_FAV_DEDUPE"
+else
+  assert_notification_exists "$USER_UID" "$SHOWROOM_FAV_DEDUPE" "SHOWROOM_FAVORITED" "showroom" "$APPROVED_ID" "$ADMIN_UID"
+  assert_notification_count_by_dedupe "$USER_UID" "$SHOWROOM_FAV_DEDUPE" "1"
+fi
 
 http_request "POST /showrooms/{id}/favorite (admin idempotent)" 200 "" \
   -X POST "${ADMIN_HEADER[@]}" \
   "${BASE_URL}/showrooms/${APPROVED_ID}/favorite"
-assert_notification_count_by_dedupe "$USER_UID" "$SHOWROOM_FAV_DEDUPE" "1"
+if [[ "${MVP_MODE:-}" != "true" ]]; then
+  assert_notification_count_by_dedupe "$USER_UID" "$SHOWROOM_FAV_DEDUPE" "1"
+fi
 
 http_request "POST /showrooms/{id}/favorite (self-like)" 200 "" \
   -X POST "${AUTH_HEADER[@]}" \
@@ -305,7 +319,11 @@ http_request "POST /lookbooks/{id}/favorite (admin first)" 200 "" \
   "${BASE_URL}/lookbooks/${LOOKBOOK_ID}/favorite"
 
 LOOKBOOK_DEDUPE="lookbook:${LOOKBOOK_ID}:favorited:${ADMIN_UID}"
-assert_notification_exists "$USER_UID" "$LOOKBOOK_DEDUPE" "LOOKBOOK_FAVORITED" "lookbook" "$LOOKBOOK_ID" "$ADMIN_UID"
+if [[ "${MVP_MODE:-}" == "true" ]]; then
+  assert_notification_absent "$USER_UID" "$LOOKBOOK_DEDUPE"
+else
+  assert_notification_exists "$USER_UID" "$LOOKBOOK_DEDUPE" "LOOKBOOK_FAVORITED" "lookbook" "$LOOKBOOK_ID" "$ADMIN_UID"
+fi
 
 print_section "Event want-to-visit notification"
 EVENT_ID="events_notif_${NOW}"
@@ -315,7 +333,11 @@ http_request "POST /events/{id}/want-to-visit (admin first)" 200 "" \
   "${BASE_URL}/events/${EVENT_ID}/want-to-visit"
 
 EVENT_DEDUPE="event:${EVENT_ID}:want:${ADMIN_UID}"
-assert_notification_exists "$USER_UID" "$EVENT_DEDUPE" "EVENT_WANT_TO_VISIT" "event" "$EVENT_ID" "$ADMIN_UID"
+if [[ "${MVP_MODE:-}" == "true" ]]; then
+  assert_notification_absent "$USER_UID" "$EVENT_DEDUPE"
+else
+  assert_notification_exists "$USER_UID" "$EVENT_DEDUPE" "EVENT_WANT_TO_VISIT" "event" "$EVENT_ID" "$ADMIN_UID"
+fi
 
 print_section "RESULT"
 echo "✔ Notifications storage tests passed"

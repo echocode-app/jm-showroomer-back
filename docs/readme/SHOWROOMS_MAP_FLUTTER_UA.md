@@ -7,6 +7,7 @@
 Він не повертає cursor-пагінацію як звичайний список.
 Він повертає showroom точки тільки для поточного viewport карти.
 Кластеризацію робить Flutter / map SDK.
+Для плашки `знайдено N шоурумів` використовуйте окремий `GET /showrooms/map/counters`.
 
 ---
 
@@ -82,6 +83,29 @@ Flutter має:
 - при потребі кластеризувати їх локально через map SDK
 - при tap використовувати `id` для `GET /showrooms/{id}`
 
+Для exact badge count по тому самому viewport:
+
+```http
+GET /showrooms/map/counters?north=<...>&south=<...>&east=<...>&west=<...>&zoom=<...>
+```
+
+Приклад відповіді:
+
+```json
+{
+  "success": true,
+  "data": {
+    "total": 856
+  },
+  "meta": {
+    "zoom": 12,
+    "queryPrecision": 5,
+    "prefixesCount": 4,
+    "exact": true
+  }
+}
+```
+
 ---
 
 ## 5) Що важливо
@@ -102,9 +126,10 @@ Flutter має:
 2. Flutter бере current bounds + zoom
 3. Викликає `GET /showrooms/map`
 4. Рендерить showroom точки
-5. Локально кластеризує їх через map SDK, якщо це потрібно для поточного zoom
-6. Користувач zoom in / pan
-7. Після `cameraIdle` повторює запит з новими bounds + zoom
+5. Для плашки count окремо викликає `GET /showrooms/map/counters` з тими самими bounds + zoom
+6. Локально кластеризує точки через map SDK, якщо це потрібно для поточного zoom
+7. Користувач zoom in / pan
+8. Після `cameraIdle` повторює обидва запити з новими bounds + zoom
 
 ---
 
@@ -127,6 +152,7 @@ GET /showrooms/{id}
 - не будувати карту через `nearRadiusKm`, якщо вже є `visibleRegion / bounds`
 - не припускати, що карта = `GET /showrooms?fields=geo`
 - не змішувати cursor pagination списку з viewport map behavior
+- не брати текст `знайдено N шоурумів` з `/showrooms/map`; для цього є окремий `/showrooms/map/counters`
 
 ---
 

@@ -131,6 +131,8 @@ paths:
     $ref: './showrooms.yaml#/paths/~1showrooms'
   /showrooms/map:
     $ref: './showrooms.yaml#/paths/~1showrooms~1map'
+  /showrooms/map/counters:
+    $ref: './showrooms.yaml#/paths/~1showrooms~1map~1counters'
   /showrooms/suggestions:
     $ref: './showrooms.yaml#/paths/~1showrooms~1suggestions'
   /showrooms/counters:

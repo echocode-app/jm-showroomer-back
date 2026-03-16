@@ -4,6 +4,7 @@ import {
     submitShowroomForReviewService,
     listShowroomsService,
     mapShowroomsService,
+    mapShowroomCountersService,
     suggestShowroomsService,
     countShowroomsService,
     getShowroomByIdService,
@@ -124,6 +125,15 @@ export async function mapShowrooms(req, res, next) {
     try {
         const { showrooms, meta } = await mapShowroomsService(req.query, req.user ?? null);
         return ok(res, { showrooms }, meta);
+    } catch (err) {
+        next(err);
+    }
+}
+
+export async function getShowroomMapCounters(req, res, next) {
+    try {
+        const { total, meta } = await mapShowroomCountersService(req.query, req.user ?? null);
+        return ok(res, { total }, meta);
     } catch (err) {
         next(err);
     }
