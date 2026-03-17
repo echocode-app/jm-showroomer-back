@@ -6,3 +6,4 @@ export { applyCursorFilter } from "./cursorFilter.js";
 export { buildMeta } from "./meta.js";
 export { getVisibilityFilter, applyVisibilityPostFilter } from "./visibility.js";
 export { mergeSnapshots } from "./merge.js";
+export { scanOrderedQuery } from "./scan.js";

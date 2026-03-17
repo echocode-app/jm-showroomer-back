@@ -9,6 +9,7 @@ import {
     compareValues,
     getValueByPath,
     mergeSnapshots,
+    scanOrderedQuery,
 } from "../utils/index.js";
 
 export async function runGeohashMode(baseQuery, parsed, user, orderField, direction) {
@@ -16,17 +17,40 @@ export async function runGeohashMode(baseQuery, parsed, user, orderField, direct
     const isSinglePrefix = parsed.geohashPrefixes.length === 1;
     const cursor = isSinglePrefix ? parsed.cursor : null;
 
+    if (isSinglePrefix) {
+        const query = buildGeohashOrderedQuery(
+            baseQuery,
+            parsed.geohashPrefixes[0],
+            orderField,
+            direction
+        );
+        const { items } = await scanOrderedQuery(query, {
+            cursor,
+            limit: parsed.limit,
+            orderField,
+            transform: item => {
+                if (applyVisibilityPostFilter([item], user).length === 0) return null;
+                if (isCountryBlocked(item.country)) return null;
+                return item;
+            },
+        });
+
+        const { pageItems, meta } = buildMeta(items, parsed.limit, orderField, direction);
+        const showrooms = pageItems.map(s => applyFieldMode(s, parsed.fields));
+        return { showrooms, meta };
+    }
+
     // Run one bounded query per prefix and merge results afterwards.
     const snapshots = await Promise.all(
         parsed.geohashPrefixes.map(prefix =>
-            buildGeohashQuery(
+            buildGeohashOrderedQuery(
                 baseQuery,
                 prefix,
-                parsed,
                 orderField,
-                direction,
-                cursor
-            ).get()
+                direction
+            )
+                .limit(parsed.limit + 1)
+                .get()
         )
     );
 
@@ -76,16 +100,12 @@ export async function runGeohashMode(baseQuery, parsed, user, orderField, direct
     return { showrooms, meta };
 }
 
-function buildGeohashQuery(baseQuery, prefix, parsed, orderField, direction, cursor) {
+function buildGeohashOrderedQuery(baseQuery, prefix, orderField, direction) {
     // Prefix range [prefix, prefix+\uf8ff] selects all descendant geohashes in this area bucket.
     let query = baseQuery
         .where("geo.geohash", ">=", prefix)
         .where("geo.geohash", "<=", `${prefix}\uf8ff`);
     query = applyOrdering(query, orderField, direction);
-    if (cursor) {
-        query = query.startAfter(cursor.value, cursor.id);
-    }
-    query = query.limit(parsed.limit + 1);
     return query;
 }
 
