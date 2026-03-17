@@ -1,4 +1,5 @@
 import { Timestamp } from "firebase-admin/firestore";
+import { normalizeCountry } from "../../constants/countries.js";
 import { toIsoString, toTimestamp } from "../../utils/timestamp.js";
 
 // Re-export for existing imports in events domain.
@@ -41,6 +42,9 @@ export function buildEventResponse(event, options = {}) {
 
     const response = {
         ...event,
+        countryNormalized: typeof event?.countryNormalized === "string" && event.countryNormalized.trim()
+            ? normalizeCountry(event.countryNormalized)
+            : (event?.country ? normalizeCountry(event.country) : null),
         // Normalize temporal fields to a stable API shape.
         startsAt: normalizeTimestamp(event.startsAt),
         endsAt: normalizeTimestamp(event.endsAt),

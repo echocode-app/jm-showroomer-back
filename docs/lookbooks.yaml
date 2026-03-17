@@ -25,18 +25,25 @@ components:
           type: string
           nullable: true
           format: uri
+          description: Public author profile URL. Can point to Instagram or another external profile.
 
     LookbookItem:
       type: object
       properties:
         name:
           type: string
+          description: Fallback display label for UI. Flutter may show it directly when no local translation exists.
+        nameKey:
+          type: string
+          nullable: true
+          description: Stable localization key for the clothing item label. Flutter should localize by `nameKey` and fallback to `name`.
         brand:
           type: string
           nullable: true
         link:
           type: string
           format: uri
+          description: External URL for the tagged outfit item.
 
     Lookbook:
       type: object
@@ -83,6 +90,7 @@ components:
         countryNormalized:
           type: string
           nullable: true
+          description: Lowercased canonical key for client-side country localization/filter state.
         city:
           type: string
           nullable: true
@@ -200,6 +208,7 @@ paths:
         Requires `country` query param. `seasonKey` is optional.
         Supports nearby mode via `nearLat/nearLng/nearRadiusKm` (same UX entrypoint as showrooms).
         Returns published lookbooks only.
+        `items[].nameKey` is the preferred stable key for Flutter localization of clothing labels; fallback to `items[].name` when unknown.
         Blocked countries return an empty public catalog.
         Ordering is deterministic: ranked (`sortRank asc`) first, then unranked (`publishedAt desc`) with id tie-breaker.
         Signed URL is generated for coverPath only.

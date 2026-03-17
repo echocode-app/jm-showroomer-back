@@ -14,11 +14,16 @@ components:
         type:
           type: string
           nullable: true
-          description: Event tag/type for UI badges (e.g., pop_up, fashion_week).
+          description: Stable event type key for UI badges/localization (e.g., pop_up, fashion_week).
         country:
           type: string
           nullable: true
           description: Full country name (e.g., Ukraine). Not ISO2.
+        countryNormalized:
+          type: string
+          nullable: true
+          readOnly: true
+          description: Lowercased canonical country key for client-side localization/filter state.
         city:
           type: string
           nullable: true
@@ -34,7 +39,7 @@ components:
         externalUrl:
           type: string
           nullable: true
-          description: External link for event details or registration.
+          description: External link for event details, registration, or public Instagram page.
         startsAt:
           type: string
           format: date-time
@@ -131,6 +136,7 @@ paths:
         Events from blocked countries are silently excluded.
         All event timestamps in response payloads are normalized to ISO 8601 strings
         (or null where applicable), including `startsAt`, `endsAt`, `createdAt`, `updatedAt`.
+        `type` should be treated by Flutter as a stable localizable key, not as final translated text.
         Authorization header is optional. If provided and valid, response includes user flag `isWantToVisit`
         and excludes dismissed events from the list.
         Guest users can keep local likes/dismiss state in app and sync after login via
@@ -205,10 +211,11 @@ paths:
                           name: Kyiv Pop-up Weekend
                           type: pop_up
                           country: Ukraine
+                          countryNormalized: ukraine
                           city: Kyiv
                           address: Kyiv, Khreshchatyk 10
                           cityNormalized: kyiv
-                          externalUrl: https://example.com/events/evt_001
+                          externalUrl: https://www.instagram.com/dim_brendiv/
                           startsAt: "2026-03-20T10:00:00.000Z"
                           endsAt: "2026-03-20T18:00:00.000Z"
                           createdAt: "2026-03-01T12:00:00.000Z"
@@ -273,10 +280,11 @@ paths:
                         name: Kyiv Pop-up Weekend
                         type: pop_up
                         country: Ukraine
+                        countryNormalized: ukraine
                         city: Kyiv
                         address: Kyiv, Khreshchatyk 10
                         cityNormalized: kyiv
-                        externalUrl: https://example.com/events/evt_001
+                        externalUrl: https://www.instagram.com/dim_brendiv/
                         startsAt: "2026-03-20T10:00:00.000Z"
                         endsAt: "2026-03-20T18:00:00.000Z"
                         createdAt: "2026-03-01T12:00:00.000Z"

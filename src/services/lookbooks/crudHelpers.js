@@ -1,6 +1,10 @@
 import { Timestamp } from "firebase-admin/firestore";
 import { badRequest, forbidden } from "../../core/error.js";
 import { getFirestoreInstance } from "../../config/firebase.js";
+import {
+    inferLookbookItemNameKey,
+    normalizeLookbookItemNameKey,
+} from "./itemNameKey.js";
 
 const LIKE_DELETE_BATCH_LIMIT = 500;
 
@@ -153,11 +157,13 @@ export function normalizeItems(value) {
             if (!item || typeof item !== "object") return null;
 
             const name = parseOptionalString(item.name);
+            const nameKey = normalizeLookbookItemNameKey(item.nameKey)
+                ?? inferLookbookItemNameKey(name);
             const brand = parseOptionalString(item.brand);
             const link = parseOptionalString(item.link);
             if (!name || !link) return null;
 
-            return { name, brand, link };
+            return { name, nameKey, brand, link };
         })
         .filter(Boolean);
 }

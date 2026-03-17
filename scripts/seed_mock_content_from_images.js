@@ -136,39 +136,41 @@ const LOOKBOOK_VARIANTS = [
     { title: "Night Bus Elegance", seasonKey: "winter", seasonLabel: "Winter" },
 ];
 
+const PUBLIC_INSTAGRAM_URL = "https://www.instagram.com/dim_brendiv/";
+
 const LOOKBOOK_AUTHOR_PRESETS = [
-    { name: "Svitlana", position: "Stylist", instagram: "https://instagram.com/svitlana_stylist" },
-    { name: "Marta", position: "Fashion Editor", instagram: "https://instagram.com/marta.edit" },
-    { name: "Iryna", position: "Creative Producer", instagram: "https://instagram.com/iryna.producer" },
-    { name: "Lina", position: "Image Maker", instagram: "https://instagram.com/lina.image" },
-    { name: "Daria", position: "Personal Stylist", instagram: "https://instagram.com/daria.style.notes" },
+    { name: "Svitlana", position: "Stylist", instagram: PUBLIC_INSTAGRAM_URL },
+    { name: "Marta", position: "Fashion Editor", instagram: PUBLIC_INSTAGRAM_URL },
+    { name: "Iryna", position: "Creative Producer", instagram: PUBLIC_INSTAGRAM_URL },
+    { name: "Lina", position: "Image Maker", instagram: PUBLIC_INSTAGRAM_URL },
+    { name: "Daria", position: "Personal Stylist", instagram: PUBLIC_INSTAGRAM_URL },
 ];
 
 const LOOKBOOK_ITEMS_PRESETS = [
     [
-        { name: "Coat", brand: "Bazhane", link: "https://example.com/item/coat" },
-        { name: "Jeans", brand: "Coat", link: "https://example.com/item/jeans" },
-        { name: "Bag", brand: "Kocharovska", link: "https://example.com/item/bag" },
+        { nameKey: "coat", name: "Coat", brand: "Bazhane", link: PUBLIC_INSTAGRAM_URL },
+        { nameKey: "jeans", name: "Jeans", brand: "Coat", link: PUBLIC_INSTAGRAM_URL },
+        { nameKey: "bag", name: "Bag", brand: "Kocharovska", link: PUBLIC_INSTAGRAM_URL },
     ],
     [
-        { name: "Blazer", brand: "The Coat", link: "https://example.com/item/blazer" },
-        { name: "Trousers", brand: "Bazhane", link: "https://example.com/item/trousers" },
-        { name: "Shoes", brand: "Kocharovska", link: "https://example.com/item/shoes" },
+        { nameKey: "blazer", name: "Blazer", brand: "The Coat", link: PUBLIC_INSTAGRAM_URL },
+        { nameKey: "trousers", name: "Trousers", brand: "Bazhane", link: PUBLIC_INSTAGRAM_URL },
+        { nameKey: "shoes", name: "Shoes", brand: "Kocharovska", link: PUBLIC_INSTAGRAM_URL },
     ],
     [
-        { name: "Top", brand: "Woolhappen", link: "https://example.com/item/top" },
-        { name: "Skirt", brand: "Coat", link: "https://example.com/item/skirt" },
-        { name: "Bag", brand: "Kocharovska", link: "https://example.com/item/bag-2" },
+        { nameKey: "top", name: "Top", brand: "Woolhappen", link: PUBLIC_INSTAGRAM_URL },
+        { nameKey: "skirt", name: "Skirt", brand: "Coat", link: PUBLIC_INSTAGRAM_URL },
+        { nameKey: "bag", name: "Bag", brand: "Kocharovska", link: PUBLIC_INSTAGRAM_URL },
     ],
     [
-        { name: "Shirt", brand: "The Coat", link: "https://example.com/item/shirt" },
-        { name: "Belt", brand: "Coat", link: "https://example.com/item/belt" },
-        { name: "Boots", brand: "Kocharovska", link: "https://example.com/item/boots" },
+        { nameKey: "shirt", name: "Shirt", brand: "The Coat", link: PUBLIC_INSTAGRAM_URL },
+        { nameKey: "belt", name: "Belt", brand: "Coat", link: PUBLIC_INSTAGRAM_URL },
+        { nameKey: "boots", name: "Boots", brand: "Kocharovska", link: PUBLIC_INSTAGRAM_URL },
     ],
     [
-        { name: "Dress", brand: "Bazhane", link: "https://example.com/item/dress" },
-        { name: "Cardigan", brand: "Woolhappen", link: "https://example.com/item/cardigan" },
-        { name: "Shoes", brand: "Kocharovska", link: "https://example.com/item/shoes-2" },
+        { nameKey: "dress", name: "Dress", brand: "Bazhane", link: PUBLIC_INSTAGRAM_URL },
+        { nameKey: "cardigan", name: "Cardigan", brand: "Woolhappen", link: PUBLIC_INSTAGRAM_URL },
+        { nameKey: "shoes", name: "Shoes", brand: "Kocharovska", link: PUBLIC_INSTAGRAM_URL },
     ],
 ];
 
@@ -293,7 +295,7 @@ function buildEventDoc({ id, filename, index }) {
             city: preset.city,
             cityNormalized: preset.cityNormalized,
             address: `${preset.city}, Main Fashion Street 1`,
-            externalUrl: "https://example.com/fashion-event",
+            externalUrl: PUBLIC_INSTAGRAM_URL,
             coverPath,
             published: true,
             startsAt: Timestamp.fromDate(startsAt),

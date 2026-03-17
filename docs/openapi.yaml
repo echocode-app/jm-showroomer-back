@@ -29,6 +29,11 @@ info:
       Value: no-ambiguity checklist for `POST /users/me/devices` and notifications center integration.  
       <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/PUSH_NOTIFICATIONS_FLUTTER_UA.md" target="_blank" rel="noopener noreferrer">Open document</a>
 
+    - **LOOKBOOKS_EVENTS_FLUTTER_UA.md**  
+      Для Flutter: короткий контракт по локалізації lookbooks/events, stable keys, fallback-логіці і зовнішніх tappable links.  
+      Value: no-ambiguity integration guide for `items[].nameKey`, `events.type`, and country localization.  
+      <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/LOOKBOOKS_EVENTS_FLUTTER_UA.md" target="_blank" rel="noopener noreferrer">Open document</a>
+
     - **CURSOR_PAGINATION_FLUTTER.md**  
       For Flutter: universal cursor pagination rules for all backend list endpoints (opaque token, reset rules, error handling).  
       Value: correct infinite scroll implementation without duplicates/skips/cursor misuse.  

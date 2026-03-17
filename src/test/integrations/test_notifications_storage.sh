@@ -235,7 +235,7 @@ await db.collection("events").doc(eventId).set({
     city: "Kyiv",
     address: "Kyiv, Notifications 1",
     cityNormalized: "kyiv",
-    externalUrl: `https://example.com/events/${eventId}`,
+    externalUrl: "https://www.instagram.com/dim_brendiv/",
     startsAt: Timestamp.fromDate(new Date(now + (3 * 24 * 60 * 60 * 1000))),
     endsAt: Timestamp.fromDate(new Date(now + (3 * 24 * 60 * 60 * 1000))),
     published: true,

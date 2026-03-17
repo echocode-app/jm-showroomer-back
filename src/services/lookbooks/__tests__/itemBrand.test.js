@@ -1,21 +1,25 @@
 import { normalizeItems } from "../crudHelpers.js";
 import { normalizeLookbook } from "../response.js";
 
+const PUBLIC_INSTAGRAM_URL = "https://www.instagram.com/dim_brendiv/";
+
 describe("lookbook item brand", () => {
     test("persists optional brand in normalized payload items", () => {
         expect(
             normalizeItems([
                 {
                     name: "Coat",
+                    nameKey: "coat",
                     brand: "Bazhane",
-                    link: "https://example.com/coat",
+                    link: PUBLIC_INSTAGRAM_URL,
                 },
             ])
         ).toEqual([
             {
                 name: "Coat",
+                nameKey: "coat",
                 brand: "Bazhane",
-                link: "https://example.com/coat",
+                link: PUBLIC_INSTAGRAM_URL,
             },
         ]);
     });
@@ -26,8 +30,9 @@ describe("lookbook item brand", () => {
             items: [
                 {
                     name: "Coat",
+                    nameKey: "coat",
                     brand: "Bazhane",
-                    link: "https://example.com/coat",
+                    link: PUBLIC_INSTAGRAM_URL,
                 },
             ],
         });
@@ -35,8 +40,30 @@ describe("lookbook item brand", () => {
         expect(result.items).toEqual([
             {
                 name: "Coat",
+                nameKey: "coat",
                 brand: "Bazhane",
-                link: "https://example.com/coat",
+                link: PUBLIC_INSTAGRAM_URL,
+            },
+        ]);
+    });
+
+    test("infers nameKey from legacy item names", () => {
+        const result = normalizeLookbook({
+            id: "lookbook-legacy",
+            items: [
+                {
+                    name: "Evening Dress",
+                    link: PUBLIC_INSTAGRAM_URL,
+                },
+            ],
+        });
+
+        expect(result.items).toEqual([
+            {
+                name: "Evening Dress",
+                nameKey: "evening_dress",
+                brand: null,
+                link: PUBLIC_INSTAGRAM_URL,
             },
         ]);
     });

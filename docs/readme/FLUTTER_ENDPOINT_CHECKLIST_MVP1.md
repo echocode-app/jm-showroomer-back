@@ -50,6 +50,13 @@ Base URL:
 - Push-текст від бекенду локалізується за `users.appLanguage` (`uk|en`) з fallback `en`.
 - In-app текст нотифікацій у Flutter має бути локалізований локально по `type + payload` (не покладатися тільки на push title/body).
 
+7. Локалізація lookbooks/events:
+
+- `lookbooks.items[].nameKey` — stable key для локалізації назви одягу;
+- якщо для `nameKey` немає перекладу, fallback -> `lookbooks.items[].name`;
+- `events.type` — stable key для локалізації badge/type label;
+- `country`/`countryNormalized` у lookbooks/events треба локалізувати локально у Flutter, не чекати перекладених назв від backend.
+
 ## 3) Матриця endpoint-ів проекту для Flutter
 
 Легенда:

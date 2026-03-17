@@ -2,6 +2,10 @@ import { assertAllowedPathForResource } from "../../utils/mediaValidation.js";
 import { normalizeCountry } from "../../constants/countries.js";
 import { getSignedReadUrl } from "../mediaService.js";
 import { toIsoString } from "./firestoreQuery.js";
+import {
+    inferLookbookItemNameKey,
+    normalizeLookbookItemNameKey,
+} from "./itemNameKey.js";
 
 // Normalizes raw Firestore lookbook document into stable API DTO.
 export function normalizeLookbook(doc = {}) {
@@ -175,6 +179,8 @@ function normalizeItems(doc) {
     return doc.items
         .map(item => ({
             name: firstNonEmpty(item?.name),
+            nameKey: normalizeLookbookItemNameKey(item?.nameKey)
+                ?? inferLookbookItemNameKey(item?.name),
             brand: firstNonEmpty(item?.brand),
             link: firstNonEmpty(item?.link, item?.url),
         }))

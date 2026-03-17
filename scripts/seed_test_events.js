@@ -20,6 +20,7 @@ const prefix = process.argv[2] || `evt_${Date.now()}`;
 const now = new Date();
 const plusDays = n => Timestamp.fromDate(new Date(now.getTime() + n * 24 * 60 * 60 * 1000));
 const minusDays = n => Timestamp.fromDate(new Date(now.getTime() - n * 24 * 60 * 60 * 1000));
+const PUBLIC_INSTAGRAM_URL = "https://www.instagram.com/dim_brendiv/";
 
 const docs = {
     [`${prefix}_future_1`]: {
@@ -30,7 +31,7 @@ const docs = {
         city: "Kyiv",
         address: "Kyiv, Khreshchatyk 1",
         cityNormalized: "kyiv",
-        externalUrl: "https://example.com/events/future-1",
+        externalUrl: PUBLIC_INSTAGRAM_URL,
         startsAt: plusDays(3),
         endsAt: plusDays(3),
         published: true,
@@ -45,7 +46,7 @@ const docs = {
         city: "Warsaw",
         address: "Warsaw, Main St 2",
         cityNormalized: "warsaw",
-        externalUrl: "https://example.com/events/future-2",
+        externalUrl: PUBLIC_INSTAGRAM_URL,
         startsAt: plusDays(7),
         endsAt: plusDays(7),
         published: true,
@@ -60,7 +61,7 @@ const docs = {
         city: "Lviv",
         address: "Lviv, Rynok Square 1",
         cityNormalized: "lviv",
-        externalUrl: "https://example.com/events/past-1",
+        externalUrl: PUBLIC_INSTAGRAM_URL,
         startsAt: minusDays(7),
         endsAt: minusDays(7),
         published: true,
@@ -75,7 +76,7 @@ const docs = {
         city: "Kyiv",
         address: "Kyiv, Hidden St 5",
         cityNormalized: "kyiv",
-        externalUrl: "https://example.com/events/hidden-1",
+        externalUrl: PUBLIC_INSTAGRAM_URL,
         startsAt: plusDays(5),
         endsAt: plusDays(5),
         published: false,
@@ -90,7 +91,7 @@ const docs = {
         city: "Moscow",
         address: "Moscow, Blocked St 9",
         cityNormalized: "moscow",
-        externalUrl: "https://example.com/events/blocked-1",
+        externalUrl: PUBLIC_INSTAGRAM_URL,
         startsAt: plusDays(4),
         endsAt: plusDays(4),
         published: true,
