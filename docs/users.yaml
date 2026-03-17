@@ -101,6 +101,8 @@ components:
       properties:
         name:
           type: string
+          minLength: 2
+          maxLength: 15
         position:
           type: string
           nullable: true
@@ -119,6 +121,8 @@ components:
       properties:
         name:
           type: string
+          minLength: 2
+          maxLength: 15
           description: Owner-only field after owner profile registration. Before that, only appLanguage and notificationsEnabled can be updated.
         country:
           type: string

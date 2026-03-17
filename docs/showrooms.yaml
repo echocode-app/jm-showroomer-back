@@ -96,6 +96,8 @@ components:
           type: string
         name:
           type: string
+          minLength: 2
+          maxLength: 15
         nameNormalized:
           type: string
           readOnly: true

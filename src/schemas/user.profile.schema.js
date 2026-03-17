@@ -5,7 +5,7 @@ import { APP_LANGUAGES } from "../constants/appLanguage.js";
 
 // Profile update allows partial fields; at least one field is required.
 export const userProfileUpdateSchema = Joi.object({
-    name: Joi.string().trim().min(2).max(60),
+    name: Joi.string().trim().min(2).max(15),
     country: Joi.string().trim().min(2).max(60),
     instagram: Joi.string().trim().min(2).max(200),
     position: Joi.string().trim().allow("", null).max(100),

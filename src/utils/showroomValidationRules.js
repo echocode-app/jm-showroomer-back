@@ -13,7 +13,7 @@ export function validateShowroomName(name) {
     const trimmed = String(name ?? "").trim();
     const length = Array.from(trimmed).length;
 
-    if (length < 2 || length > 60) throw badRequest("SHOWROOM_NAME_INVALID");
+    if (length < 2 || length > 15) throw badRequest("SHOWROOM_NAME_INVALID");
     if (/^\d+$/u.test(trimmed)) throw badRequest("SHOWROOM_NAME_INVALID");
     if (!/[\p{L}\p{N}]/u.test(trimmed)) {
         throw badRequest("SHOWROOM_NAME_INVALID");
