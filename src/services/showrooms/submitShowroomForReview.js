@@ -65,10 +65,11 @@ export async function submitShowroomForReviewService(id, user) {
             db.collection("showrooms").where("ownerUid", "==", user.uid)
         );
 
-        assertNoOwnerNameDuplicates(
+        assertNoOwnerDuplicateAtSameAddress(
             ownerSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })),
             id,
-            normalized.nameNormalized
+            normalized.nameNormalized,
+            normalized.addressNormalized
         );
 
         const duplicateSnapshot = await tx.get(
@@ -176,14 +177,20 @@ function assertNoDevDuplicates(showroom, user, normalized) {
         normalizedName: normalized.nameNormalized,
     });
 
-    const ownerDuplicates = DEV_STORE.showrooms.filter(
-        s =>
-            s.id !== showroom.id &&
-            s.ownerUid === user.uid &&
-            s.status !== "deleted" &&
-            (s.nameNormalized ?? normalizeShowroomName(s.name || "")) ===
-                normalized.nameNormalized
-    );
+    const ownerDuplicates = DEV_STORE.showrooms.filter(s => {
+        if (s.id === showroom.id) return false;
+        if (s.ownerUid !== user.uid) return false;
+        if (s.status === "deleted") return false;
+
+        const otherName = s.nameNormalized ?? normalizeShowroomName(s.name || "");
+        const otherAddress =
+            s.addressNormalized ?? normalizeAddressForCompare(s.address || "");
+
+        return (
+            otherName === normalized.nameNormalized &&
+            otherAddress === normalized.addressNormalized
+        );
+    });
     if (ownerDuplicates.length > 0) {
         throw badRequest("SHOWROOM_NAME_ALREADY_EXISTS");
     }
@@ -206,9 +213,9 @@ function assertNoDevDuplicates(showroom, user, normalized) {
 }
 
 /**
- * Rejects duplicate showroom names inside one owner portfolio.
+ * Rejects duplicate showroom identity inside one owner portfolio.
  */
-function assertNoOwnerNameDuplicates(items, showroomId, normalizedName) {
+function assertNoOwnerDuplicateAtSameAddress(items, showroomId, normalizedName, normalizedAddress) {
     const ownerUid = items.find(s => s.id === showroomId)?.ownerUid ?? null;
     assertNoOwnerRecreateCooldown(items, {
         ownerUid,
@@ -216,12 +223,16 @@ function assertNoOwnerNameDuplicates(items, showroomId, normalizedName) {
         normalizedName,
     });
 
-    const duplicates = items.filter(
-        s =>
-            s.id !== showroomId &&
-            s.status !== "deleted" &&
-            (s.nameNormalized ?? normalizeShowroomName(s.name || "")) === normalizedName
-    );
+    const duplicates = items.filter(s => {
+        if (s.id === showroomId) return false;
+        if (s.status === "deleted") return false;
+
+        const otherName = s.nameNormalized ?? normalizeShowroomName(s.name || "");
+        const otherAddress =
+            s.addressNormalized ?? normalizeAddressForCompare(s.address || "");
+
+        return otherName === normalizedName && otherAddress === normalizedAddress;
+    });
     if (duplicates.length > 0) {
         throw badRequest("SHOWROOM_NAME_ALREADY_EXISTS");
     }

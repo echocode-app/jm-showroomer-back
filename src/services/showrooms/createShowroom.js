@@ -69,9 +69,12 @@ export async function createShowroom(data, ownerUid, options = {}) {
             normalizedName: normalized.nameNormalized,
         });
 
-        // Keep owner-level uniqueness among non-deleted showrooms.
+        // Keep owner-level uniqueness only for the same normalized name at the same address.
         const existing = ownerItems.filter(
-            s => s.status !== "deleted" && s.name === data.name
+            s =>
+                s.status !== "deleted" &&
+                s.nameNormalized === normalized.nameNormalized &&
+                s.addressNormalized === normalized.addressNormalized
         );
 
         if (existing.length > 0) {

@@ -48,34 +48,72 @@ export function isWithinBounds(showroom, bounds) {
     );
 }
 
-function buildBoundsPrefixes(bounds, precision) {
-    const cell = GEOHASH_CELL_KM[precision] ?? GEOHASH_CELL_KM[2];
-    const midLat = (bounds.north + bounds.south) / 2;
-    const latStep = Math.max(kmToLatDegrees(cell.lat), 0.05);
-    const lngStep = Math.max(kmToLngDegrees(cell.lng, midLat), 0.05);
+function intersectsBounds(cellBounds, bounds) {
+    return !(
+        cellBounds.north < bounds.south ||
+        cellBounds.south > bounds.north ||
+        cellBounds.east < bounds.west ||
+        cellBounds.west > bounds.east
+    );
+}
 
+function decodeBounds(hash) {
+    const [south, west, north, east] = ngeohash.decode_bbox(hash);
+    return { south, west, north, east };
+}
+
+function buildSeedHashes(bounds, precision) {
+    const centerLat = (bounds.north + bounds.south) / 2;
+    const centerLng = (bounds.east + bounds.west) / 2;
+    return Array.from(
+        new Set([
+            ngeohash.encode(bounds.north, bounds.west, precision).toLowerCase(),
+            ngeohash.encode(bounds.north, bounds.east, precision).toLowerCase(),
+            ngeohash.encode(bounds.south, bounds.west, precision).toLowerCase(),
+            ngeohash.encode(bounds.south, bounds.east, precision).toLowerCase(),
+            ngeohash.encode(centerLat, centerLng, precision).toLowerCase(),
+        ])
+    );
+}
+
+function buildBoundsPrefixes(bounds, precision, limit = Infinity) {
+    const queue = buildSeedHashes(bounds, precision);
+    const seen = new Set();
     const prefixes = new Set();
-    for (let lat = bounds.south; lat <= bounds.north + latStep / 2; lat += latStep) {
-        for (let lng = bounds.west; lng <= bounds.east + lngStep / 2; lng += lngStep) {
-            prefixes.add(ngeohash.encode(lat, lng, precision).toLowerCase());
+
+    while (queue.length > 0) {
+        const hash = String(queue.shift() || "").toLowerCase();
+        if (!hash || seen.has(hash)) continue;
+        seen.add(hash);
+
+        if (!intersectsBounds(decodeBounds(hash), bounds)) {
+            continue;
+        }
+
+        prefixes.add(hash);
+        if (prefixes.size > limit) {
+            return Array.from(prefixes).sort();
+        }
+
+        const neighbors = ngeohash.neighbors(hash) || [];
+        for (const neighbor of neighbors) {
+            const next = String(neighbor || "").toLowerCase();
+            if (next && !seen.has(next)) {
+                queue.push(next);
+            }
         }
     }
-
-    prefixes.add(ngeohash.encode(bounds.north, bounds.west, precision).toLowerCase());
-    prefixes.add(ngeohash.encode(bounds.north, bounds.east, precision).toLowerCase());
-    prefixes.add(ngeohash.encode(bounds.south, bounds.west, precision).toLowerCase());
-    prefixes.add(ngeohash.encode(bounds.south, bounds.east, precision).toLowerCase());
 
     return Array.from(prefixes).sort();
 }
 
 export function resolveBoundedPrefixes(bounds, requestedPrecision) {
     let precision = requestedPrecision;
-    let prefixes = buildBoundsPrefixes(bounds, precision);
+    let prefixes = buildBoundsPrefixes(bounds, precision, MAX_PREFIXES);
 
     while (prefixes.length > MAX_PREFIXES && precision > 2) {
         precision -= 1;
-        prefixes = buildBoundsPrefixes(bounds, precision);
+        prefixes = buildBoundsPrefixes(bounds, precision, MAX_PREFIXES);
     }
 
     return { precision, prefixes };

@@ -335,9 +335,9 @@ Flutter має:
 - `SHOWROOM_LOCKED_PENDING`
   - спроба редагувати/showroom у `pending`
 - `SHOWROOM_NAME_ALREADY_EXISTS`
-  - duplicate name у цього owner
+  - у цього owner вже є showroom з тією самою назвою за тією самою адресою
 - `SHOWROOM_DUPLICATE`
-  - глобальний duplicate для moderation
+  - глобальний duplicate для moderation по комбінації name + address в іншого pending/approved showroom
 - `SHOWROOM_RECREATE_COOLDOWN`
   - занадто рання повторна спроба після soft delete
 

@@ -6,6 +6,7 @@
 
 Він не повертає cursor-пагінацію як звичайний список.
 Він повертає showroom точки тільки для поточного viewport карти.
+Backend сам будує повне geohash-покриття viewport і потім робить точний post-filter по bounds.
 Кластеризацію робить Flutter / map SDK.
 Для плашки `знайдено N шоурумів` використовуйте окремий `GET /showrooms/map/counters`.
 
@@ -106,6 +107,9 @@ GET /showrooms/map/counters?north=<...>&south=<...>&east=<...>&west=<...>&zoom=<
 }
 ```
 
+Тут `data.total` — це exact count для переданого прямокутника viewport.
+Це не approximate geohash count і не число з локальної кластеризації.
+
 ---
 
 ## 5) Що важливо
@@ -114,6 +118,7 @@ GET /showrooms/map/counters?north=<...>&south=<...>&east=<...>&west=<...>&zoom=<
 - `limit` тут не використовується
 - backend сам обмежує payload
 - якщо точок у viewport забагато, backend поверне `meta.truncated = true`
+- `/showrooms/map/counters` використовує той самий viewport contract, але повертає exact count
 - якщо `meta.truncated = true`, Flutter може:
   - кластеризувати те, що отримав
   - або попросити юзера наблизити карту
@@ -153,6 +158,7 @@ GET /showrooms/{id}
 - не припускати, що карта = `GET /showrooms?fields=geo`
 - не змішувати cursor pagination списку з viewport map behavior
 - не брати текст `знайдено N шоурумів` з `/showrooms/map`; для цього є окремий `/showrooms/map/counters`
+- не трактувати `data.total` як approximate bucket estimate; для viewport badge це exact count
 
 ---
 

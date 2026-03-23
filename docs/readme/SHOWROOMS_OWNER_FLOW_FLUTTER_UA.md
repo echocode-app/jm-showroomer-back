@@ -139,9 +139,9 @@ Flutter не повинен сам контролювати:
 - `SHOWROOM_LOCKED_PENDING`
   - спроба редагувати або видалити showroom у статусі `pending`
 - `SHOWROOM_NAME_ALREADY_EXISTS`
-  - у цього owner вже є showroom з такою нормалізованою назвою
+  - у цього owner вже є showroom з такою самою нормалізованою назвою за тією самою адресою
 - `SHOWROOM_DUPLICATE`
-  - глобальний дублікат для moderation flow
+  - глобальний duplicate для moderation flow по комбінації name + address в іншого pending/approved showroom
 - `SHOWROOM_RECREATE_COOLDOWN`
   - занадто рання повторна спроба створити той самий showroom після soft delete
 

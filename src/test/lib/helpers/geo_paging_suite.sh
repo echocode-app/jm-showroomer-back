@@ -14,7 +14,7 @@ seed_geo_showroom() {
     --arg country "Ukraine" \
     --arg city "Kyiv" \
     --arg placeId "test-seed-${suffix}-${ts}" \
-    --arg name "Geo Seed ${suffix} ${ts}" \
+    --arg name "Geo ${suffix}${ts}" \
     --arg type "multibrand" \
     --arg availability "open" \
     --arg address "Kyiv, Khreshchatyk ${suffix} ${ts}" \
@@ -199,7 +199,7 @@ run_geo_paging_suite() {
 
   PATCH_NO_GEO=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
     -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-    -d "{\"name\":\"Legacy Geo Test ${LEGACY_TS}\"}" \
+    -d "{\"name\":\"Lgc ${LEGACY_TS}\"}" \
     "${BASE_URL}/showrooms/${SHOWROOM_ID}")
   PATCH_NO_GEO_STATUS=$(echo "$PATCH_NO_GEO" | sed -n 's/.*HTTP_STATUS://p')
   PATCH_NO_GEO_BODY=$(echo "$PATCH_NO_GEO" | sed '/HTTP_STATUS/d')

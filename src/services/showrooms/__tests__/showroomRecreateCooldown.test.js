@@ -160,6 +160,39 @@ describe("showroom recreate cooldown (3 months after soft delete)", () => {
         });
     });
 
+    it("same owner can create the same showroom name at a different address", async () => {
+        const payload = makeCreatePayload();
+
+        await expect(
+            createShowroom(payload, owner.uid, { userCountry: owner.country })
+        ).resolves.toMatchObject({
+            ownerUid: owner.uid,
+            name: payload.name,
+            address: payload.address,
+        });
+
+        await expect(
+            createShowroom(
+                makeCreatePayload({
+                    address: "Khreshchatyk 2",
+                    city: "Lviv",
+                    location: { lat: 49.84, lng: 24.03 },
+                    geo: {
+                        city: "Lviv",
+                        country: "Ukraine",
+                        coords: { lat: 49.84, lng: 24.03 },
+                    },
+                }),
+                owner.uid,
+                { userCountry: owner.country }
+            )
+        ).resolves.toMatchObject({
+            ownerUid: owner.uid,
+            name: payload.name,
+            address: "Khreshchatyk 2",
+        });
+    });
+
     it("different showroom name is allowed during cooldown", async () => {
         const created = await createShowroom(makeCreatePayload(), owner.uid, {
             userCountry: owner.country,

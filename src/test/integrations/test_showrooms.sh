@@ -21,6 +21,13 @@ JSON_HEADER=(-H "$(json_header)")
 NOW=$(now_ns)
 SHORT_NOW="${NOW: -6}"
 SAFE_SUFFIX=$(printf '%s' "$SHORT_NOW" | tr '0-9' 'a-j')
+OWNER_NAME="Own ${SAFE_SUFFIX}"
+PROFILE_NAME="Prof ${SAFE_SUFFIX}"
+PRE_OWNER_NAME="Pre ${SAFE_SUFFIX}"
+NAME_MAIN="Show ${SAFE_SUFFIX}"
+INCOMPLETE_NAME="Inc ${SAFE_SUFFIX}"
+GEO_ONLY_NAME="Geo ${SAFE_SUFFIX}"
+NAME_E="Adr ${SAFE_SUFFIX}"
 warn_if_prod_write "${BASE_URL}"
 
 print_section "Auth + role"
@@ -46,14 +53,14 @@ if [[ "$USER_ROLE" != "owner" ]]; then
 
   http_request "PATCH /users/profile (pre-owner name forbidden)" 403 "USER_PROFILE_FIELDS_FORBIDDEN" \
     -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-    -d "{\"name\":\"Pre Owner ${NOW}\"}" \
+    -d "{\"name\":\"${PRE_OWNER_NAME}\"}" \
     "${BASE_URL}/users/profile"
 fi
 
 if [[ "$USER_ROLE" != "owner" ]]; then
   http_request "POST /users/complete-owner-profile (upgrade)" 200 "" \
     -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-    -d "{\"name\":\"Owner ${NOW}\",\"position\":\"Founder\",\"country\":\"Ukraine\",\"instagram\":\"https://instagram.com/owner${NOW}\"}" \
+    -d "{\"name\":\"${OWNER_NAME}\",\"position\":\"Founder\",\"country\":\"Ukraine\",\"instagram\":\"https://instagram.com/owner${NOW}\"}" \
     "${BASE_URL}/users/complete-owner-profile"
 
   ME_RESPONSE=$(curl -s "${AUTH_HEADER[@]}" "${BASE_URL}/users/me")
@@ -73,11 +80,10 @@ http_request "PATCH /users/profile (settings)" 200 "" \
 
 http_request "PATCH /users/profile (name)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d "{\"name\":\"Profile Name ${NOW}\"}" \
+  -d "{\"name\":\"${PROFILE_NAME}\"}" \
   "${BASE_URL}/users/profile"
 
 print_section "Draft flow"
-NAME_MAIN="My Showroom 01 ${SAFE_SUFFIX}"
 ADDRESS_MAIN="Cherkasy, Shevchenka Ave ${NOW}"
 
 http_request "POST /showrooms/draft" 200 "" \
@@ -175,7 +181,7 @@ assert_non_empty "$(json_get "$LAST_BODY" '.data.showroom.geo.geohash')" "geo.ge
 print_section "Submit incomplete"
 http_request "PATCH force incomplete (clear contacts)" 200 "" \
   -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-  -d "{\"name\":\"Incomplete ${NOW}\",\"contacts\":{\"phone\":null,\"instagram\":null}}" \
+  -d "{\"name\":\"${INCOMPLETE_NAME}\",\"contacts\":{\"phone\":null,\"instagram\":null}}" \
   "${BASE_URL}/showrooms/$SHOWROOM_ID"
 
 http_request "POST /showrooms/{id}/submit (incomplete)" 400 "SHOWROOM_INCOMPLETE" \
@@ -325,13 +331,24 @@ http_request "PATCH second showroom (set required fields + duplicate name)" 200 
   -d "{\"name\":\"${SUBMITTED_NAME}\",\"availability\":\"open\",\"address\":\"${SUBMITTED_ADDRESS}\",\"city\":\"Cherkasy\",\"location\":{\"lat\":49.4444,\"lng\":32.0598},\"contacts\":{\"phone\":\"+380999111223\",\"instagram\":\"https://instagram.com/newhandle\"}}" \
   "${BASE_URL}/showrooms/$SECOND_ID"
 
-http_request "POST /showrooms/{id}/submit (owner duplicate name)" 400 "SHOWROOM_NAME_ALREADY_EXISTS" \
+http_request "POST /showrooms/{id}/submit (same name + same address)" 400 "SHOWROOM_NAME_ALREADY_EXISTS" \
+  -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+  -d '{}' \
+  "${BASE_URL}/showrooms/$SECOND_ID/submit"
+
+SECOND_ADDRESS_ALT="Cherkasy, Haharina Ave ${NOW}"
+
+http_request "PATCH second showroom (same name + different address)" 200 "" \
+  -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
+  -d "{\"address\":\"${SECOND_ADDRESS_ALT}\",\"city\":\"Cherkasy\",\"location\":{\"lat\":49.4488,\"lng\":32.0651}}" \
+  "${BASE_URL}/showrooms/$SECOND_ID"
+
+http_request "POST /showrooms/{id}/submit (same name + different address allowed)" 200 "" \
   -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
   -d '{}' \
   "${BASE_URL}/showrooms/$SECOND_ID/submit"
 
 print_section "Geo-only canonical create"
-GEO_ONLY_NAME="Geo Only ${SAFE_SUFFIX}"
 http_request "POST /showrooms/create (geo only)" 200 "" \
   -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
   -d "{\"name\":\"${GEO_ONLY_NAME}\",\"type\":\"unique\",\"country\":\"Ukraine\",\"availability\":\"open\",\"address\":\"Geo street ${NOW}\",\"contacts\":{\"phone\":\"+380999111224\",\"instagram\":\"https://instagram.com/geoonly${NOW}\"},\"geo\":{\"city\":\"Lviv\",\"country\":\"Ukraine\",\"coords\":{\"lat\":49.8397,\"lng\":24.0297}}}" \
@@ -390,7 +407,6 @@ http_request "POST /showrooms/draft (E)" 200 "" \
 SHOWROOM_E_ID=$(json_get "$LAST_BODY" '.data.showroom.id // empty')
 assert_non_empty "$SHOWROOM_E_ID" "showroom E id"
 
-NAME_E="Address Norm ${NOW}"
 ADDRESS_E="Cherkasy ,  Shevchenka Ave 1"
 
 http_request "PATCH E (messy address)" 200 "" \

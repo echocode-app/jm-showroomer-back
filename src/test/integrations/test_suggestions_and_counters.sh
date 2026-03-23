@@ -72,9 +72,9 @@ create_and_approve_showroom() {
 }
 
 print_section "Seed showrooms"
-NAME_TOTAL="Total White ${SHORT_NOW}"
-NAME_COAT="The Coat ${SHORT_NOW}"
-NAME_ROAR="Roar ${SHORT_NOW}"
+NAME_TOTAL="Tot${SHORT_NOW}"
+NAME_COAT="Coat${SHORT_NOW}"
+NAME_ROAR="Roar${SHORT_NOW}"
 BRAND_TEST="BrandTest${SHORT_NOW}"
 
 # create_and_approve_showroom logs multiple lines; keep only the final "id|geohash" row.
@@ -97,8 +97,8 @@ print_section "Suggestions by showroom name"
 http_request "GET /showrooms/suggestions?q=to" 200 "" \
   "${BASE_URL}/showrooms/suggestions?q=to"
 
-FOUND_NAME=$(echo "$LAST_BODY" | jq -r '.data.suggestions[] | select(.type=="showroom") | select(.value|test("^Total White")) | .value' | head -n1)
-assert_non_empty "$FOUND_NAME" "showroom suggestion Total White"
+FOUND_NAME=$(echo "$LAST_BODY" | jq -r --arg expected "$NAME_TOTAL" '.data.suggestions[] | select(.type=="showroom") | select(.value == $expected) | .value' | head -n1)
+assert_non_empty "$FOUND_NAME" "showroom suggestion ${NAME_TOTAL}"
 
 print_section "Suggestions by city"
 http_request "GET /showrooms/suggestions?q=ky&qMode=city" 200 "" \

@@ -20,6 +20,7 @@ ADMIN_HEADER=(-H "$(auth_header "${TEST_ADMIN_TOKEN}")")
 JSON_HEADER=(-H "$(json_header)")
 NOW=$(now_ns)
 SHORT_NOW="${NOW: -6}"
+SAFE_SUFFIX=$(printf '%s' "$SHORT_NOW" | tr '0-9' 'a-j')
 
 ensure_owner_role() {
   local me_response
@@ -35,7 +36,7 @@ ensure_owner_role() {
 
   http_request "POST /users/complete-owner-profile (upgrade for favorites test)" 200 "" \
     -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-    -d "{\"name\":\"Owner ${NOW}\",\"position\":\"Founder\",\"country\":\"Ukraine\",\"instagram\":\"https://instagram.com/owner${NOW}\"}" \
+    -d "{\"name\":\"Own ${SAFE_SUFFIX}\",\"position\":\"Founder\",\"country\":\"Ukraine\",\"instagram\":\"https://instagram.com/owner${NOW}\"}" \
     "${BASE_URL}/users/complete-owner-profile"
 }
 
@@ -43,7 +44,9 @@ create_submittable_showroom() {
   local suffix=$1
   local city=$2
   local draft_id
-  local unique="${SHORT_NOW}${suffix}"
+  local tag="${SHORT_NOW}${suffix}"
+  local unique="${tag:0:8}"
+  local name="Fav ${unique}"
   local lat="49.4444"
   local lng="32.0598"
 
@@ -62,7 +65,7 @@ create_submittable_showroom() {
 
   http_request "PATCH /showrooms/{id} (${suffix})" 200 "" \
     -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-    -d "{\"name\":\"Favorites ${unique}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"address\":\"${city}, Favorites St ${unique}\",\"city\":\"${city}\",\"availability\":\"open\",\"category\":\"womenswear\",\"categoryGroup\":\"clothing\",\"subcategories\":[\"dresses\"],\"brands\":[\"BrandTest${SHORT_NOW}\"],\"contacts\":{\"phone\":\"+380501112233\",\"instagram\":\"https://instagram.com/fav${SHORT_NOW}${suffix}\"},\"location\":{\"lat\":${lat},\"lng\":${lng}}}" \
+    -d "{\"name\":\"${name}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"address\":\"${city}, Favorites St ${unique}\",\"city\":\"${city}\",\"availability\":\"open\",\"category\":\"womenswear\",\"categoryGroup\":\"clothing\",\"subcategories\":[\"dresses\"],\"brands\":[\"BrandTest${SHORT_NOW}\"],\"contacts\":{\"phone\":\"+380501112233\",\"instagram\":\"https://instagram.com/fav${SHORT_NOW}${suffix}\"},\"location\":{\"lat\":${lat},\"lng\":${lng}}}" \
     "${BASE_URL}/showrooms/${draft_id}"
 
   http_request "PATCH /showrooms/{id} geo (${suffix})" 200 "" \

@@ -1193,6 +1193,8 @@ paths:
 
         Client sends current map bounds (`north/south/east/west`) and `zoom`.
         Backend returns showroom points inside the current viewport.
+        Backend first expands the viewport into a complete geohash cell cover for the current zoom
+        and then applies exact bounds filtering to the resulting candidates.
         Clustering is intentionally delegated to the client map SDK.
 
         The endpoint is not cursor-paginated.
@@ -1343,6 +1345,9 @@ paths:
 
         Client sends the same `north/south/east/west` bounds and `zoom` as for `GET /showrooms/map`.
         Use this endpoint for map badge / overlay counters such as `знайдено N шоурумів`.
+        Backend expands the viewport into a complete geohash cell cover for the current zoom and
+        then applies exact bounds filtering, so `data.total` is the exact visible count for the
+        submitted rectangle rather than an approximate geohash bucket count.
 
         Unlike `GET /showrooms/map`, this endpoint is intended for exact count only and does not return point payload.
       operationId: getShowroomMapCounters

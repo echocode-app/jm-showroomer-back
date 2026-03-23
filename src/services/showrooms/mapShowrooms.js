@@ -65,6 +65,7 @@ async function fetchPointsFirestore(baseQuery, prefixes, bounds, user) {
                 .get()
         )
     );
+    const prefixLimited = snapshots.some(snapshot => snapshot.docs.length >= perPrefixLimit);
 
     const byId = new Map();
     snapshots.forEach(snapshot => {
@@ -87,7 +88,7 @@ async function fetchPointsFirestore(baseQuery, prefixes, bounds, user) {
         showrooms: filtered.slice(0, MAX_POINTS).map(item => mapShowroomToPoint(item, user)),
         total: filtered.length,
         scanned: byId.size,
-        truncated: byId.size >= MAX_SCAN_DOCS || filtered.length > MAX_POINTS,
+        truncated: prefixLimited || byId.size >= MAX_SCAN_DOCS || filtered.length > MAX_POINTS,
     };
 }
 

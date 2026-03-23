@@ -42,7 +42,7 @@ run_admin_and_collections_suite() {
     -d '{"reason":"Invalid state"}' \
     "${BASE_URL}/admin/showrooms/${SHOWROOM_ID}/reject"
 
-  NAME_MAIN="Admin Review ${SAFE_SUFFIX}"
+  NAME_MAIN="Adm ${SAFE_SUFFIX}"
   http_request "PATCH /showrooms/{id} (complete data)" 200 "" \
     -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
     -d "{\"name\":\"${NAME_MAIN}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"address\":\"Cherkasy, Main St 2\",\"city\":\"Cherkasy\",\"availability\":\"open\",\"contacts\":{\"phone\":\"+380501112244\",\"instagram\":\"https://instagram.com/review${SHORT_NOW}\"},\"location\":{\"lat\":49.4444,\"lng\":32.0598}}" \
@@ -102,7 +102,7 @@ run_admin_and_collections_suite() {
   fi
 
   print_section "Owner resubmit -> admin approve"
-  UPDATED_NAME="Admin Review Updated ${SAFE_SUFFIX}"
+  UPDATED_NAME="Upd ${SAFE_SUFFIX}"
   http_request "PATCH rejected (update name)" 200 "" \
     -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
     -d "{\"name\":\"${UPDATED_NAME}\"}" \
@@ -161,7 +161,7 @@ run_admin_and_collections_suite() {
 
   http_request "PATCH /showrooms/{id} (admin delete target)" 200 "" \
     -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-    -d "{\"name\":\"Admin Delete ${SAFE_SUFFIX}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"address\":\"Zaporizhzhia, Main St 3\",\"city\":\"Zaporizhzhia\",\"availability\":\"open\",\"contacts\":{\"phone\":\"+380501112255\",\"instagram\":\"https://instagram.com/admindelete${NOW}\"},\"location\":{\"lat\":47.8388,\"lng\":35.1396}}" \
+    -d "{\"name\":\"Del ${SAFE_SUFFIX}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"address\":\"Zaporizhzhia, Main St 3\",\"city\":\"Zaporizhzhia\",\"availability\":\"open\",\"contacts\":{\"phone\":\"+380501112255\",\"instagram\":\"https://instagram.com/admindelete${NOW}\"},\"location\":{\"lat\":47.8388,\"lng\":35.1396}}" \
     "${BASE_URL}/showrooms/${ADMIN_DEL_ID}"
 
   http_request "POST /showrooms/{id}/submit (admin delete target)" 200 "" \

@@ -28,6 +28,7 @@ ADMIN_HEADER=(-H "$(auth_header "${TEST_ADMIN_TOKEN}")")
 JSON_HEADER=(-H "$(json_header)")
 NOW=$(now_ns)
 SHORT_NOW="${NOW: -6}"
+SAFE_SUFFIX=$(printf '%s' "$SHORT_NOW" | tr '0-9' 'a-j')
 APPROVED_ID=""
 REJECTED_ID=""
 DELETED_ID=""
@@ -70,7 +71,7 @@ ensure_owner_role() {
 
   http_request "POST /users/complete-owner-profile (upgrade for notifications test)" 200 "" \
     -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-    -d "{\"name\":\"Owner ${NOW}\",\"position\":\"Founder\",\"country\":\"Ukraine\",\"instagram\":\"https://instagram.com/notif${NOW}\"}" \
+    -d "{\"name\":\"Own ${SAFE_SUFFIX}\",\"position\":\"Founder\",\"country\":\"Ukraine\",\"instagram\":\"https://instagram.com/notif${NOW}\"}" \
     "${BASE_URL}/users/complete-owner-profile"
 }
 
@@ -78,7 +79,9 @@ create_submittable_showroom() {
   local suffix=$1
   local city=$2
   local draft_id
-  local unique="${SHORT_NOW}${suffix}"
+  local tag="${SHORT_NOW}${suffix}"
+  local unique="${tag:0:8}"
+  local name="Nt ${unique}"
   local instagram_suffix
   instagram_suffix=$(echo "${suffix}" | tr -c '[:alnum:]_.' '_' | tr '[:upper:]' '[:lower:]')
   local instagram_handle="notif_${SHORT_NOW}_${instagram_suffix}"
@@ -102,7 +105,7 @@ create_submittable_showroom() {
 
   http_request "PATCH /showrooms/{id} (${suffix})" 200 "" \
     -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-    -d "{\"name\":\"Notif ${unique}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"address\":\"${city}, Notif St ${unique}\",\"city\":\"${city}\",\"availability\":\"open\",\"brands\":[\"BrandNotif${SHORT_NOW}\"],\"contacts\":{\"phone\":\"+380501112233\",\"instagram\":\"https://instagram.com/${instagram_handle}\"},\"location\":{\"lat\":${lat},\"lng\":${lng}}}" \
+    -d "{\"name\":\"${name}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"address\":\"${city}, Notif St ${unique}\",\"city\":\"${city}\",\"availability\":\"open\",\"brands\":[\"BrandNotif${SHORT_NOW}\"],\"contacts\":{\"phone\":\"+380501112233\",\"instagram\":\"https://instagram.com/${instagram_handle}\"},\"location\":{\"lat\":${lat},\"lng\":${lng}}}" \
     "${BASE_URL}/showrooms/${draft_id}"
 
   http_request "PATCH /showrooms/{id} geo (${suffix})" 200 "" \
