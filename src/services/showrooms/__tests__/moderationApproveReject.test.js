@@ -272,6 +272,26 @@ describe("approveShowroomService", () => {
         );
     });
 
+    it("uses a cycle-specific dedupe key for repeated approve after resubmission", async () => {
+        state.showrooms[0] = makePendingShowroom({
+            submittedAt: "2026-02-27T10:00:00.000Z",
+            editHistory: [
+                { action: "submit", statusBefore: "draft", statusAfter: "pending", changedFields: ["status"] },
+                { action: "approve", statusBefore: "pending", statusAfter: "approved", changedFields: [] },
+                { action: "patch", statusBefore: "approved", statusAfter: "approved", changedFields: ["name"] },
+                { action: "submit", statusBefore: "approved", statusAfter: "pending", changedFields: ["status"] },
+            ],
+        });
+
+        await approveShowroomService("sr-1", admin);
+
+        expect(createNotificationMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                dedupeKey: "showroom:sr-1:approved:20260227T100000000Z",
+            })
+        );
+    });
+
     it("double approve: second call fails", async () => {
         await approveShowroomService("sr-1", admin);
 
@@ -334,6 +354,26 @@ describe("rejectShowroomService", () => {
         expect(createNotificationMock).toHaveBeenCalledWith(
             expect.objectContaining({
                 payload: expect.objectContaining({ reason: "Need clearer photos" }),
+            })
+        );
+    });
+
+    it("uses a cycle-specific dedupe key for repeated reject after resubmission", async () => {
+        state.showrooms[0] = makePendingShowroom({
+            submittedAt: "2026-02-28T10:00:00.000Z",
+            editHistory: [
+                { action: "submit", statusBefore: "draft", statusAfter: "pending", changedFields: ["status"] },
+                { action: "reject", statusBefore: "pending", statusAfter: "rejected", changedFields: ["status"] },
+                { action: "patch", statusBefore: "rejected", statusAfter: "rejected", changedFields: ["name"] },
+                { action: "submit", statusBefore: "rejected", statusAfter: "pending", changedFields: ["status"] },
+            ],
+        });
+
+        await rejectShowroomService("sr-1", "Reason ok", admin);
+
+        expect(createNotificationMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                dedupeKey: "showroom:sr-1:rejected:20260228T100000000Z",
             })
         );
     });

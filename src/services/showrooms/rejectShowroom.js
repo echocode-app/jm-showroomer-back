@@ -2,7 +2,11 @@ import { getFirestoreInstance } from "../../config/firebase.js";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { log } from "../../config/logger.js";
 import { badRequest, forbidden, notFound } from "../../core/error.js";
-import { appendHistory, makeHistoryEntry } from "./_helpers.js";
+import {
+    appendHistory,
+    buildModerationNotificationDedupeKey,
+    makeHistoryEntry,
+} from "./_helpers.js";
 import { createNotification } from "../notifications/notificationService.js";
 import { NOTIFICATION_TYPES } from "../notifications/types.js";
 import { assertUserWritable, assertUserWritableInTx } from "../users/writeGuardService.js";
@@ -66,7 +70,7 @@ export async function rejectShowroomService(id, reason, user) {
                     showroomName: showroom.name ?? null,
                     reason: normalizedReason,
                 },
-                dedupeKey: `showroom:${id}:rejected`,
+                dedupeKey: buildModerationNotificationDedupeKey(showroom, id, "rejected", "reject"),
             });
         } catch (err) {
             log.error(`Notification write skipped (reject ${id}): ${err?.message || err}`);
@@ -113,7 +117,7 @@ export async function rejectShowroomService(id, reason, user) {
                 showroomName: showroom.name ?? null,
                 reason: normalizedReason,
             },
-            dedupeKey: `showroom:${id}:rejected`,
+            dedupeKey: buildModerationNotificationDedupeKey(showroom, id, "rejected", "reject"),
         };
     });
 

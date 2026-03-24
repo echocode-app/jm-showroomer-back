@@ -3,7 +3,12 @@ import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { log } from "../../config/logger.js";
 import { badRequest, forbidden, notFound } from "../../core/error.js";
 import { EDITABLE_FIELDS } from "./_constants.js";
-import { appendHistory, buildDiff, makeHistoryEntry } from "./_helpers.js";
+import {
+    appendHistory,
+    buildDiff,
+    buildModerationNotificationDedupeKey,
+    makeHistoryEntry,
+} from "./_helpers.js";
 import { createNotification } from "../notifications/notificationService.js";
 import { NOTIFICATION_TYPES } from "../notifications/types.js";
 import { assertUserWritable, assertUserWritableInTx } from "../users/writeGuardService.js";
@@ -58,7 +63,7 @@ export async function approveShowroomService(id, user) {
             })
         );
         const targetUid = showroom.ownerUid ?? null;
-        const dedupeKey = `showroom:${id}:approved`;
+        const dedupeKey = buildModerationNotificationDedupeKey(showroom, id, "approved", "approve");
         const notificationRefPath = targetUid
             ? dbNotificationPath(targetUid, dedupeKey)
             : "invalid-target-uid";
@@ -146,7 +151,7 @@ export async function approveShowroomService(id, user) {
 
         tx.update(ref, updates);
         const targetUid = showroom.ownerUid ?? null;
-        const dedupeKey = `showroom:${id}:approved`;
+        const dedupeKey = buildModerationNotificationDedupeKey(showroom, id, "approved", "approve");
         notificationDraft = {
             targetUid,
             actorUid: user.uid,

@@ -66,3 +66,40 @@ export function buildPendingSnapshot(showroom, overrides = {}) {
     }
     return { ...snapshot, ...overrides };
 }
+
+export function hasPriorHistoryAction(history = [], action) {
+    return history.some(entry => entry?.action === action);
+}
+
+export function buildModerationNotificationDedupeKey(showroom, showroomId, action, historyAction = action) {
+    const baseKey = `showroom:${showroomId}:${action}`;
+    if (!hasPriorHistoryAction(showroom?.editHistory || [], historyAction)) {
+        return baseKey;
+    }
+
+    const cycleKey = toCycleKey(showroom?.submittedAt);
+    if (!cycleKey) {
+        return baseKey;
+    }
+
+    return `${baseKey}:${cycleKey}`;
+}
+
+function toCycleKey(value) {
+    if (!value) return null;
+
+    if (typeof value === "string") {
+        return value.replace(/[^\dTZ]/g, "");
+    }
+
+    if (typeof value?.toDate === "function") {
+        return value.toDate().toISOString().replace(/[^\dTZ]/g, "");
+    }
+
+    if (typeof value?._seconds === "number") {
+        const millis = value._seconds * 1000 + Math.floor((value._nanoseconds || 0) / 1e6);
+        return new Date(millis).toISOString().replace(/[^\dTZ]/g, "");
+    }
+
+    return null;
+}
