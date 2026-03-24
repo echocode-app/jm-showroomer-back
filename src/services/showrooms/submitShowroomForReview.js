@@ -15,7 +15,6 @@ import {
     buildSubmitUpdates,
     ensureNormalizedFields,
 } from "./submit/helpers.js";
-import { assertNoOwnerRecreateCooldown } from "./recreateCooldown.js";
 
 /**
  * Moves showroom from editable states into `pending` after duplicate checks.
@@ -171,12 +170,6 @@ function validateAndNormalizeSubmittable(showroom, user) {
  * Rejects owner-local duplicates for DEV mode.
  */
 function assertNoDevDuplicates(showroom, user, normalized) {
-    assertNoOwnerRecreateCooldown(DEV_STORE.showrooms, {
-        ownerUid: user.uid,
-        showroomId: showroom.id,
-        normalizedName: normalized.nameNormalized,
-    });
-
     const ownerDuplicates = DEV_STORE.showrooms.filter(s => {
         if (s.id === showroom.id) return false;
         if (s.ownerUid !== user.uid) return false;
@@ -216,13 +209,6 @@ function assertNoDevDuplicates(showroom, user, normalized) {
  * Rejects duplicate showroom identity inside one owner portfolio.
  */
 function assertNoOwnerDuplicateAtSameAddress(items, showroomId, normalizedName, normalizedAddress) {
-    const ownerUid = items.find(s => s.id === showroomId)?.ownerUid ?? null;
-    assertNoOwnerRecreateCooldown(items, {
-        ownerUid,
-        showroomId,
-        normalizedName,
-    });
-
     const duplicates = items.filter(s => {
         if (s.id === showroomId) return false;
         if (s.status === "deleted") return false;

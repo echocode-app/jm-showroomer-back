@@ -339,7 +339,7 @@ Flutter має:
 - `SHOWROOM_DUPLICATE`
   - глобальний duplicate для moderation по комбінації name + address в іншого pending/approved showroom
 - `SHOWROOM_RECREATE_COOLDOWN`
-  - занадто рання повторна спроба після soft delete
+  - занадто рання повторна спроба `create` після soft delete; до `submit` існуючого showroom цей код більше не застосовується
 
 ---
 

@@ -1900,8 +1900,7 @@ paths:
         Resubmission from `approved` and `rejected` back to `pending` is intentionally allowed.
         Showroom country must match owner country.
         Completeness is evaluated against canonical owner-facing fields; `geo.city` and `geo.coords` are accepted as the source-of-truth for city/location requirements.
-        Error codes: SHOWROOM_INCOMPLETE (400), SHOWROOM_NAME_ALREADY_EXISTS (400), SHOWROOM_DUPLICATE (400), SHOWROOM_LOCKED_PENDING (409), SHOWROOM_NOT_EDITABLE (400), SHOWROOM_RECREATE_COOLDOWN (409).
-        `SHOWROOM_RECREATE_COOLDOWN` may include `error.meta.nextAvailableAt` (ISO timestamp).
+        Error codes: SHOWROOM_INCOMPLETE (400), SHOWROOM_NAME_ALREADY_EXISTS (400), SHOWROOM_DUPLICATE (400), SHOWROOM_LOCKED_PENDING (409), SHOWROOM_NOT_EDITABLE (400).
       operationId: submitShowroom
       externalDocs:
         description: Showrooms Flutter guide (UA)
@@ -1960,20 +1959,11 @@ paths:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "409":
-          description: Locked (pending) or recreation cooldown conflict
+          description: Locked (pending)
           content:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
-              examples:
-                recreate_cooldown:
-                  summary: Resubmitting same normalized showroom name while cooldown is active
-                  value:
-                    error:
-                      code: SHOWROOM_RECREATE_COOLDOWN
-                      message: Showroom can be recreated after cooldown period
-                      meta:
-                        nextAvailableAt: "2026-05-26T13:00:00.000Z"
 
   /showrooms/{id}/favorite:
     parameters:

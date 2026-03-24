@@ -143,7 +143,7 @@ Flutter не повинен сам контролювати:
 - `SHOWROOM_DUPLICATE`
   - глобальний duplicate для moderation flow по комбінації name + address в іншого pending/approved showroom
 - `SHOWROOM_RECREATE_COOLDOWN`
-  - занадто рання повторна спроба створити той самий showroom після soft delete
+  - занадто рання повторна спроба створити той самий showroom після soft delete; для `submit` існуючого showroom цей код не використовується
 
 ## 9. Важливі правила для Flutter
 

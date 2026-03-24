@@ -212,7 +212,7 @@ describe("showroom recreate cooldown (3 months after soft delete)", () => {
         });
     });
 
-    it("submit is blocked by cooldown when same owner has recent soft-deleted showroom with same normalized name", async () => {
+    it("submit of existing showroom is not blocked by cooldown from deleted showroom with same normalized name", async () => {
         const recentDeletedAt = new Date().toISOString();
         DEV_STORE.showrooms.push(
             makeDraftShowroom("sr-deleted", owner.uid, "Atelier Nova", {
@@ -228,12 +228,13 @@ describe("showroom recreate cooldown (3 months after soft delete)", () => {
 
         await expect(
             submitShowroomForReviewService("sr-current", owner)
-        ).rejects.toMatchObject({
-            code: "SHOWROOM_RECREATE_COOLDOWN",
+        ).resolves.toMatchObject({
+            id: "sr-current",
+            status: "pending",
         });
     });
 
-    it("submit is allowed after cooldown expires", async () => {
+    it("submit still succeeds after cooldown window also expires", async () => {
         const oldDeletedAt = addMonths(new Date(), -4).toISOString();
         DEV_STORE.showrooms.push(
             makeDraftShowroom("sr-deleted", owner.uid, "Atelier Nova", {
