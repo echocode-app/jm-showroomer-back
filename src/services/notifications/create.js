@@ -85,6 +85,9 @@ export async function createNotification({
 
     const created = await upsertNotificationDoc(ref, doc);
     if (!created) {
+        log.info(
+            `Notification deduped targetUid=${targetUid} type=${type} resourceType=${resourceType} resourceId=${resourceId} dedupeKey=${dedupeKey}`
+        );
         return {
             skippedByPolicy: false,
             created: false,
@@ -101,11 +104,14 @@ export async function createNotification({
         payload: doc.payload,
         locale: targetUser?.appLanguage ?? null,
     });
-    await sendPushToUser(targetUid, pushPayload);
+    const pushResult = await sendPushToUser(targetUid, pushPayload);
+    log.info(
+        `Notification created targetUid=${targetUid} type=${type} resourceType=${resourceType} resourceId=${resourceId} dedupeKey=${dedupeKey} push=${JSON.stringify(pushResult)}`
+    );
     return {
         skippedByPolicy: false,
         created: true,
-        pushed: true,
+        pushed: pushResult?.skipped !== true,
     };
 }
 

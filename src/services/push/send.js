@@ -15,11 +15,13 @@ export async function sendPushToUser(uid, payload) {
     try {
         // Guard: feature flag and test env hard-disable.
         if (!isPushEnabled()) {
+            log.info(`Push send skipped uid=${uid} reason=push_disabled`);
             return { skipped: true, reason: "push_disabled" };
         }
 
         const targets = await resolveUserPushTargets(uid);
         if (targets.skipped) {
+            log.info(`Push send skipped uid=${uid} reason=${targets.reason}`);
             return { skipped: true, reason: targets.reason };
         }
 
