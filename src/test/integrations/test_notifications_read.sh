@@ -40,11 +40,19 @@ ensure_owner_role() {
 create_submittable_showroom() {
   local suffix=$1
   local draft_id
-  local tag="${SHORT_NOW}${suffix}"
-  local unique="${tag:0:8}"
+  local call_now
+  call_now=$(now_ns)
+  local call_short="${call_now: -6}"
+  local suffix_key
+  suffix_key=$(printf '%s' "${suffix}" | tr -c '[:alnum:]' '_' | tr '[:upper:]' '[:lower:]')
+  suffix_key="${suffix_key#_}"
+  suffix_key="${suffix_key%_}"
+  local unique="${call_short}_${suffix_key}"
   local name="Ntr ${unique}"
   local instagram_suffix
-  instagram_suffix=$(echo "${suffix}" | tr -c '[:alnum:]_.' '_' | tr '[:upper:]' '[:lower:]')
+  instagram_suffix=$(printf '%s' "${suffix}" | tr -c '[:alnum:]_.' '_' | tr '[:upper:]' '[:lower:]')
+  instagram_suffix="${instagram_suffix#_}"
+  instagram_suffix="${instagram_suffix%_}"
 
   http_request "POST /showrooms/draft (${suffix})" 200 "" \
     -X POST "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
@@ -56,7 +64,7 @@ create_submittable_showroom() {
 
   http_request "PATCH /showrooms/{id} (${suffix})" 200 "" \
     -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-    -d "{\"name\":\"${name}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"address\":\"Kyiv, Notif Read St ${unique}\",\"city\":\"Kyiv\",\"availability\":\"open\",\"brands\":[\"BrandNotifRead${SHORT_NOW}\"],\"contacts\":{\"phone\":\"+380501112233\",\"instagram\":\"https://instagram.com/notifread_${SHORT_NOW}_${instagram_suffix}\"},\"location\":{\"lat\":50.4501,\"lng\":30.5234}}" \
+    -d "{\"name\":\"${name}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"address\":\"Kyiv, Notif Read St ${unique}\",\"city\":\"Kyiv\",\"availability\":\"open\",\"brands\":[\"BrandNotifRead${call_short}\"],\"contacts\":{\"phone\":\"+380501112233\",\"instagram\":\"https://instagram.com/notifread_${call_short}_${instagram_suffix}\"},\"location\":{\"lat\":50.4501,\"lng\":30.5234}}" \
     "${BASE_URL}/showrooms/${draft_id}"
 
   http_request "PATCH /showrooms/{id} geo (${suffix})" 200 "" \

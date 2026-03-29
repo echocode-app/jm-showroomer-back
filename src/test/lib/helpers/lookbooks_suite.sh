@@ -1,5 +1,36 @@
 #!/usr/bin/env bash
 
+find_lookbook_in_country_catalog() {
+  local country=$1
+  local target_id=$2
+  local cursor=""
+  local attempts=0
+  local max_attempts=20
+
+  while (( attempts < max_attempts )); do
+    local url="${BASE_URL}/lookbooks?country=${country}&limit=100"
+    if [[ -n "$cursor" ]]; then
+      url="${url}&cursor=${cursor}"
+    fi
+
+    http_request "GET /lookbooks scan page $((attempts + 1))" 200 "" "$url"
+
+    local found
+    found=$(echo "$LAST_BODY" | jq -r --arg id "$target_id" '.data.lookbooks[]?.id | select(. == $id)')
+    if [[ -n "$found" ]]; then
+      return 0
+    fi
+
+    cursor=$(echo "$LAST_BODY" | jq -r '.meta.nextCursor // empty')
+    if [[ -z "$cursor" || "$cursor" == "null" ]]; then
+      break
+    fi
+    attempts=$((attempts + 1))
+  done
+
+  return 1
+}
+
 run_lookbooks_suite() {
   NOW=$(now_ns)
   PREFIX="lookbooks_mvp1_${NOW}"
@@ -72,11 +103,9 @@ run_lookbooks_suite() {
   http_request "GET /lookbooks missing country" 400 "QUERY_INVALID" \
     "${BASE_URL}/lookbooks?seasonKey=ss-2026"
 
-  http_request "GET /lookbooks missing seasonKey (optional)" 200 "" \
-    "${BASE_URL}/lookbooks?country=Ukraine"
-
-  HAS_FW_IN_NO_SEASON=$(echo "$LAST_BODY" | jq -r --arg id "$OTHER_SEASON_ID" '.data.lookbooks[]?.id | select(. == $id)')
-  assert_non_empty "$HAS_FW_IN_NO_SEASON" "other season in list without seasonKey filter"
+  if ! find_lookbook_in_country_catalog "Ukraine" "$OTHER_SEASON_ID"; then
+    fail "other season in list without seasonKey filter"
+  fi
 
   http_request "GET /lookbooks nearby" 200 "" \
     "${BASE_URL}/lookbooks?country=Ukraine&nearLat=50&nearLng=30&nearRadiusKm=5"

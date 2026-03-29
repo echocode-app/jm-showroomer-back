@@ -79,12 +79,20 @@ create_submittable_showroom() {
   local suffix=$1
   local city=$2
   local draft_id
-  local tag="${SHORT_NOW}${suffix}"
-  local unique="${tag:0:8}"
+  local call_now
+  call_now=$(now_ns)
+  local call_short="${call_now: -6}"
+  local suffix_key
+  suffix_key=$(printf '%s' "${suffix}" | tr -c '[:alnum:]' '_' | tr '[:upper:]' '[:lower:]')
+  suffix_key="${suffix_key#_}"
+  suffix_key="${suffix_key%_}"
+  local unique="${call_short}_${suffix_key}"
   local name="Nt ${unique}"
   local instagram_suffix
-  instagram_suffix=$(echo "${suffix}" | tr -c '[:alnum:]_.' '_' | tr '[:upper:]' '[:lower:]')
-  local instagram_handle="notif_${SHORT_NOW}_${instagram_suffix}"
+  instagram_suffix=$(printf '%s' "${suffix}" | tr -c '[:alnum:]_.' '_' | tr '[:upper:]' '[:lower:]')
+  instagram_suffix="${instagram_suffix#_}"
+  instagram_suffix="${instagram_suffix%_}"
+  local instagram_handle="notif_${call_short}_${instagram_suffix}"
   instagram_handle="${instagram_handle:0:30}"
   instagram_handle="${instagram_handle%.}"
   instagram_handle="${instagram_handle%_}"
@@ -105,7 +113,7 @@ create_submittable_showroom() {
 
   http_request "PATCH /showrooms/{id} (${suffix})" 200 "" \
     -X PATCH "${AUTH_HEADER[@]}" "${JSON_HEADER[@]}" \
-    -d "{\"name\":\"${name}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"address\":\"${city}, Notif St ${unique}\",\"city\":\"${city}\",\"availability\":\"open\",\"brands\":[\"BrandNotif${SHORT_NOW}\"],\"contacts\":{\"phone\":\"+380501112233\",\"instagram\":\"https://instagram.com/${instagram_handle}\"},\"location\":{\"lat\":${lat},\"lng\":${lng}}}" \
+    -d "{\"name\":\"${name}\",\"type\":\"multibrand\",\"country\":\"Ukraine\",\"address\":\"${city}, Notif St ${unique}\",\"city\":\"${city}\",\"availability\":\"open\",\"brands\":[\"BrandNotif${call_short}\"],\"contacts\":{\"phone\":\"+380501112233\",\"instagram\":\"https://instagram.com/${instagram_handle}\"},\"location\":{\"lat\":${lat},\"lng\":${lng}}}" \
     "${BASE_URL}/showrooms/${draft_id}"
 
   http_request "PATCH /showrooms/{id} geo (${suffix})" 200 "" \
@@ -149,29 +157,59 @@ import { getFirestoreInstance } from "./src/config/firebase.js";
 
 const [targetUid, dedupeKey, expectedType, expectedResourceType, expectedResourceId, expectedActorUid] = process.argv.slice(2);
 const db = getFirestoreInstance();
-const ref = db.collection("users").doc(targetUid).collection("notifications").doc(dedupeKey);
-const snap = await ref.get();
-if (!snap.exists) {
+const collectionRef = db.collection("users").doc(targetUid).collection("notifications");
+const maxAttempts = Number(process.env.NOTIFICATION_ASSERT_MAX_ATTEMPTS || 8);
+const delayMs = Number(process.env.NOTIFICATION_ASSERT_DELAY_MS || 250);
+
+function matches(data = {}) {
+    if (data.type !== expectedType) return false;
+    if (!data.resource || data.resource.type !== expectedResourceType || data.resource.id !== expectedResourceId) {
+        return false;
+    }
+    if (expectedActorUid && data.actorUid !== expectedActorUid) {
+        return false;
+    }
+    return true;
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+let matched = null;
+for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const exactSnap = await collectionRef.doc(dedupeKey).get();
+    if (exactSnap.exists) {
+        const data = exactSnap.data() || {};
+        if (matches(data)) {
+            matched = { id: exactSnap.id, ...data };
+            break;
+        }
+    }
+
+    const listSnap = await collectionRef.get();
+    matched = listSnap.docs
+        .map(doc => ({ id: doc.id, ...(doc.data() || {}) }))
+        .find(data => matches(data)) ?? null;
+
+    if (matched) break;
+    if (attempt < maxAttempts) {
+        await sleep(delayMs);
+    }
+}
+
+if (!matched) {
     console.error(`missing notification ${dedupeKey}`);
     process.exit(1);
 }
-const data = snap.data() || {};
-if (data.type !== expectedType) {
-    console.error(`unexpected type for ${dedupeKey}: ${data.type}`);
+
+if (matched.isRead !== false || matched.readAt !== null) {
+    console.error(`unexpected read state for ${matched.id}`);
     process.exit(1);
 }
-if (!data.resource || data.resource.type !== expectedResourceType || data.resource.id !== expectedResourceId) {
-    console.error(`unexpected resource for ${dedupeKey}`);
-    process.exit(1);
-}
-if (expectedActorUid) {
-    if (data.actorUid !== expectedActorUid) {
-        console.error(`unexpected actorUid for ${dedupeKey}: ${data.actorUid}`);
-        process.exit(1);
-    }
-}
-if (data.isRead !== false || data.readAt !== null || data.dedupeKey !== dedupeKey) {
-    console.error(`unexpected read state/dedupe for ${dedupeKey}`);
+
+if (matched.dedupeKey !== matched.id) {
+    console.error(`unexpected dedupe/doc id mismatch for ${matched.id}`);
     process.exit(1);
 }
 NODE
@@ -270,18 +308,6 @@ reject_showroom "$REJECTED_ID"
 REJECT_DEDUPE="showroom:${REJECTED_ID}:rejected"
 assert_notification_exists "$USER_UID" "$REJECT_DEDUPE" "SHOWROOM_REJECTED" "showroom" "$REJECTED_ID" "$ADMIN_UID"
 
-print_section "Admin delete showroom notification"
-DELETED_ID=$(create_submittable_showroom "notif-admin-delete" "Kyiv" | tail -n1)
-http_request "DELETE /admin/showrooms/{id}" 200 "" \
-  -X DELETE "${ADMIN_HEADER[@]}" \
-  "${BASE_URL}/admin/showrooms/${DELETED_ID}"
-DELETED_DEDUPE="showroom:${DELETED_ID}:deleted_by_admin"
-if [[ "${MVP_MODE:-}" == "true" ]]; then
-  assert_notification_absent "$USER_UID" "$DELETED_DEDUPE"
-else
-  assert_notification_exists "$USER_UID" "$DELETED_DEDUPE" "SHOWROOM_DELETED_BY_ADMIN" "showroom" "$DELETED_ID" "$ADMIN_UID"
-fi
-
 print_section "Showroom favorite notifications"
 http_request "POST /showrooms/{id}/favorite (admin first)" 200 "" \
   -X POST "${ADMIN_HEADER[@]}" \
@@ -340,6 +366,17 @@ if [[ "${MVP_MODE:-}" == "true" ]]; then
   assert_notification_absent "$USER_UID" "$EVENT_DEDUPE"
 else
   assert_notification_exists "$USER_UID" "$EVENT_DEDUPE" "EVENT_WANT_TO_VISIT" "event" "$EVENT_ID" "$ADMIN_UID"
+fi
+
+print_section "Admin delete showroom notification"
+http_request "DELETE /admin/showrooms/{id}" 200 "" \
+  -X DELETE "${ADMIN_HEADER[@]}" \
+  "${BASE_URL}/admin/showrooms/${APPROVED_ID}"
+DELETED_DEDUPE="showroom:${APPROVED_ID}:deleted_by_admin"
+if [[ "${MVP_MODE:-}" == "true" ]]; then
+  assert_notification_absent "$USER_UID" "$DELETED_DEDUPE"
+else
+  assert_notification_exists "$USER_UID" "$DELETED_DEDUPE" "SHOWROOM_DELETED_BY_ADMIN" "showroom" "$APPROVED_ID" "$ADMIN_UID"
 fi
 
 print_section "RESULT"

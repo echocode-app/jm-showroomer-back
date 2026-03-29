@@ -15,4 +15,4 @@ export {
     parseAdminModerationQueueQuery,
 } from "./validation.js";
 export { mapModerationDTO, mapShowroomToAdminModerationQueueDTO } from "./dto.js";
-
+export { getSubmissionKindFromEditHistory } from "../submissionKind.js";

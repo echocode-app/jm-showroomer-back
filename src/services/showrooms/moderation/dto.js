@@ -1,4 +1,5 @@
 import { toIsoString } from "../../../utils/timestamp.js";
+import { getSubmissionKindFromEditHistory } from "../submissionKind.js";
 
 // Admin moderation queue DTO is intentionally minimal:
 // enough to review queue items, but no snapshots/history/derived search metadata.
@@ -17,9 +18,9 @@ export function mapModerationDTO(showroomDoc = {}) {
             ? showroomDoc.editCount
             : (showroomDoc.editCount ?? 0),
         status: showroomDoc.status ?? null,
+        submissionKind: getSubmissionKindFromEditHistory(showroomDoc.editHistory),
     };
 }
 
 // Backward-compatible alias for existing imports.
 export const mapShowroomToAdminModerationQueueDTO = mapModerationDTO;
-

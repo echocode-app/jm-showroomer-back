@@ -4,6 +4,7 @@ import {
     assertAdminModerationCursorFingerprint,
     decodeAdminModerationCursor,
     encodeAdminModerationCursor,
+    getSubmissionKindFromEditHistory,
     mapShowroomToAdminModerationQueueDTO,
     parseAdminModerationQueueQuery,
     parseAdminShowroomsStatus,
@@ -105,7 +106,7 @@ describe("admin moderation queue dto", () => {
             nameNormalized: "name",
             brandsMap: { zara: true },
             pendingSnapshot: { name: "Name" },
-            editHistory: [{ action: "submit" }],
+            editHistory: [{ action: "submit", statusBefore: "draft" }],
         });
 
         expect(dto).toEqual({
@@ -120,10 +121,46 @@ describe("admin moderation queue dto", () => {
             updatedAt: "2026-01-02T00:00:00.000Z",
             editCount: 3,
             status: "pending",
+            submissionKind: "new",
         });
         expect(dto).not.toHaveProperty("nameNormalized");
         expect(dto).not.toHaveProperty("brandsMap");
         expect(dto).not.toHaveProperty("pendingSnapshot");
         expect(dto).not.toHaveProperty("editHistory");
+    });
+});
+
+describe("submission kind helper", () => {
+    it("classifies first submit from draft as new", () => {
+        expect(
+            getSubmissionKindFromEditHistory([
+                { action: "patch", statusBefore: "draft" },
+                { action: "submit", statusBefore: "draft" },
+            ])
+        ).toBe("new");
+    });
+
+    it("classifies resubmission from rejected or approved as edited", () => {
+        expect(
+            getSubmissionKindFromEditHistory([
+                { action: "submit", statusBefore: "draft" },
+                { action: "reject", statusBefore: "pending" },
+                { action: "submit", statusBefore: "rejected" },
+            ])
+        ).toBe("edited");
+
+        expect(
+            getSubmissionKindFromEditHistory([
+                { action: "submit", statusBefore: "draft" },
+                { action: "approve", statusBefore: "pending" },
+                { action: "submit", statusBefore: "approved" },
+            ])
+        ).toBe("edited");
+    });
+
+    it("falls back to unknown for legacy or malformed histories", () => {
+        expect(getSubmissionKindFromEditHistory([])).toBe("unknown");
+        expect(getSubmissionKindFromEditHistory([{ action: "submit" }])).toBe("unknown");
+        expect(getSubmissionKindFromEditHistory(null)).toBe("unknown");
     });
 });

@@ -1,4 +1,5 @@
 import { toIsoString } from "../../utils/timestamp.js";
+import { getSubmissionKindFromEditHistory } from "./submissionKind.js";
 
 function normalizeHistory(history) {
     if (!Array.isArray(history)) return [];
@@ -78,6 +79,7 @@ export function mapShowroomToPublicDTO(showroomDoc, options = {}) {
         dto.ownerUid = showroomDoc.ownerUid;
         dto.location = showroomDoc.location ?? showroomDoc.geo?.coords ?? null;
         dto.editHistory = showroomDoc.editHistory;
+        dto.submissionKind = getSubmissionKindFromEditHistory(showroomDoc.editHistory);
         dto.pendingSnapshot = showroomDoc.pendingSnapshot;
         dto.deletedAt = showroomDoc.deletedAt;
         dto.deletedBy = showroomDoc.deletedBy;

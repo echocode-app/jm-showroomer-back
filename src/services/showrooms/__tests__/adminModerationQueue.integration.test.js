@@ -359,6 +359,7 @@ describe("admin moderation queue integration", () => {
             expect(item).toHaveProperty("id");
             expect(item).toHaveProperty("ownerUid");
             expect(item).toHaveProperty("submittedAt");
+            expect(item).toHaveProperty("submissionKind", "new");
 
             expect(item).not.toHaveProperty("editHistory");
             expect(item).not.toHaveProperty("pendingSnapshot");
@@ -373,6 +374,45 @@ describe("admin moderation queue integration", () => {
             expect(typeof doc.submittedAt).toBe("string");
             expect(doc.submittedAt).toMatch(/T/);
         });
+    });
+
+    it("classifies pending submissions as new, edited, or unknown from submit history", async () => {
+        state.showrooms = [
+            {
+                ...makeDraftShowroom("sr-new", owner.uid, "New", "Addr new"),
+                status: "pending",
+                submittedAt: "2026-02-25T12:00:03.000Z",
+                editHistory: [
+                    { action: "patch", statusBefore: "draft", statusAfter: "draft" },
+                    { action: "submit", statusBefore: "draft", statusAfter: "pending" },
+                ],
+            },
+            {
+                ...makeDraftShowroom("sr-edited", owner.uid, "Edited", "Addr edited"),
+                status: "pending",
+                submittedAt: "2026-02-25T12:00:02.000Z",
+                editHistory: [
+                    { action: "submit", statusBefore: "draft", statusAfter: "pending" },
+                    { action: "reject", statusBefore: "pending", statusAfter: "rejected" },
+                    { action: "patch", statusBefore: "rejected", statusAfter: "rejected" },
+                    { action: "submit", statusBefore: "rejected", statusAfter: "pending" },
+                ],
+            },
+            {
+                ...makeDraftShowroom("sr-unknown", owner.uid, "Unknown", "Addr unknown"),
+                status: "pending",
+                submittedAt: "2026-02-25T12:00:01.000Z",
+                editHistory: [],
+            },
+        ];
+
+        const result = await listAdminModerationQueueService({ status: "pending", limit: 10 }, admin);
+
+        expect(result.showrooms).toEqual([
+            expect.objectContaining({ id: "sr-new", submissionKind: "new" }),
+            expect.objectContaining({ id: "sr-edited", submissionKind: "edited" }),
+            expect.objectContaining({ id: "sr-unknown", submissionKind: "unknown" }),
+        ]);
     });
 
     it("cursor pagination: no duplicates and last page hasMore=false", async () => {
