@@ -55,8 +55,11 @@ components:
 
     PublicContacts:
       type: object
-      description: Public-safe contact channels (phone is intentionally excluded).
+      description: Public contact channels exposed in showroom responses.
       properties:
+        phone:
+          type: string
+          nullable: true
         instagram:
           type: string
           nullable: true
@@ -413,6 +416,7 @@ components:
           description: |
             Public showroom detail DTO returned by `GET /showrooms/{id}`.
             Unlike baseline list/card payloads, detail includes exact `geo.coords`.
+            Public detail also exposes the showroom phone number when present.
           properties:
             geo:
               allOf:

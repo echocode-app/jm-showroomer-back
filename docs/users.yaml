@@ -84,6 +84,8 @@ components:
             position:
               type: string
               nullable: true
+            phone:
+              type: string
             instagram:
               type: string
 
@@ -97,7 +99,7 @@ components:
 
     CompleteOwnerProfileInput:
       type: object
-      required: [name, country, instagram]
+      required: [name, country, phone, instagram]
       properties:
         name:
           type: string
@@ -109,6 +111,9 @@ components:
         country:
           type: string
           description: Full country name (e.g., Ukraine). Not ISO2. russia/belarus blocked.
+        phone:
+          type: string
+          description: Owner phone number. Backend normalizes to E.164 and requires it for owner registration.
         instagram:
           type: string
           description: >-
@@ -127,6 +132,9 @@ components:
         country:
           type: string
           description: Full country name (e.g., Ukraine). Not ISO2. russia/belarus blocked. Owner-only field after owner profile registration.
+        phone:
+          type: string
+          description: Owner-only field after owner profile registration. Backend normalizes to E.164.
         instagram:
           type: string
           description: >-

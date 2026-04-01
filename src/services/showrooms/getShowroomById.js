@@ -44,7 +44,7 @@ export async function getShowroomByIdService(id, user = null) {
         return normalizeShowroomForResponse(showroom, {
             includeInternal: isPrivilegedViewer(showroom, user),
             includeGeoCoords: true,
-            includePhone: isPrivilegedViewer(showroom, user),
+            includePhone: true,
         });
     }
 
@@ -77,6 +77,6 @@ export async function getShowroomByIdService(id, user = null) {
     return normalizeShowroomForResponse(payload, {
         includeInternal: privileged,
         includeGeoCoords: true,
-        includePhone: privileged,
+        includePhone: true,
     });
 }

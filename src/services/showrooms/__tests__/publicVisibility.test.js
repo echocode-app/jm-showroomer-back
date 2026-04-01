@@ -63,4 +63,17 @@ describe("showrooms public visibility", () => {
 
         expect(showroom.geo.coords).toEqual({ lat: 50.4501, lng: 30.5234 });
     });
+
+    it("returns contacts.phone in public showroom detail", async () => {
+        seedShowroom({
+            contacts: {
+                phone: "+380501112233",
+                instagram: "https://instagram.com/test",
+            },
+        });
+
+        const showroom = await getShowroomByIdService("sr-1", null);
+
+        expect(showroom.contacts.phone).toBe("+380501112233");
+    });
 });

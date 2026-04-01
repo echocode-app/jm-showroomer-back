@@ -13,7 +13,8 @@ function pickPublicContacts(contacts) {
     if (!contacts || typeof contacts !== "object" || Array.isArray(contacts)) return null;
     const next = {};
 
-    // Public contract hardening: keep only non-sensitive contact channels.
+    // Public showroom contract exposes all supported contact channels, including phone.
+    if (typeof contacts.phone === "string") next.phone = contacts.phone;
     if (typeof contacts.instagram === "string") next.instagram = contacts.instagram;
     if (typeof contacts.email === "string") next.email = contacts.email;
     if (typeof contacts.website === "string") next.website = contacts.website;

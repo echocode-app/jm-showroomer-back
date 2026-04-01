@@ -36,6 +36,7 @@ function buildSoftDeleteProfileUpdate(now) {
         notificationsEnabled: null,
         "ownerProfile.name": null,
         "ownerProfile.position": null,
+        "ownerProfile.phone": null,
         "ownerProfile.instagram": null,
     };
 }

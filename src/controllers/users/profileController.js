@@ -2,6 +2,7 @@ import { isCountryBlocked, normalizeCountry } from "../../constants/countries.js
 import { ok, fail } from "../../utils/apiResponse.js";
 import {
     normalizeInstagramUrl,
+    validatePhone,
     validateInstagramUrl,
 } from "../../utils/showroomValidation.js";
 import {
@@ -74,13 +75,14 @@ export async function completeOnboarding(req, res) {
  * Validates owner profile fields and upgrades user role to owner.
  */
 export async function completeOwnerProfile(req, res) {
-    const { name, position = null, country, instagram } = req.body || {};
+    const { name, position = null, country, phone, instagram } = req.body || {};
 
     const trimmedName = String(name ?? "").trim();
     const trimmedCountry = String(country ?? "").trim();
+    const trimmedPhone = String(phone ?? "").trim();
     const trimmedInstagram = String(instagram ?? "").trim();
 
-    if (!trimmedName || !trimmedCountry || !trimmedInstagram) {
+    if (!trimmedName || !trimmedCountry || !trimmedPhone || !trimmedInstagram) {
         return fail(res, "VALIDATION_ERROR", "Missing required fields", 400);
     }
 
@@ -90,6 +92,7 @@ export async function completeOwnerProfile(req, res) {
 
     try {
         const wasOwner = req.user?.role === "owner";
+        const { e164 } = validatePhone(trimmedPhone, trimmedCountry);
         const normalizedInstagram = normalizeInstagramUrl(trimmedInstagram);
         validateInstagramUrl(normalizedInstagram);
 
@@ -97,6 +100,7 @@ export async function completeOwnerProfile(req, res) {
         const ownerProfile = {
             name: trimmedName,
             position: position ? String(position).trim() : null,
+            phone: e164,
             instagram: normalizedInstagram,
         };
 
@@ -148,6 +152,7 @@ export async function updateUserProfile(req, res) {
     const {
         name,
         country,
+        phone,
         instagram,
         position,
         appLanguage,
@@ -160,6 +165,7 @@ export async function updateUserProfile(req, res) {
     const hasIdentityFieldPatch = [
         name,
         country,
+        phone,
         instagram,
         position,
     ].some(value => value !== undefined);
@@ -217,6 +223,25 @@ export async function updateUserProfile(req, res) {
     if (instagram !== undefined || position !== undefined) {
         if (!isOwner) {
             return fail(res, "FORBIDDEN", "Access denied", 403);
+        }
+    }
+
+    if (phone !== undefined) {
+        if (!isOwner) {
+            return fail(res, "FORBIDDEN", "Access denied", 403);
+        }
+    }
+
+    if (phone !== undefined) {
+        const trimmedPhone = String(phone ?? "").trim();
+        if (!trimmedPhone) {
+            return fail(res, "VALIDATION_ERROR", "Phone is required", 400);
+        }
+        try {
+            const { e164 } = validatePhone(trimmedPhone, updates.country ?? req.user?.country ?? null);
+            updates["ownerProfile.phone"] = e164;
+        } catch (err) {
+            return fail(res, err.code || "VALIDATION_ERROR", err.message, err.status || 400);
         }
     }
 

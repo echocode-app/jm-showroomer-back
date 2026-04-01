@@ -6,6 +6,7 @@ const updateUserProfileDocMock = jest.fn();
 const ownerHasActiveShowroomsMock = jest.fn();
 const normalizeInstagramUrlMock = jest.fn(value => value);
 const validateInstagramUrlMock = jest.fn();
+const validatePhoneMock = jest.fn(value => ({ e164: value }));
 const normalizeAppLanguageMock = jest.fn(value => value);
 
 jest.unstable_mockModule("../../utils/apiResponse.js", () => ({
@@ -16,6 +17,7 @@ jest.unstable_mockModule("../../utils/apiResponse.js", () => ({
 jest.unstable_mockModule("../../utils/showroomValidation.js", () => ({
     normalizeInstagramUrl: normalizeInstagramUrlMock,
     validateInstagramUrl: validateInstagramUrlMock,
+    validatePhone: validatePhoneMock,
 }));
 
 jest.unstable_mockModule("../../services/users/profileService.js", () => ({
@@ -98,6 +100,7 @@ describe("user profile controller", () => {
         const req = {
             body: {
                 name: "Victoria",
+                phone: "+380501112233",
                 position: "Founder",
                 instagram: "https://instagram.com/victoria",
             },
@@ -109,13 +112,37 @@ describe("user profile controller", () => {
         await updateUserProfile(req, res, undefined);
 
         expect(validateInstagramUrlMock).toHaveBeenCalled();
+        expect(validatePhoneMock).toHaveBeenCalledWith("+380501112233", "Ukraine");
         expect(updateUserProfileDocMock).toHaveBeenCalledWith(
             "owner-1",
             expect.objectContaining({
                 name: "Victoria",
                 "ownerProfile.name": "Victoria",
                 "ownerProfile.position": "Founder",
+                "ownerProfile.phone": "+380501112233",
                 "ownerProfile.instagram": "https://instagram.com/victoria",
+            })
+        );
+        expect(okMock).toHaveBeenCalledWith(res, { message: "Profile updated" });
+    });
+
+    it("allows owner phone update and stores normalized ownerProfile.phone", async () => {
+        const req = {
+            body: {
+                phone: "+380501112233",
+            },
+            user: { uid: "owner-1", role: "owner", country: "Ukraine" },
+            auth: { uid: "owner-1" },
+        };
+        const res = {};
+
+        await updateUserProfile(req, res, undefined);
+
+        expect(validatePhoneMock).toHaveBeenCalledWith("+380501112233", "Ukraine");
+        expect(updateUserProfileDocMock).toHaveBeenCalledWith(
+            "owner-1",
+            expect.objectContaining({
+                "ownerProfile.phone": "+380501112233",
             })
         );
         expect(okMock).toHaveBeenCalledWith(res, { message: "Profile updated" });

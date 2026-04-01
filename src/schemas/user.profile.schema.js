@@ -7,6 +7,7 @@ import { APP_LANGUAGES } from "../constants/appLanguage.js";
 export const userProfileUpdateSchema = Joi.object({
     name: Joi.string().trim().min(2).max(15),
     country: Joi.string().trim().min(2).max(60),
+    phone: Joi.string().trim().min(3).max(50),
     instagram: Joi.string().trim().min(2).max(200),
     position: Joi.string().trim().allow("", null).max(100),
     appLanguage: Joi.string().trim().lowercase().valid(

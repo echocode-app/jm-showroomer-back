@@ -5,6 +5,7 @@ import { assertUserWritableInTx } from "../users/writeGuardService.js";
 import { buildDiff, isSameCountry } from "./_helpers.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 import { normalizePatchData } from "./update/normalizePatch.js";
+import { assertShowroomComplete } from "../../utils/showroomValidation.js";
 import {
     applyCategoryPatch,
     assertEditableShowroom,
@@ -85,6 +86,9 @@ function buildPatchPayload(showroom, data, user) {
     applyCategoryPatch(data, showroom);
 
     const proposed = { ...showroom, ...data };
+    if (["approved", "rejected"].includes(showroom.status)) {
+        assertShowroomComplete(proposed);
+    }
     const { diff, changedFields } = buildDiff(showroom, proposed);
     if (changedFields.length === 0) {
         throw badRequest("NO_FIELDS_TO_UPDATE");
