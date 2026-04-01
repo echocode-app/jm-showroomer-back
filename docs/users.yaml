@@ -666,6 +666,7 @@ paths:
                   name: "Owner Test"
                   position: "Owner"
                   country: "Ukraine"
+                  phone: "+380501112233"
                   instagram: "https://instagram.com/owner_test"
       responses:
         "200":
