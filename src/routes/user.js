@@ -5,6 +5,7 @@ import { requireRole } from "../middlewares/role.js";
 import { schemaValidate } from "../middlewares/schemaValidate.js";
 import { ROLES } from "../constants/roles.js";
 import { completeOwnerProfileSchema } from "../schemas/user.complete-owner-profile.schema.js";
+import { completeOnboardingSchema } from "../schemas/user.complete-onboarding.schema.js";
 import { userProfileUpdateSchema } from "../schemas/user.profile.schema.js";
 import {
   userDeviceParamsSchema,
@@ -104,6 +105,7 @@ router.post(
   "/complete-onboarding",
   authMiddleware,
   loadUser,
+  schemaValidate({ body: completeOnboardingSchema }),
   completeOnboarding
 );
 

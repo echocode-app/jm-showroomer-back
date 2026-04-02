@@ -12,13 +12,27 @@ function mapJoiError(details) {
         d => d.type === "any.required" && d.path?.length
     );
 
+    const meta = {
+        fields: details.map(detail => ({
+            path: Array.isArray(detail.path) ? detail.path.join(".") : String(detail.path || ""),
+            type: detail.type,
+            message: detail.message,
+        })),
+    };
+
     if (missing) {
         const key = String(missing.path[0]);
         const code = REQUIRED_CODE_MAP[key];
-        if (code) return badRequest(code);
+        if (code) {
+            const err = badRequest(code);
+            err.meta = meta;
+            return err;
+        }
     }
 
-    return badRequest("VALIDATION_ERROR");
+    const err = badRequest("VALIDATION_ERROR");
+    err.meta = meta;
+    return err;
 }
 
 // schemaValidate
