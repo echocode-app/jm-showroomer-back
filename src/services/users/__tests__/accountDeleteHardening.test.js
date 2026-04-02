@@ -184,6 +184,10 @@ describe("account delete hardening", () => {
         expect(result.status).toBe("deleted");
         expect(state.users.u1.isDeleted).toBe(true);
         expect(state.users.u1.deleteLock).toBeNull();
+        expect(state.users.u1.role).toBe("user");
+        expect(state.users.u1.roles).toEqual(["user"]);
+        expect(state.users.u1.onboardingState).toBe("new");
+        expect(state.users.u1.country).toBeNull();
         expect(state.showrooms[0].status).toBe("deleted");
         expect(state.lookbooks).toHaveLength(0);
         expect(state.events).toHaveLength(0);
@@ -203,6 +207,10 @@ describe("account delete hardening", () => {
         expect(result.status).toBe("deleted");
         expect(state.users.u1.isDeleted).toBe(true);
         expect(state.users.u1.deleteLock).toBeNull();
+        expect(state.users.u1.role).toBe("user");
+        expect(state.users.u1.roles).toEqual(["user"]);
+        expect(state.users.u1.onboardingState).toBe("new");
+        expect(state.users.u1.country).toBeNull();
         expect(typeof state.users.u1.deletedAt).toBe("string");
     });
 

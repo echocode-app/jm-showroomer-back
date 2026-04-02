@@ -1,6 +1,37 @@
 import { getAuthInstance, getFirestoreInstance } from "../config/firebase.js";
 import { isCountryBlocked } from "../constants/countries.js";
 
+function buildActiveUserProfile({ uid, email, name, picture, createdAt, existingUser = null }) {
+    const now = new Date().toISOString();
+    return {
+        uid,
+        email: email || null,
+        name: name || null,
+        avatar: picture || null,
+        role: "user",
+        roles: ["user"],
+        country: null,
+        status: "active",
+        onboardingState: "new",
+        createdAt: createdAt || existingUser?.createdAt || now,
+        updatedAt: now,
+        isDeleted: false,
+        deletedAt: null,
+        deleteLock: null,
+        deleteLockAt: null,
+        instagram: null,
+        position: null,
+        appLanguage: null,
+        notificationsEnabled: true,
+        ownerProfile: {
+            name: null,
+            position: null,
+            phone: null,
+            instagram: null,
+        },
+    };
+}
+
 // verifyOAuthToken
 export async function verifyOAuthToken(idToken) {
     if (!idToken) {
@@ -31,25 +62,26 @@ export async function verifyOAuthToken(idToken) {
     let firestoreUser;
 
     if (!snap.exists) {
-        const now = new Date().toISOString();
-
-        firestoreUser = {
+        firestoreUser = buildActiveUserProfile({
             uid,
-            email: email || null,
-            name: name || null,
-            avatar: picture || null,
-            role: "user",
-            roles: ["user"],
-            country: null,
-            status: "active",
-            onboardingState: "new",
-            createdAt: now,
-            updatedAt: now,
-        };
+            email,
+            name,
+            picture,
+        });
 
         await userRef.set(firestoreUser);
     } else {
         firestoreUser = snap.data();
+        if (firestoreUser?.isDeleted === true) {
+            firestoreUser = buildActiveUserProfile({
+                uid,
+                email,
+                name,
+                picture,
+                existingUser: firestoreUser,
+            });
+            await userRef.set(firestoreUser, { merge: true });
+        }
     }
 
     return {
