@@ -3,6 +3,8 @@ import { isCountryBlocked } from "../constants/countries.js";
 
 function buildActiveUserProfile({ uid, email, name, picture, createdAt, existingUser = null }) {
     const now = new Date().toISOString();
+    const onboardingState =
+        existingUser?.onboardingState === "completed" ? "completed" : "new";
     return {
         uid,
         email: email || null,
@@ -10,9 +12,9 @@ function buildActiveUserProfile({ uid, email, name, picture, createdAt, existing
         avatar: picture || null,
         role: "user",
         roles: ["user"],
-        country: null,
+        country: existingUser?.country ?? null,
         status: "active",
-        onboardingState: "new",
+        onboardingState,
         createdAt: createdAt || existingUser?.createdAt || now,
         updatedAt: now,
         isDeleted: false,
@@ -21,7 +23,7 @@ function buildActiveUserProfile({ uid, email, name, picture, createdAt, existing
         deleteLockAt: null,
         instagram: null,
         position: null,
-        appLanguage: null,
+        appLanguage: existingUser?.appLanguage ?? null,
         notificationsEnabled: true,
         ownerProfile: {
             name: null,

@@ -28,47 +28,52 @@ export async function getMyProfile(req, res) {
  * Completes onboarding by persisting allowed country.
  */
 export async function completeOnboarding(req, res) {
-    const { country } = req.body;
-
-    if (!country) {
-        return fail(res, "COUNTRY_REQUIRED", "Country is required", 400);
-    }
-
-    if (isCountryBlocked(country)) {
-        return fail(res, "COUNTRY_BLOCKED", "Country is not supported", 403);
-    }
-
-    if (req.user.onboardingState === "completed") {
-        return ok(res, { message: "Onboarding already completed" });
-    }
-
-    await updateUserOnboarding(req.user.uid, country);
     try {
-        await record(buildAnalyticsEvent({
-            eventName: ANALYTICS_EVENTS.ONBOARDING_COMPLETED,
-            source: "server",
-            actor: {
-                userId: req.user?.uid ?? null,
-                isAnonymous: false,
-            },
-            context: {
-                surface: "onboarding",
-                route: "/api/v1/users/complete-onboarding",
-                method: "POST",
-            },
-            resource: {
-                type: "onboarding",
-                id: "completed",
-            },
-            meta: {
-                producer: "backend_api",
-            },
-        }));
-    } catch (err) {
-        log.error(`Analytics emit failed (onboarding_completed): ${err?.message || err}`);
-    }
+        const trimmedCountry = String(req.body?.country ?? "").trim();
 
-    return ok(res, { message: "Onboarding completed" });
+        if (!trimmedCountry) {
+            return fail(res, "COUNTRY_REQUIRED", "Country is required", 400);
+        }
+
+        if (isCountryBlocked(trimmedCountry)) {
+            return fail(res, "COUNTRY_BLOCKED", "Country is not supported", 403);
+        }
+
+        if (req.user.onboardingState === "completed") {
+            return ok(res, { message: "Onboarding already completed" });
+        }
+
+        await updateUserOnboarding(req.user.uid, trimmedCountry);
+        try {
+            await record(buildAnalyticsEvent({
+                eventName: ANALYTICS_EVENTS.ONBOARDING_COMPLETED,
+                source: "server",
+                actor: {
+                    userId: req.user?.uid ?? null,
+                    isAnonymous: false,
+                },
+                context: {
+                    surface: "onboarding",
+                    route: "/api/v1/users/complete-onboarding",
+                    method: "POST",
+                },
+                resource: {
+                    type: "onboarding",
+                    id: "completed",
+                },
+                meta: {
+                    producer: "backend_api",
+                },
+            }));
+        } catch (err) {
+            log.error(`Analytics emit failed (onboarding_completed): ${err?.message || err}`);
+        }
+
+        return ok(res, { message: "Onboarding completed" });
+    } catch (err) {
+        log.error(`completeOnboarding failed uid=${req.user?.uid ?? "unknown"}: ${err?.stack || err?.message || err}`);
+        return fail(res, err.code || "INTERNAL_ERROR", err.message || "Internal server error", err.status || 500);
+    }
 }
 
 /**

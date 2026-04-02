@@ -55,10 +55,11 @@ describe("authService.verifyOAuthToken", () => {
             role: "user",
             roles: ["user"],
             onboardingState: "new",
+            country: null,
         });
     });
 
-    it("reactivates a soft-deleted user as a fresh baseline account", async () => {
+    it("reactivates a soft-deleted user without restoring owner role", async () => {
         verifyIdTokenMock.mockResolvedValue({
             uid: "u2",
             email: "restored@example.com",
@@ -74,6 +75,7 @@ describe("authService.verifyOAuthToken", () => {
                 roles: ["owner"],
                 onboardingState: "completed",
                 country: "Ukraine",
+                appLanguage: "uk",
                 isDeleted: true,
                 deletedAt: "2026-04-02T08:24:58.808Z",
                 createdAt: "2026-03-17T00:24:51.881Z",
@@ -96,8 +98,9 @@ describe("authService.verifyOAuthToken", () => {
                 name: "Restored User",
                 role: "user",
                 roles: ["user"],
-                onboardingState: "new",
-                country: null,
+                onboardingState: "completed",
+                country: "Ukraine",
+                appLanguage: "uk",
                 isDeleted: false,
                 deletedAt: null,
                 deleteLock: null,
@@ -115,7 +118,8 @@ describe("authService.verifyOAuthToken", () => {
             uid: "u2",
             role: "user",
             roles: ["user"],
-            onboardingState: "new",
+            onboardingState: "completed",
+            country: "Ukraine",
             isDeleted: false,
         });
     });

@@ -20,23 +20,24 @@ function getUserRef(userId) {
     return db.collection("users").doc(userId);
 }
 
-function buildSoftDeleteProfileUpdate(now) {
+function buildSoftDeleteProfileUpdate(user, now) {
     return {
         isDeleted: true,
         deletedAt: now,
         deleteLock: null,
         deleteLockAt: null,
         updatedAt: now,
+        status: "deleted",
         role: "user",
         roles: ["user"],
-        onboardingState: "new",
-        country: null,
+        onboardingState: user?.onboardingState === "completed" ? "completed" : "new",
+        country: user?.country ?? null,
         email: null,
         name: null,
         avatar: null,
         instagram: null,
         position: null,
-        appLanguage: null,
+        appLanguage: user?.appLanguage ?? null,
         notificationsEnabled: null,
         "ownerProfile.name": null,
         "ownerProfile.position": null,
@@ -236,7 +237,7 @@ async function finalizeSoftDeleteWithLock(userId) {
         const user = snap.data() || {};
         if (user.isDeleted === true) return { status: "already_deleted" };
         if (user.deleteLock !== true) return { status: "lock_lost" };
-        tx.update(ref, buildSoftDeleteProfileUpdate(now));
+        tx.update(ref, buildSoftDeleteProfileUpdate(user, now));
         return { status: "deleted" };
     });
 }

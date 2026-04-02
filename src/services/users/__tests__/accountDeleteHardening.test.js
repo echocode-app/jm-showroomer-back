@@ -172,7 +172,17 @@ describe("account delete hardening", () => {
 
     it("deletes account and cascades cleanup when user owns business entities", async () => {
         const state = {
-            users: { u1: { uid: "u1", isDeleted: false } },
+            users: {
+                u1: {
+                    uid: "u1",
+                    isDeleted: false,
+                    role: "owner",
+                    roles: ["owner"],
+                    onboardingState: "completed",
+                    country: "Ukraine",
+                    appLanguage: "uk",
+                },
+            },
             showrooms: [{ id: "sr-1", ownerUid: "u1", status: "approved" }],
             lookbooks: [{ id: "lb-1", authorId: "u1", published: true }],
             events: [{ id: "ev-1", ownerUid: "u1" }],
@@ -184,10 +194,12 @@ describe("account delete hardening", () => {
         expect(result.status).toBe("deleted");
         expect(state.users.u1.isDeleted).toBe(true);
         expect(state.users.u1.deleteLock).toBeNull();
+        expect(state.users.u1.status).toBe("deleted");
         expect(state.users.u1.role).toBe("user");
         expect(state.users.u1.roles).toEqual(["user"]);
-        expect(state.users.u1.onboardingState).toBe("new");
-        expect(state.users.u1.country).toBeNull();
+        expect(state.users.u1.onboardingState).toBe("completed");
+        expect(state.users.u1.country).toBe("Ukraine");
+        expect(state.users.u1.appLanguage).toBe("uk");
         expect(state.showrooms[0].status).toBe("deleted");
         expect(state.lookbooks).toHaveLength(0);
         expect(state.events).toHaveLength(0);
@@ -195,7 +207,14 @@ describe("account delete hardening", () => {
 
     it("allows deletion when user owns only deleted showrooms", async () => {
         const state = {
-            users: { u1: { uid: "u1", isDeleted: false } },
+            users: {
+                u1: {
+                    uid: "u1",
+                    isDeleted: false,
+                    onboardingState: "new",
+                    country: null,
+                },
+            },
             showrooms: [{ id: "sr-1", ownerUid: "u1", status: "deleted" }],
             lookbooks: [],
             events: [],
@@ -211,6 +230,7 @@ describe("account delete hardening", () => {
         expect(state.users.u1.roles).toEqual(["user"]);
         expect(state.users.u1.onboardingState).toBe("new");
         expect(state.users.u1.country).toBeNull();
+        expect(state.users.u1.status).toBe("deleted");
         expect(typeof state.users.u1.deletedAt).toBe("string");
     });
 
