@@ -44,6 +44,9 @@ export const errorHandler = (err, req, res, next) => {
     message,
     userId: req?.user?.uid ?? req?.auth?.uid ?? undefined,
   };
+  if (err?.meta && typeof err.meta === "object" && !Array.isArray(err.meta)) {
+    errorLogPayload.meta = err.meta;
+  }
   if (code === "INDEX_NOT_READY" && err?.meta?.firestoreMessage) {
     errorLogPayload.firestoreMessage = err.meta.firestoreMessage;
   }
