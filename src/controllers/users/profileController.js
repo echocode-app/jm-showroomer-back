@@ -87,7 +87,7 @@ export async function completeOwnerProfile(req, res) {
     const trimmedPhone = String(phone ?? "").trim();
     const trimmedInstagram = String(instagram ?? "").trim();
 
-    if (!trimmedName || !trimmedCountry || !trimmedPhone || !trimmedInstagram) {
+    if (!trimmedName || !trimmedCountry || !trimmedInstagram) {
         return fail(res, "VALIDATION_ERROR", "Missing required fields", 400);
     }
 
@@ -97,15 +97,17 @@ export async function completeOwnerProfile(req, res) {
 
     try {
         const wasOwner = req.user?.role === "owner";
-        const { e164 } = validatePhone(trimmedPhone, trimmedCountry);
         const normalizedInstagram = normalizeInstagramUrl(trimmedInstagram);
         validateInstagramUrl(normalizedInstagram);
+        const normalizedPhone = trimmedPhone
+            ? validatePhone(trimmedPhone, trimmedCountry).e164
+            : null;
 
         const now = new Date().toISOString();
         const ownerProfile = {
             name: trimmedName,
             position: position ? String(position).trim() : null,
-            phone: e164,
+            phone: normalizedPhone,
             instagram: normalizedInstagram,
         };
 

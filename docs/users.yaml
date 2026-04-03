@@ -99,7 +99,7 @@ components:
 
     CompleteOwnerProfileInput:
       type: object
-      required: [name, country, phone, instagram]
+      required: [name, country, instagram]
       properties:
         name:
           type: string
@@ -113,7 +113,7 @@ components:
           description: Full country name (e.g., Ukraine). Not ISO2. russia/belarus blocked.
         phone:
           type: string
-          description: Owner phone number. Backend normalizes to E.164 and requires it for owner registration.
+          description: Owner phone number. Optional for owner registration; when present backend normalizes to E.164.
         instagram:
           type: string
           description: >-
@@ -666,7 +666,6 @@ paths:
                   name: "Owner Test"
                   position: "Owner"
                   country: "Ukraine"
-                  phone: "+380501112233"
                   instagram: "https://instagram.com/owner_test"
       responses:
         "200":
