@@ -355,6 +355,8 @@ paths:
         showrooms are soft-deleted, lookbooks/events are hard-deleted, and user subcollections are cleaned up.
         Endpoint is idempotent and may return `Account already deleted` or
         `Account deletion in progress` under concurrent repeated calls.
+        If the same Firebase user logs in again later, backend reactivates the profile as `role=user`
+        without auto-restoring owner role; completed onboarding baseline is preserved.
       operationId: deleteMyProfile
       security:
         - bearerAuth: []

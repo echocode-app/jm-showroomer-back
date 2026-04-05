@@ -232,6 +232,7 @@ Delete flow (`DELETE /users/me`):
 - крок 2: cascade cleanup ownership/user data (showrooms soft-delete, lookbooks/events hard-delete, user subcollections cleanup)
 - крок 3: tx finalize soft delete (перевіряє, що lock ще утримується)
 - крок 4: якщо error -> release lock
+- повторний login тим самим Firebase user реактивує профіль як `role=user` без auto-restore owner role; `onboardingState=completed` зберігається.
 
 Race-safety strategy:
 - write-сервіси використовують `assertUserWritableInTx(tx, uid)` всередині Firestore transaction;

@@ -2,15 +2,22 @@ import { getAuthInstance, getFirestoreInstance } from "../config/firebase.js";
 import { toTimestamp } from "../utils/timestamp.js";
 import { normalizeUserForResponse } from "./users/response.js";
 
+function deriveOnboardingState(existingUser = null) {
+    return existingUser?.onboardingState === "completed" ? "completed" : "new";
+}
+
+function deriveNotificationsEnabled(existingUser = null) {
+    return typeof existingUser?.notificationsEnabled === "boolean"
+        ? existingUser.notificationsEnabled
+        : true;
+}
+
 function buildActiveUserProfile({ uid, email, name, picture, createdAt, existingUser = null }) {
     const now = new Date();
     const persistedCreatedAt =
         toTimestamp(createdAt)?.toDate()
         ?? toTimestamp(existingUser?.createdAt)?.toDate()
         ?? now;
-
-    const onboardingState =
-        existingUser?.onboardingState === "completed" ? "completed" : "new";
     return {
         uid,
         email: email || null,
@@ -20,7 +27,7 @@ function buildActiveUserProfile({ uid, email, name, picture, createdAt, existing
         roles: ["user"],
         country: existingUser?.country ?? null,
         status: "active",
-        onboardingState,
+        onboardingState: deriveOnboardingState(existingUser),
         createdAt: persistedCreatedAt,
         updatedAt: now,
         isDeleted: false,
@@ -30,7 +37,7 @@ function buildActiveUserProfile({ uid, email, name, picture, createdAt, existing
         instagram: null,
         position: null,
         appLanguage: existingUser?.appLanguage ?? null,
-        notificationsEnabled: true,
+        notificationsEnabled: deriveNotificationsEnabled(existingUser),
         ownerProfile: {
             name: null,
             position: null,

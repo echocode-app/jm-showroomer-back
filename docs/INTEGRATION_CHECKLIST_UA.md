@@ -68,6 +68,7 @@ Checklist:
 Примітка:
 
 У наявній логіці роль не змінюється "сама". Перехід у `owner` відбувається тільки через explicit endpoint `POST /users/complete-owner-profile`.
+Після soft-delete і повторного login onboarding не проходиться заново, але роль `owner` теж не відновлюється автоматично.
 
 ## 3. Онбординг
 
