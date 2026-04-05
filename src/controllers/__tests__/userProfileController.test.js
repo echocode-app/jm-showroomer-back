@@ -49,12 +49,39 @@ jest.unstable_mockModule("../../constants/appLanguage.js", () => ({
     normalizeAppLanguage: normalizeAppLanguageMock,
 }));
 
-const { updateUserProfile } = await import("../users/profileController.js");
+const { getMyProfile, updateUserProfile } = await import("../users/profileController.js");
 
 describe("user profile controller", () => {
     beforeEach(() => {
         jest.clearAllMocks();
         ownerHasActiveShowroomsMock.mockResolvedValue(false);
+    });
+
+    it("normalizes profile timestamps before returning /users/me", async () => {
+        const req = {
+            user: {
+                uid: "user-1",
+                role: "user",
+                createdAt: new Date("2026-04-05T10:00:00.000Z"),
+                updatedAt: {
+                    toDate: () => new Date("2026-04-05T11:00:00.000Z"),
+                },
+                deletedAt: null,
+            },
+        };
+        const res = {};
+
+        await getMyProfile(req, res);
+
+        expect(okMock).toHaveBeenCalledWith(
+            res,
+            expect.objectContaining({
+                uid: "user-1",
+                createdAt: "2026-04-05T10:00:00.000Z",
+                updatedAt: "2026-04-05T11:00:00.000Z",
+                deletedAt: null,
+            })
+        );
     });
 
     it("blocks identity fields before owner profile registration", async () => {

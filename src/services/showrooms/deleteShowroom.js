@@ -6,6 +6,7 @@ import { createNotification } from "../notifications/notificationService.js";
 import { NOTIFICATION_TYPES } from "../notifications/types.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 import { appendHistory, makeHistoryEntry } from "./_helpers.js";
+import { normalizeShowroomForResponse } from "./response.js";
 
 // assertCanDelete
 function assertCanDelete(showroom, user, isAdmin) {
@@ -70,7 +71,11 @@ export async function deleteShowroomService(id, user) {
             }
         }
 
-        return showroom;
+        return normalizeShowroomForResponse(showroom, {
+            includeInternal: true,
+            includeGeoCoords: true,
+            includePhone: true,
+        });
     }
 
     const db = getFirestoreInstance();
@@ -88,7 +93,7 @@ export async function deleteShowroomService(id, user) {
         assertCanDelete(showroom, user, isAdmin);
 
         const statusBefore = showroom.status;
-        const updatedAt = new Date().toISOString();
+        const updatedAt = new Date();
 
         const updates = {
             status: "deleted",
@@ -135,5 +140,9 @@ export async function deleteShowroomService(id, user) {
             log.error(`Notification write skipped (admin delete ${id}): ${err?.message || err}`);
         }
     }
-    return result;
+    return normalizeShowroomForResponse(result, {
+        includeInternal: true,
+        includeGeoCoords: true,
+        includePhone: true,
+    });
 }

@@ -1,6 +1,7 @@
 import { getFirestoreInstance } from "../../config/firebase.js";
 import { DEV_STORE, useDevMock } from "../showrooms/_store.js";
 import { assertUserWritableInTx } from "./writeGuardService.js";
+import { toTimestamp } from "../../utils/timestamp.js";
 
 const DELETE_SCAN_LIMIT = 400;
 const USER_SUBCOLLECTIONS = [
@@ -67,7 +68,7 @@ export async function updateUserOnboarding(userId, country) {
         tx.update(ref, {
             country,
             onboardingState: "completed",
-            updatedAt: new Date().toISOString(),
+            updatedAt: new Date(),
         });
     });
 }
@@ -79,6 +80,10 @@ export async function updateOwnerProfile(userId, payload) {
     const { name, country, ownerProfile, updatedAt } = payload;
     const db = getFirestoreInstance();
     const ref = getUserRef(userId);
+    const persistedUpdatedAt =
+        toTimestamp(updatedAt)?.toDate()
+        ?? new Date();
+
     await db.runTransaction(async tx => {
         await assertUserWritableInTx(tx, userId);
         tx.update(ref, {
@@ -88,7 +93,7 @@ export async function updateOwnerProfile(userId, payload) {
             role: "owner",
             roles: ["owner"],
             ownerProfile,
-            updatedAt,
+            updatedAt: persistedUpdatedAt,
         });
     });
 }
@@ -99,9 +104,17 @@ export async function updateOwnerProfile(userId, payload) {
 export async function updateUserProfileDoc(userId, updates) {
     const db = getFirestoreInstance();
     const ref = getUserRef(userId);
+    const persistedUpdates = { ...updates };
+
+    if ("updatedAt" in persistedUpdates) {
+        persistedUpdates.updatedAt =
+            toTimestamp(persistedUpdates.updatedAt)?.toDate()
+            ?? new Date();
+    }
+
     await db.runTransaction(async tx => {
         await assertUserWritableInTx(tx, userId);
-        tx.update(ref, updates);
+        tx.update(ref, persistedUpdates);
     });
 }
 
@@ -182,8 +195,8 @@ async function acquireUserDeleteLock(userId) {
 
         tx.update(ref, {
             deleteLock: true,
-            deleteLockAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            deleteLockAt: new Date(),
+            updatedAt: new Date(),
         });
 
         return { status: "locked_by_me", user };
@@ -221,7 +234,7 @@ async function releaseUserDeleteLock(userId) {
         tx.update(ref, {
             deleteLock: null,
             deleteLockAt: null,
-            updatedAt: new Date().toISOString(),
+            updatedAt: new Date(),
         });
     });
 }
@@ -229,7 +242,7 @@ async function releaseUserDeleteLock(userId) {
 async function finalizeSoftDeleteWithLock(userId) {
     const db = getFirestoreInstance();
     const ref = getUserRef(userId);
-    const now = new Date().toISOString();
+    const now = new Date();
 
     return db.runTransaction(async tx => {
         const snap = await tx.get(ref);
@@ -286,14 +299,14 @@ async function cleanupOwnedShowrooms(ownerUid) {
             .where("ownerUid", "==", ownerUid)
             .orderBy("__name__")
     );
-    const now = new Date().toISOString();
+    const now = new Date();
     let softDeleted = 0;
     for (const doc of docs) {
         const data = doc.data() || {};
         if (data.status === "deleted") continue;
         await doc.ref.update({
             status: "deleted",
-            deletedAt: data.deletedAt || now,
+            deletedAt: toTimestamp(data.deletedAt)?.toDate() ?? now,
             updatedAt: now,
             deletedBy: { uid: ownerUid, role: "self_delete" },
         });

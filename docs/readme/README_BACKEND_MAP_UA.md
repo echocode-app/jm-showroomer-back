@@ -56,6 +56,11 @@
 - `firestoreTransaction.js` — transaction wrapper helper.
 - showroom/media/geo/actor helpers.
 
+Timestamp policy:
+- storage для query-critical lifecycle fields у `users/showrooms` — Firestore native timestamp;
+- response contract назовні — тільки ISO strings/null;
+- legacy ISO-string docs нормалізуються окремим migration script.
+
 ## 3) Middleware map (`src/middlewares/`)
 
 - `auth.js`

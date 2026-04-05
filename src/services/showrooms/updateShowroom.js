@@ -6,6 +6,7 @@ import { buildDiff, isSameCountry } from "./_helpers.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 import { normalizePatchData } from "./update/normalizePatch.js";
 import { assertShowroomComplete } from "../../utils/showroomValidation.js";
+import { normalizeShowroomForResponse } from "./response.js";
 import {
     applyCategoryPatch,
     assertEditableShowroom,
@@ -31,7 +32,11 @@ export async function updateShowroomService(id, data, user) {
         showroom.updatedAt = historyUpdate.updatedAt;
         showroom.editHistory = historyUpdate.editHistory;
 
-        return showroom;
+        return normalizeShowroomForResponse(showroom, {
+            includeInternal: true,
+            includeGeoCoords: true,
+            includePhone: true,
+        });
     }
 
     const db = getFirestoreInstance();
@@ -50,7 +55,11 @@ export async function updateShowroomService(id, data, user) {
         result = { id, ...showroom, ...updates };
     });
 
-    return result;
+    return normalizeShowroomForResponse(result, {
+        includeInternal: true,
+        includeGeoCoords: true,
+        includePhone: true,
+    });
 }
 
 /**
@@ -94,7 +103,7 @@ function buildPatchPayload(showroom, data, user) {
         throw badRequest("NO_FIELDS_TO_UPDATE");
     }
 
-    const updatedAt = new Date().toISOString();
+    const updatedAt = new Date();
     const historyUpdate = buildHistoryUpdate(showroom, changedFields, diff, user, updatedAt);
     return { diff, changedFields, historyUpdate };
 }

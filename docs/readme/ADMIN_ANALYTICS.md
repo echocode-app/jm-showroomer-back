@@ -52,6 +52,8 @@ All endpoints use the standard success envelope:
 ## Notes
 
 - Read-only: no writes, no moderation changes, no analytics ingestion side effects.
+- Query-critical lifecycle fields (`createdAt`, `updatedAt`, `submittedAt`, `reviewedAt`) are stored as Firestore-native timestamps.
+- Legacy string-based documents should be normalized before relying on dashboard ranges (`npm run migrate:timestamps:dry` / `npm run migrate:timestamps`).
 - Aggregations use Firestore `count()` where possible.
 - Showroom moderation approve/reject metrics are counted from embedded `editHistory`, so backend uses a
   range-bounded Firestore read (`updatedAt >= from`) and filters history entries in memory (Firestore cannot aggregate nested history actions).

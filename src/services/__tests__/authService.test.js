@@ -56,6 +56,8 @@ describe("authService.verifyOAuthToken", () => {
             roles: ["user"],
             onboardingState: "new",
             country: null,
+            createdAt: expect.any(String),
+            updatedAt: expect.any(String),
         });
     });
 
@@ -121,6 +123,8 @@ describe("authService.verifyOAuthToken", () => {
             onboardingState: "completed",
             country: "Ukraine",
             isDeleted: false,
+            createdAt: "2026-03-17T00:24:51.881Z",
+            updatedAt: expect.any(String),
         });
     });
 });

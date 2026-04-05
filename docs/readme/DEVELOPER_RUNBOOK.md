@@ -32,6 +32,8 @@ npm run test:full
 ```bash
 npm run test:cleanup:dry
 npm run test:cleanup
+npm run migrate:timestamps:dry
+npm run migrate:timestamps
 npm run cleanup:notifications:dry
 npm run cleanup:notifications
 npm run seed:mocks -- --prefix=mvp1_local_seed
@@ -47,6 +49,14 @@ npm run cleanup:mocks -- --prefix=mvp1_local_seed
 - `PUSH_ENABLED`
 - `MVP_MODE`
 - Firebase credentials (`FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `FIREBASE_STORAGE_BUCKET`)
+
+Timestamp storage policy:
+
+- query-critical lifecycle fields у `users` і `showrooms` зберігаються як Firestore-native timestamps;
+- public API продовжує повертати ISO strings через response normalizers;
+- для legacy ISO-string документів є migration helper:
+  - `npm run migrate:timestamps:dry`
+  - `npm run migrate:timestamps`
 
 `MVP_MODE=true`:
 

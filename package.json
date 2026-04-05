@@ -31,6 +31,8 @@
     "keep:lookbooks:prefix": "NODE_ENV=dev node scripts/keep_only_lookbook_prefix.js --keep-prefix=mvp1_client_pack_20260302_lookbooks_ --execute",
     "cleanup:preprod:dry": "NODE_ENV=dev node scripts/preprod_cleanup_reset.js",
     "cleanup:preprod": "NODE_ENV=dev node scripts/preprod_cleanup_reset.js --execute",
+    "migrate:timestamps:dry": "NODE_ENV=dev node scripts/migrate_firestore_native_timestamps.js",
+    "migrate:timestamps": "NODE_ENV=dev node scripts/migrate_firestore_native_timestamps.js --execute",
     "seed:mocks": "NODE_ENV=dev node scripts/seed_mock_content_from_images.js",
     "seed:mocks:dry": "NODE_ENV=dev node scripts/seed_mock_content_from_images.js --dry-run",
     "cleanup:mocks": "NODE_ENV=dev node scripts/cleanup_mock_content_by_prefix.js",

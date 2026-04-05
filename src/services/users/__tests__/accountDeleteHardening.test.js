@@ -231,7 +231,11 @@ describe("account delete hardening", () => {
         expect(state.users.u1.onboardingState).toBe("new");
         expect(state.users.u1.country).toBeNull();
         expect(state.users.u1.status).toBe("deleted");
-        expect(typeof state.users.u1.deletedAt).toBe("string");
+        expect(
+            typeof state.users.u1.deletedAt === "string" ||
+            state.users.u1.deletedAt instanceof Date ||
+            typeof state.users.u1.deletedAt?.toDate === "function"
+        ).toBe(true);
     });
 
     it("deletes lookbooks using canonical authorId ownership", async () => {

@@ -16,12 +16,13 @@ import { buildAnalyticsEvent } from "../../services/analytics/analyticsEventBuil
 import { record } from "../../services/analytics/analyticsEventService.js";
 import { log } from "../../config/logger.js";
 import { normalizeAppLanguage } from "../../constants/appLanguage.js";
+import { normalizeUserForResponse } from "../../services/users/response.js";
 
 /**
  * Returns authenticated user profile from middleware context.
  */
 export async function getMyProfile(req, res) {
-    return ok(res, req.user);
+    return ok(res, normalizeUserForResponse(req.user));
 }
 
 /**

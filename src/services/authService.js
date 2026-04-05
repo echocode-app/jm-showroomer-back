@@ -1,8 +1,14 @@
 import { getAuthInstance, getFirestoreInstance } from "../config/firebase.js";
-import { isCountryBlocked } from "../constants/countries.js";
+import { toTimestamp } from "../utils/timestamp.js";
+import { normalizeUserForResponse } from "./users/response.js";
 
 function buildActiveUserProfile({ uid, email, name, picture, createdAt, existingUser = null }) {
-    const now = new Date().toISOString();
+    const now = new Date();
+    const persistedCreatedAt =
+        toTimestamp(createdAt)?.toDate()
+        ?? toTimestamp(existingUser?.createdAt)?.toDate()
+        ?? now;
+
     const onboardingState =
         existingUser?.onboardingState === "completed" ? "completed" : "new";
     return {
@@ -15,7 +21,7 @@ function buildActiveUserProfile({ uid, email, name, picture, createdAt, existing
         country: existingUser?.country ?? null,
         status: "active",
         onboardingState,
-        createdAt: createdAt || existingUser?.createdAt || now,
+        createdAt: persistedCreatedAt,
         updatedAt: now,
         isDeleted: false,
         deletedAt: null,
@@ -87,7 +93,7 @@ export async function verifyOAuthToken(idToken) {
     }
 
     return {
-        user: firestoreUser,
+        user: normalizeUserForResponse(firestoreUser),
         signInProvider: decoded?.firebase?.sign_in_provider || null,
     };
 }

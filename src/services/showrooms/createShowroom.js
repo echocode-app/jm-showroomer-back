@@ -10,6 +10,7 @@ import { assertNoOwnerRecreateCooldown } from "./recreateCooldown.js";
 import { buildAnalyticsEvent } from "../analytics/analyticsEventBuilder.js";
 import { record } from "../analytics/analyticsEventService.js";
 import { ANALYTICS_EVENTS } from "../analytics/eventNames.js";
+import { normalizeShowroomForResponse } from "./response.js";
 
 // createShowroom
 export async function createShowroom(data, ownerUid, options = {}) {
@@ -47,7 +48,11 @@ export async function createShowroom(data, ownerUid, options = {}) {
 
         DEV_STORE.showrooms.push(showroom);
         await emitShowroomCreateStartedAnalytics({ ownerUid, showroomId: id });
-        return showroom;
+        return normalizeShowroomForResponse(showroom, {
+            includeInternal: true,
+            includeGeoCoords: true,
+            includePhone: true,
+        });
     }
 
     const db = getFirestoreInstance();
@@ -81,7 +86,7 @@ export async function createShowroom(data, ownerUid, options = {}) {
             throw badRequest("SHOWROOM_NAME_ALREADY_EXISTS");
         }
 
-        const now = new Date().toISOString();
+        const now = new Date();
 
         const showroom = {
             ownerUid,
@@ -124,7 +129,11 @@ export async function createShowroom(data, ownerUid, options = {}) {
     });
 
     await emitShowroomCreateStartedAnalytics({ ownerUid, showroomId: createdShowroom.id });
-    return createdShowroom;
+    return normalizeShowroomForResponse(createdShowroom, {
+        includeInternal: true,
+        includeGeoCoords: true,
+        includePhone: true,
+    });
 }
 
 async function emitShowroomCreateStartedAnalytics({ ownerUid, showroomId }) {

@@ -1,6 +1,7 @@
 import { getFirestoreInstance } from "../../config/firebase.js";
 import { assertUserWritableInTx } from "../users/writeGuardService.js";
 import { DEV_STORE, generateId, useDevMock } from "./_store.js";
+import { normalizeShowroomForResponse } from "./response.js";
 
 // createDraftShowroom
 export async function createDraftShowroom(ownerUid) {
@@ -9,7 +10,7 @@ export async function createDraftShowroom(ownerUid) {
         const existing = DEV_STORE.showrooms.find(
             s => s.ownerUid === ownerUid && s.status === "draft"
         );
-        if (existing) return existing;
+        if (existing) return normalizeShowroomForResponse(existing, { includeInternal: true, includeGeoCoords: true, includePhone: true });
 
         const now = new Date().toISOString();
         const draft = {
@@ -22,7 +23,7 @@ export async function createDraftShowroom(ownerUid) {
             updatedAt: now,
         };
         DEV_STORE.showrooms.push(draft);
-        return draft;
+        return normalizeShowroomForResponse(draft, { includeInternal: true, includeGeoCoords: true, includePhone: true });
     }
 
     const db = getFirestoreInstance();
@@ -41,10 +42,13 @@ export async function createDraftShowroom(ownerUid) {
 
         if (!existingSnapshot.empty) {
             const doc = existingSnapshot.docs[0];
-            return { id: doc.id, ...doc.data() };
+            return normalizeShowroomForResponse(
+                { id: doc.id, ...doc.data() },
+                { includeInternal: true, includeGeoCoords: true, includePhone: true }
+            );
         }
 
-        const now = new Date().toISOString();
+        const now = new Date();
         const draft = {
             ownerUid,
             status: "draft",
@@ -55,6 +59,9 @@ export async function createDraftShowroom(ownerUid) {
         };
 
         tx.set(draftRef, draft);
-        return { id: draftRef.id, ...draft };
+        return normalizeShowroomForResponse(
+            { id: draftRef.id, ...draft },
+            { includeInternal: true, includeGeoCoords: true, includePhone: true }
+        );
     });
 }
