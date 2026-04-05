@@ -22,7 +22,7 @@
 - Base path: `/api/v1`
 - Формат успіху: `success=true`, `data`, опційно `meta`.
 - Формат помилки: `success=false`, `error.code`, `error.message`.
-- Public list endpoints підтримують `optionalAuth`; mutating endpoints вимагають `Authorization: Bearer <idToken>`.
+- Public list endpoints підтримують `optionalAuth`; mutating endpoints не повинні silently downgrade невалідний Bearer token у guest mode.
 - Cursor є opaque і прив'язаний до конкретного режиму запиту (фільтри/порядок/мод пошуку).
 
 ## Інтеграційна стратегія для клієнтів

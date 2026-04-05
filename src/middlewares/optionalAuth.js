@@ -17,7 +17,7 @@ export async function optionalAuth(req, res, next) {
         req.auth = decoded;
         attachActorLogContext(req);
     } catch (e) {
-        // invalid token, proceed without auth
+        req.optionalAuthInvalid = true;
     }
 
     next();

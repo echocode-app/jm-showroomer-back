@@ -344,6 +344,8 @@ paths:
         Public-compatible create.
         Auth users are stored as owner (`authorId=uid`); guests use `x-anonymous-id`.
         If guest id header is missing, backend generates and returns it in `x-anonymous-id` response header.
+        Missing bearer token may fall back to guest mode when guest writes are enabled.
+        Invalid or expired bearer token is rejected with `401 AUTH_INVALID` and never downgraded to guest mode.
       operationId: createLookbook
       security: []
       parameters:
@@ -391,6 +393,12 @@ paths:
                             $ref: '#/components/schemas/Lookbook'
         "400":
           description: Validation error (`VALIDATION_ERROR`) or invalid anonymous id (`ANON_ID_INVALID`)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Invalid bearer token (`AUTH_INVALID`)
           content:
             application/json:
               schema:
@@ -488,6 +496,8 @@ paths:
       description: |
         Public-compatible update with ownership validation.
         Allowed when current actor matches `authorId` (auth) or `x-anonymous-id` (guest).
+        Missing bearer token may fall back to guest mode when guest writes are enabled.
+        Invalid or expired bearer token is rejected with `401 AUTH_INVALID` and never downgraded to guest mode.
       operationId: updateLookbook
       security: []
       parameters:
@@ -548,10 +558,19 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Invalid bearer token (`AUTH_INVALID`) or missing token when guest writes are disabled (`AUTH_MISSING`)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
     delete:
       tags: [Lookbooks]
       summary: Delete lookbook
-      description: Public-compatible delete with ownership validation.
+      description: |
+        Public-compatible delete with ownership validation.
+        Missing bearer token may fall back to guest mode when guest writes are enabled.
+        Invalid or expired bearer token is rejected with `401 AUTH_INVALID` and never downgraded to guest mode.
       operationId: deleteLookbook
       security: []
       parameters:
@@ -581,6 +600,12 @@ paths:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "400":
           description: Invalid anonymous id (`ANON_ID_INVALID`)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "401":
+          description: Invalid bearer token (`AUTH_INVALID`) or missing token when guest writes are disabled (`AUTH_MISSING`)
           content:
             application/json:
               schema:

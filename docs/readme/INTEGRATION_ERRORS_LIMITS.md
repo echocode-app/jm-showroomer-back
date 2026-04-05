@@ -15,6 +15,7 @@
 ## 2) Найчастіші error codes
 
 - `AUTH_MISSING` / `AUTH_INVALID` - відсутній або битий Bearer token.
+  - Для lookbook guest-write endpoint-ів відсутній token ще може бути допустимим у guest mode, але битий/expired token завжди має падати в `401 AUTH_INVALID`.
 - `ACCESS_DENIED` / `FORBIDDEN` - недостатня роль.
 - `VALIDATION_ERROR` - невалідний body/params.
 - `QUERY_INVALID` - невалідні query-параметри або заборонені комбінації фільтрів.
