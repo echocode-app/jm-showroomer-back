@@ -68,4 +68,37 @@ describe("schemaValidate", () => {
             ],
         });
     });
+
+    it("maps required idToken to ID_TOKEN_REQUIRED and preserves field meta", () => {
+        const middleware = schemaValidate({
+            body: {
+                validate: () => ({
+                    error: {
+                        details: [
+                            {
+                                path: ["idToken"],
+                                type: "any.required",
+                                message: "\"idToken\" is required",
+                            },
+                        ],
+                    },
+                }),
+            },
+        });
+
+        const next = jest.fn();
+        middleware({ body: {} }, {}, next);
+
+        const err = next.mock.calls[0][0];
+        expect(err.code).toBe("ID_TOKEN_REQUIRED");
+        expect(err.meta).toEqual({
+            fields: [
+                {
+                    path: "idToken",
+                    type: "any.required",
+                    message: "\"idToken\" is required",
+                },
+            ],
+        });
+    });
 });

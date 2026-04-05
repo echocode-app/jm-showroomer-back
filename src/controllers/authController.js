@@ -10,7 +10,7 @@ import { classifyError } from "../utils/errorClassifier.js";
 // oauthLogin
 export async function oauthLogin(req, res, next) {
     try {
-        const { idToken } = req.body;
+        const { idToken } = req.body ?? {};
         const { user, signInProvider } = await verifyOAuthToken(idToken);
         log.info(`firebase.sign_in_provider: ${signInProvider || "unknown"}`);
         try {

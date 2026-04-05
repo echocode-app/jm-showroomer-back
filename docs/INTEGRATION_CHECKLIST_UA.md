@@ -52,6 +52,7 @@ Checklist:
 Критичні правила:
 
 - без `idToken` очікується `400 ID_TOKEN_REQUIRED`;
+- malformed body не повинен давати `500`, очікувано `400 VALIDATION_ERROR`;
 - невалідний або протухлий token -> `401 AUTH_INVALID`;
 - після успішного логіну клієнт зберігає auth state і викликає `GET /users/me`.
 

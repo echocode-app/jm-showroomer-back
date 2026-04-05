@@ -145,6 +145,7 @@ Base URL:
 2. Unhappy:
 
 - без `idToken` -> `400 ID_TOKEN_REQUIRED`;
+- malformed body / не-object JSON -> `400 VALIDATION_ERROR`;
 - невалідний/протухлий токен -> `401`.
 
 ## 4.2 Showrooms list/detail/favorite

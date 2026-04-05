@@ -4,6 +4,7 @@ const REQUIRED_CODE_MAP = {
     name: "SHOWROOM_NAME_REQUIRED",
     type: "SHOWROOM_TYPE_REQUIRED",
     country: "COUNTRY_REQUIRED",
+    idToken: "ID_TOKEN_REQUIRED",
 };
 
 // mapJoiError

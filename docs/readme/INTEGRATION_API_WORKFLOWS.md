@@ -7,6 +7,7 @@
 - `POST /auth/oauth`
   - обмін Firebase ID token на backend profile envelope.
   - `400 ID_TOKEN_REQUIRED` якщо токен відсутній.
+  - malformed body не повинен давати `500`; очікувано `400 VALIDATION_ERROR`.
 - `GET /users/me`
   - повертає поточний профіль.
   - без токена: `401`.

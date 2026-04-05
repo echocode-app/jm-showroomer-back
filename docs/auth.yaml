@@ -15,7 +15,8 @@ paths:
       summary: Login via Firebase ID token (Google/Apple/any)
       description: |
         Bootstrap auth endpoint using Firebase ID token.
-        Route has no auth middleware chain (public endpoint); controller verifies the provided token in service layer.
+        Route is public, but body is validated before controller execution.
+        Controller verifies the provided token in service layer after schema validation.
         Backend emits auth analytics (`auth_completed` / `auth_failed`) and auth domain logs.
       operationId: oauthLogin
       security: []
@@ -57,7 +58,7 @@ paths:
                         onboardingState: "completed"
                         country: "Ukraine"
         "400":
-          description: Missing idToken
+          description: Missing/empty `idToken` (`ID_TOKEN_REQUIRED`) or malformed body (`VALIDATION_ERROR`)
           content:
             application/json:
               schema:
