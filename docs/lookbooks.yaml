@@ -800,30 +800,18 @@ paths:
           type: string
     post:
       tags: [Lookbooks]
-      summary: RSVP to lookbook (stub)
-      description: MVP2. Stub in MVP1.
+      summary: RSVP to lookbook
+      description: MVP2-only endpoint. MVP1 always returns `501 LOOKBOOKS_WRITE_MVP2_ONLY`.
       operationId: rsvpLookbook
       security:
         - bearerAuth: []
       responses:
-        "200":
-          description: RSVP response
+        "501":
+          description: MVP1 always returns not implemented (`LOOKBOOKS_WRITE_MVP2_ONLY`)
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: './common.yaml#/components/schemas/ApiSuccess'
-                  - properties:
-                      data:
-                        type: object
-                        properties:
-                          lookbookId:
-                            type: string
-                          user:
-                            type: string
-                          status:
-                            type: string
-                            example: RSVPed
+                $ref: './common.yaml#/components/schemas/ApiError'
         "400":
           description: Validation error
           content:

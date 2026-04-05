@@ -132,8 +132,8 @@ run_authenticated_smoke_suite() {
     "${auth_header[@]}" \
     "${BASE_URL}/collections/want-to-visit/events"
 
-  print_section "Lookbooks RSVP (stub)"
-  http_request "POST /lookbooks/{id}/rsvp" 200 "" \
+  print_section "Lookbooks RSVP (MVP2-only)"
+  http_request "POST /lookbooks/{id}/rsvp" 501 "LOOKBOOKS_WRITE_MVP2_ONLY" \
     -X POST "${auth_header[@]}" \
     "${BASE_URL}/lookbooks/event-test-1/rsvp"
 

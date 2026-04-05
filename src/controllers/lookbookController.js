@@ -1,4 +1,4 @@
-import { created, ok } from "../utils/apiResponse.js";
+import { created, fail, ok } from "../utils/apiResponse.js";
 import {
     createLookbookService,
     deleteLookbookService,
@@ -170,8 +170,7 @@ export async function deleteLookbook(req, res, next) {
 
 export async function rsvpLookbook(req, res, next) {
     try {
-        const { id } = req.params;
-        return ok(res, { lookbookId: id, user: req.user.uid, status: "RSVPed" });
+        return fail(res, "LOOKBOOKS_WRITE_MVP2_ONLY", "Lookbook RSVP endpoint is MVP2 only", 501);
     } catch (err) {
         next(err);
     }

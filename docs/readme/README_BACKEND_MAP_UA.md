@@ -126,13 +126,13 @@ Timestamp policy:
 ### `lookbooks.js`
 - create/list/get/update/delete;
 - favorite/unfavorite;
-- rsvp stub endpoint.
+- rsvp MVP2-only endpoint (`501 LOOKBOOKS_WRITE_MVP2_ONLY` у MVP1).
 
 ### `events.js`
 - list/get;
 - want-to-visit add/remove;
 - dismiss/undismiss;
-- rsvp stub endpoint.
+- rsvp MVP2-only endpoint (`501 EVENTS_WRITE_MVP2_ONLY` у MVP1).
 
 ### `collections.js`
 - favorites collections list/sync;

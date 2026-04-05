@@ -103,7 +103,7 @@ Base URL:
 | Lookbooks   | DELETE | `/lookbooks/{id}`                               | MVP1 Skip     | Не потрібен у mobile MVP1                    |
 | Lookbooks   | POST   | `/lookbooks/{id}/favorite`                      | MVP1 Required | Favorite toggle                              |
 | Lookbooks   | DELETE | `/lookbooks/{id}/favorite`                      | MVP1 Required | Favorite toggle                              |
-| Lookbooks   | POST   | `/lookbooks/{id}/rsvp`                          | MVP1 Skip     | Stub endpoint, не бізнес-критично            |
+| Lookbooks   | POST   | `/lookbooks/{id}/rsvp`                          | MVP1 Skip     | У MVP1 повертає `501 LOOKBOOKS_WRITE_MVP2_ONLY` |
 | Lookbooks   | GET    | `/share/lookbooks/{id}`                         | MVP1 Required | Final public share URL (redirect/fallback)   |
 | Collections | GET    | `/collections/favorites/lookbooks`              | MVP1 Required | Список favorite lookbooks                    |
 | Collections | POST   | `/collections/favorites/lookbooks/sync`         | MVP1 Required | Guest -> auth sync                           |

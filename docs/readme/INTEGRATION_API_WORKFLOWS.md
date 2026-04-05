@@ -73,7 +73,7 @@
 - `PATCH /lookbooks/{id}`
 - `DELETE /lookbooks/{id}`
 - `POST|DELETE /lookbooks/{id}/favorite`
-- `POST /lookbooks/{id}/rsvp` (MVP-обмежений сценарій)
+- `POST /lookbooks/{id}/rsvp` (MVP2-only, очікувано `501` у MVP1)
 
 ## 6) Events
 

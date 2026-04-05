@@ -89,6 +89,7 @@ components:
         - USER_DELETE_BLOCKED
         - RATE_LIMIT_EXCEEDED
         - EVENTS_WRITE_MVP2_ONLY
+        - LOOKBOOKS_WRITE_MVP2_ONLY
         - NOT_IMPLEMENTED
         - LOAD_USER_ERROR
         - AUTH_ERROR
