@@ -27,11 +27,8 @@ export async function getShowroomByIdService(id, user = null) {
             throw notFound("SHOWROOM_NOT_FOUND");
         }
 
-        if (
-            showroom.status === "deleted" &&
-            (!user || (user.uid !== showroom.ownerUid && user.role !== "admin"))
-        ) {
-            throw forbidden("ACCESS_DENIED");
+        if (showroom.status === "deleted" && user?.role !== "admin") {
+            throw notFound("SHOWROOM_NOT_FOUND");
         }
 
         if (
@@ -58,11 +55,8 @@ export async function getShowroomByIdService(id, user = null) {
         throw notFound("SHOWROOM_NOT_FOUND");
     }
 
-    if (
-        showroom.status === "deleted" &&
-        (!user || (user.uid !== showroom.ownerUid && user.role !== "admin"))
-    ) {
-        throw forbidden("ACCESS_DENIED");
+    if (showroom.status === "deleted" && user?.role !== "admin") {
+        throw notFound("SHOWROOM_NOT_FOUND");
     }
 
     if (

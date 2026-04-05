@@ -50,6 +50,29 @@ describe("showrooms public visibility", () => {
         expect(showroom.id).toBe("sr-1");
     });
 
+    it("hides deleted showroom from owner detail fetch", async () => {
+        seedShowroom({ status: "deleted" });
+
+        await expect(getShowroomByIdService("sr-1", {
+            uid: "owner-1",
+            role: "owner",
+        })).rejects.toMatchObject({
+            code: "SHOWROOM_NOT_FOUND",
+        });
+    });
+
+    it("still allows admin to open deleted showroom for audit", async () => {
+        seedShowroom({ status: "deleted" });
+
+        const showroom = await getShowroomByIdService("sr-1", {
+            uid: "admin-1",
+            role: "admin",
+        });
+
+        expect(showroom.id).toBe("sr-1");
+        expect(showroom.status).toBe("deleted");
+    });
+
     it("returns geo.coords in public showroom detail", async () => {
         seedShowroom({
             geo: {

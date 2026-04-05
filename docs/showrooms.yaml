@@ -1621,8 +1621,10 @@ paths:
         Authorization header is optional.
         Public viewers receive a public detail DTO with `geo.coords`.
         Owner/admin viewers receive a privileged DTO with moderation/audit fields and exact coordinates.
+        Soft-deleted showrooms are hidden from public and owner detail fetches.
+        Admin can still access deleted showrooms for moderation/support workflows.
         Showrooms from blocked countries are hidden from public and owner contexts.
-        Admin can still access them for moderation/support workflows.
+        Admin can still access blocked-country showrooms for moderation/support workflows.
       operationId: getShowroomById
       security: []
       responses:
