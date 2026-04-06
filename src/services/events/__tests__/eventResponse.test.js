@@ -14,4 +14,17 @@ describe("event response normalization", () => {
         expect(result.countryNormalized).toBe("ukraine");
         expect(result.type).toBe("fashion_week");
     });
+
+    it("normalizes wantToVisitCount to a safe non-negative integer", () => {
+        const result = buildEventResponse({
+            id: "evt-2",
+            name: "Popup",
+            country: "Ukraine",
+            published: true,
+            startsAt: "2026-03-20T10:00:00.000Z",
+            wantToVisitCount: -3.7,
+        });
+
+        expect(result.wantToVisitCount).toBe(0);
+    });
 });

@@ -62,6 +62,10 @@ components:
         isWantToVisit:
           type: boolean
           description: Returned when auth context is available.
+        wantToVisitCount:
+          type: integer
+          minimum: 0
+          description: Canonical event popularity counter for "want to visit". Returned in both list and detail payloads.
         createdAt:
           type: string
           format: date-time
@@ -218,6 +222,7 @@ paths:
                           externalUrl: https://www.instagram.com/dim_brendiv/
                           startsAt: "2026-03-20T10:00:00.000Z"
                           endsAt: "2026-03-20T18:00:00.000Z"
+                          wantToVisitCount: 3
                           createdAt: "2026-03-01T12:00:00.000Z"
                           updatedAt: "2026-03-10T09:30:00.000Z"
                           published: true

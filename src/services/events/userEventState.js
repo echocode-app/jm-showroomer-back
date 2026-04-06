@@ -33,6 +33,7 @@ export async function markEventWantToVisit(eventId, uid) {
         if (!event || !isEventPublished(event) || isCountryBlocked(event.country)) {
             throw notFound("EVENT_NOT_FOUND");
         }
+        const currentCount = getWantToVisitCount(event);
         eventOwnerUid = typeof event.ownerUid === "string" ? event.ownerUid : null;
         eventName = typeof event.name === "string" ? event.name : null;
 
@@ -44,6 +45,7 @@ export async function markEventWantToVisit(eventId, uid) {
 
         tx.set(wantRef, { createdAt: FieldValue.serverTimestamp() });
         tx.delete(dismissedRef);
+        tx.update(eventRef, { wantToVisitCount: currentCount + 1 });
         applied = true;
     });
 
@@ -96,6 +98,7 @@ export async function markEventWantToVisit(eventId, uid) {
 
 export async function removeEventWantToVisit(eventId, uid) {
     const db = getFirestoreInstance();
+    const eventRef = getEventsCollection().doc(eventId);
     const wantRef = userEventCollection(uid, "events_want_to_visit").doc(eventId);
     let removed = false;
 
@@ -103,7 +106,14 @@ export async function removeEventWantToVisit(eventId, uid) {
         await assertUserWritableInTx(tx, uid);
         const wantSnap = await tx.get(wantRef);
         if (!wantSnap.exists) return;
+        const eventSnap = await tx.get(eventRef);
+        const event = eventSnap.exists ? eventSnap.data() : null;
         tx.delete(wantRef);
+        if (event) {
+            tx.update(eventRef, {
+                wantToVisitCount: Math.max(0, getWantToVisitCount(event) - 1),
+            });
+        }
         removed = true;
     });
 
@@ -149,9 +159,15 @@ export async function dismissEvent(eventId, uid) {
         if (!event || !isEventPublished(event) || isCountryBlocked(event.country)) {
             throw notFound("EVENT_NOT_FOUND");
         }
+        const wantSnap = await tx.get(wantRef);
         // Idempotent upsert + mutual exclusion with want-to-visit.
         tx.set(dismissedRef, { createdAt: now }, { merge: true });
         tx.delete(wantRef);
+        if (wantSnap.exists) {
+            tx.update(eventRef, {
+                wantToVisitCount: Math.max(0, getWantToVisitCount(event) - 1),
+            });
+        }
     });
 }
 
@@ -239,4 +255,11 @@ function userEventCollection(uid, collectionName) {
         .collection("users")
         .doc(uid)
         .collection(collectionName);
+}
+
+function getWantToVisitCount(event) {
+    const value = event?.wantToVisitCount;
+    if (typeof value !== "number" || !Number.isFinite(value)) return 0;
+    if (value <= 0) return 0;
+    return Math.floor(value);
 }

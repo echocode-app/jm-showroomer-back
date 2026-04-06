@@ -42,6 +42,7 @@ export function buildEventResponse(event, options = {}) {
 
     const response = {
         ...event,
+        wantToVisitCount: normalizeCount(event?.wantToVisitCount),
         countryNormalized: typeof event?.countryNormalized === "string" && event.countryNormalized.trim()
             ? normalizeCountry(event.countryNormalized)
             : (event?.country ? normalizeCountry(event.country) : null),
@@ -61,4 +62,10 @@ export function buildEventResponse(event, options = {}) {
     }
 
     return response;
+}
+
+function normalizeCount(value) {
+    if (typeof value !== "number" || !Number.isFinite(value)) return 0;
+    if (value <= 0) return 0;
+    return Math.floor(value);
 }

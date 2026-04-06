@@ -138,17 +138,39 @@ async function applyUserStateBatch(uid, { wantToVisitIds, dismissedIds, createdA
     await db.runTransaction(async tx => {
         await assertUserWritableInTx(tx, uid);
         for (const eventId of wantToVisitIds) {
+            const eventRef = getEventsCollection().doc(eventId);
             const wantRef = userEventCollection(uid, "events_want_to_visit").doc(eventId);
             const dismissedRef = userEventCollection(uid, "events_dismissed").doc(eventId);
+            const [eventSnap, wantSnap] = await Promise.all([
+                tx.get(eventRef),
+                tx.get(wantRef),
+            ]);
+            const event = eventSnap.exists ? eventSnap.data() : null;
             tx.set(wantRef, { createdAt }, { merge: true });
             tx.delete(dismissedRef);
+            if (!wantSnap.exists && event) {
+                tx.update(eventRef, {
+                    wantToVisitCount: getWantToVisitCount(event) + 1,
+                });
+            }
         }
 
         for (const eventId of dismissedIds) {
+            const eventRef = getEventsCollection().doc(eventId);
             const dismissedRef = userEventCollection(uid, "events_dismissed").doc(eventId);
             const wantRef = userEventCollection(uid, "events_want_to_visit").doc(eventId);
+            const [eventSnap, wantSnap] = await Promise.all([
+                tx.get(eventRef),
+                tx.get(wantRef),
+            ]);
+            const event = eventSnap.exists ? eventSnap.data() : null;
             tx.set(dismissedRef, { createdAt }, { merge: true });
             tx.delete(wantRef);
+            if (wantSnap.exists && event) {
+                tx.update(eventRef, {
+                    wantToVisitCount: Math.max(0, getWantToVisitCount(event) - 1),
+                });
+            }
         }
     });
 }
@@ -158,4 +180,11 @@ function userEventCollection(uid, collectionName) {
         .collection("users")
         .doc(uid)
         .collection(collectionName);
+}
+
+function getWantToVisitCount(event) {
+    const value = event?.wantToVisitCount;
+    if (typeof value !== "number" || !Number.isFinite(value)) return 0;
+    if (value <= 0) return 0;
+    return Math.floor(value);
 }

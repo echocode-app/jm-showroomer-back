@@ -78,6 +78,20 @@ http_request "POST /events/{id}/want-to-visit idempotent" 200 "" \
   -X POST "${AUTH_HEADER[@]}" \
   "${BASE_URL}/events/${FUTURE_ID}/want-to-visit"
 
+http_request "GET /events/{futureId} after want-to-visit" 200 "" \
+  "${AUTH_HEADER[@]}" \
+  "${BASE_URL}/events/${FUTURE_ID}"
+
+DETAIL_WANT_COUNT=$(echo "$LAST_BODY" | jq -r '.data.event.wantToVisitCount')
+assert_eq "$DETAIL_WANT_COUNT" "1" "event detail wantToVisitCount after add"
+
+http_request "GET /events (auth count after want-to-visit)" 200 "" \
+  "${AUTH_HEADER[@]}" \
+  "${BASE_URL}/events?limit=50"
+
+LIST_WANT_COUNT=$(echo "$LAST_BODY" | jq -r --arg id "$FUTURE_ID" '.data.events[] | select(.id == $id) | .wantToVisitCount')
+assert_eq "$LIST_WANT_COUNT" "1" "event list wantToVisitCount after add"
+
 http_request "GET /collections/want-to-visit/events" 200 "" \
   "${AUTH_HEADER[@]}" \
   "${BASE_URL}/collections/want-to-visit/events"
@@ -102,6 +116,13 @@ HAS_WANT_AFTER_DISMISS=$(echo "$LAST_BODY" | jq -r --arg id "$FUTURE_ID" '.data.
 if [[ -n "$HAS_WANT_AFTER_DISMISS" ]]; then
   fail "Dismissed event must be removed from want-to-visit list"
 fi
+
+http_request "GET /events/{futureId} after dismiss" 200 "" \
+  "${AUTH_HEADER[@]}" \
+  "${BASE_URL}/events/${FUTURE_ID}"
+
+DETAIL_WANT_COUNT_AFTER_DISMISS=$(echo "$LAST_BODY" | jq -r '.data.event.wantToVisitCount')
+assert_eq "$DETAIL_WANT_COUNT_AFTER_DISMISS" "0" "event detail wantToVisitCount after dismiss"
 
 http_request "GET /events (auth excludes dismissed)" 200 "" \
   "${AUTH_HEADER[@]}" \
@@ -132,6 +153,13 @@ http_request "DELETE /events/{id}/want-to-visit" 200 "" \
 http_request "DELETE /events/{id}/want-to-visit idempotent" 200 "" \
   -X DELETE "${AUTH_HEADER[@]}" \
   "${BASE_URL}/events/${FUTURE_ID}/want-to-visit"
+
+http_request "GET /events/{futureId} after remove want-to-visit" 200 "" \
+  "${AUTH_HEADER[@]}" \
+  "${BASE_URL}/events/${FUTURE_ID}"
+
+DETAIL_WANT_COUNT_AFTER_REMOVE=$(echo "$LAST_BODY" | jq -r '.data.event.wantToVisitCount')
+assert_eq "$DETAIL_WANT_COUNT_AFTER_REMOVE" "0" "event detail wantToVisitCount after remove"
 
 print_section "404 and MVP2-only write endpoint"
 http_request "POST /events/{missing}/want-to-visit" 404 "EVENT_NOT_FOUND" \

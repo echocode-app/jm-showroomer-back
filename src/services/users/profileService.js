@@ -384,6 +384,10 @@ async function cleanupUserSubcollections(userId) {
     if (typeof userRef.listCollections === "function") {
         const subcollections = await userRef.listCollections();
         for (const subcollection of subcollections) {
+            if (subcollection.id === "events_want_to_visit") {
+                deleted[subcollection.id] = await deleteEventWantToVisitDocsWithCounterAdjust(userId, subcollection);
+                continue;
+            }
             if (typeof db.recursiveDelete === "function") {
                 await db.recursiveDelete(subcollection);
                 deleted[subcollection.id] = "recursive";
@@ -400,9 +404,45 @@ async function cleanupUserSubcollections(userId) {
 
     for (const subcollectionName of USER_SUBCOLLECTIONS) {
         const collectionRef = userRef.collection(subcollectionName);
+        if (subcollectionName === "events_want_to_visit") {
+            deleted[subcollectionName] = await deleteEventWantToVisitDocsWithCounterAdjust(userId, collectionRef);
+            continue;
+        }
         deleted[subcollectionName] = await deleteCollectionDocs(collectionRef);
     }
     return deleted;
+}
+
+async function deleteEventWantToVisitDocsWithCounterAdjust(userId, collectionRef) {
+    const db = getFirestoreInstance();
+    let deleted = 0;
+
+    while (true) {
+        const snap = await collectionRef.limit(DELETE_SCAN_LIMIT).get();
+        if (snap.empty) return deleted;
+
+        const eventRefs = snap.docs.map(doc => db.collection("events").doc(doc.id));
+        const eventSnaps = eventRefs.length > 0 ? await db.getAll(...eventRefs) : [];
+        const batch = db.batch();
+
+        snap.docs.forEach((doc, index) => {
+            const eventSnap = eventSnaps[index];
+            if (eventSnap?.exists) {
+                const event = eventSnap.data() || {};
+                const currentCount =
+                    typeof event.wantToVisitCount === "number" && Number.isFinite(event.wantToVisitCount)
+                        ? Math.max(0, Math.floor(event.wantToVisitCount))
+                        : 0;
+                batch.update(eventSnap.ref, {
+                    wantToVisitCount: Math.max(0, currentCount - 1),
+                });
+            }
+            batch.delete(doc.ref);
+            deleted += 1;
+        });
+
+        await batch.commit();
+    }
 }
 
 async function cleanupOwnedBusinessEntities(ownerUid) {
