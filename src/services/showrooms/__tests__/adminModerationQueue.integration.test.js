@@ -481,6 +481,35 @@ describe("admin moderation queue integration", () => {
         expect(result.showrooms.map(s => s.id)).toEqual(["sr-a", "sr-b", "sr-c"]);
     });
 
+    it("hides pending showroom when owner account is deleted", async () => {
+        state.users[owner.uid] = {
+            ...state.users[owner.uid],
+            isDeleted: true,
+        };
+        state.showrooms = [
+            {
+                ...makeDraftShowroom("sr-deleted-owner", owner.uid, "Ghost", "Addr ghost"),
+                status: "pending",
+                submittedAt: "2026-02-25T12:00:00.000Z",
+            },
+            {
+                ...makeDraftShowroom("sr-active-owner", "owner-2", "Alive", "Addr alive"),
+                ownerUid: "owner-2",
+                status: "pending",
+                submittedAt: "2026-02-25T11:00:00.000Z",
+            },
+        ];
+        state.users["owner-2"] = {
+            uid: "owner-2",
+            role: "owner",
+            isDeleted: false,
+            deleteLock: false,
+        };
+
+        const result = await listAdminModerationQueueService({ status: "pending", limit: 10 }, admin);
+        expect(result.showrooms.map(s => s.id)).toEqual(["sr-active-owner"]);
+    });
+
     it("validates limit parity: default=20, max=100, invalid => QUERY_INVALID", async () => {
         state.showrooms = Array.from({ length: 25 }, (_, i) => ({
             ...makeDraftShowroom(`sr-${String(i).padStart(2, "0")}`, owner.uid, `Name ${i}`, `Addr ${i}`),

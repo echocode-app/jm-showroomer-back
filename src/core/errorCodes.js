@@ -48,6 +48,7 @@ export const ERROR_STATUS = {
     SHOWROOM_LOCKED_PENDING: 409,
     SHOWROOM_PENDING_SNAPSHOT_MISSING: 409,
     SHOWROOM_RECREATE_COOLDOWN: 409,
+    SHOWROOM_OWNER_DELETED: 409,
     USER_COUNTRY_CHANGE_BLOCKED: 409,
     USER_DELETE_BLOCKED: 409,
 
@@ -89,6 +90,7 @@ export const ERROR_MESSAGE = {
     SHOWROOM_LOCKED_PENDING: "Showroom is under review",
     SHOWROOM_PENDING_SNAPSHOT_MISSING: "Pending snapshot missing; cannot approve",
     SHOWROOM_RECREATE_COOLDOWN: "You can recreate the same showroom only after 3 months from deletion",
+    SHOWROOM_OWNER_DELETED: "Showroom owner account is deleted",
     SHOWROOM_CATEGORY_GROUP_INVALID: "Category group is invalid",
     SHOWROOM_SUBCATEGORY_INVALID: "Subcategory is invalid",
     SHOWROOM_SUBCATEGORY_GROUP_MISMATCH: "Subcategories require clothing group",

@@ -4,6 +4,7 @@ import { buildDomainError, isIndexNotReadyError } from "../list/firestore/indexE
 import { MODERATION_DIRECTION, MODERATION_ORDER_FIELD, MODERATION_STATUS } from "./constants.js";
 import { buildModerationCursor } from "./cursor.js";
 import { mapModerationDTO } from "./dto.js";
+import { filterOutShowroomsWithDeletedOwners } from "./ownerGuard.js";
 import { parseModerationQueueQuery } from "./validation.js";
 
 // Moderation queue uses deterministic ordering:
@@ -28,10 +29,38 @@ export async function listAdminModerationQueueService(filters = {}) {
     const db = getFirestoreInstance();
 
     try {
-        const snapshot = await buildModerationQueueQuery(db, parsed).get();
-        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const pageItems = items.slice(0, parsed.limit);
-        const hasMore = items.length > parsed.limit;
+        const collected = [];
+        let scanCursor = parsed.cursor ?? null;
+        let exhausted = false;
+
+        while (collected.length <= parsed.limit && !exhausted) {
+            const snapshot = await buildModerationQueueQuery(db, {
+                ...parsed,
+                cursor: scanCursor,
+            }).get();
+            const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            if (items.length === 0) {
+                exhausted = true;
+                break;
+            }
+
+            const filteredItems = await filterOutShowroomsWithDeletedOwners(items);
+            collected.push(...filteredItems);
+
+            if (items.length <= parsed.limit) {
+                exhausted = true;
+                break;
+            }
+
+            const lastRawItem = items.at(-1);
+            scanCursor = lastRawItem
+                ? { lastValue: lastRawItem.submittedAt ?? null, id: lastRawItem.id }
+                : null;
+        }
+
+        const pageItems = collected.slice(0, parsed.limit);
+        const hasMore = collected.length > parsed.limit;
         const last = hasMore && pageItems.length > 0 ? pageItems[pageItems.length - 1] : null;
 
         return {

@@ -64,6 +64,7 @@
 - `POST /admin/showrooms/{id}/approve`
 - `POST /admin/showrooms/{id}/reject`
 - `DELETE /admin/showrooms/{id}`
+- moderation queue excludes pending showrooms whose owner account is already deleted
 
 ## 5) Lookbooks
 

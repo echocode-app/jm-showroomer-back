@@ -10,6 +10,7 @@ import {
 import { createNotification } from "../notifications/notificationService.js";
 import { NOTIFICATION_TYPES } from "../notifications/types.js";
 import { assertUserWritable, assertUserWritableInTx } from "../users/writeGuardService.js";
+import { assertShowroomOwnerActiveInTx } from "./moderation/ownerGuard.js";
 import { DEV_STORE, useDevMock } from "./_store.js";
 
 /**
@@ -35,6 +36,10 @@ export async function rejectShowroomService(id, reason, user) {
         if (!showroom) throw notFound("SHOWROOM_NOT_FOUND");
         if (showroom.status !== "pending") {
             throw badRequest("SHOWROOM_NOT_EDITABLE");
+        }
+        const owner = DEV_STORE.users?.[showroom.ownerUid] ?? null;
+        if (!owner || owner.isDeleted === true) {
+            throw badRequest("SHOWROOM_OWNER_DELETED");
         }
 
         const statusBefore = showroom.status;
@@ -103,6 +108,7 @@ export async function rejectShowroomService(id, reason, user) {
         if (showroom.status !== "pending") {
             throw badRequest("SHOWROOM_NOT_EDITABLE");
         }
+        await assertShowroomOwnerActiveInTx(tx, showroom.ownerUid);
 
         const statusBefore = showroom.status;
         const updates = buildRejectUpdates(showroom, normalizedReason, user, statusBefore);

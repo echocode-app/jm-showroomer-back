@@ -598,6 +598,7 @@ paths:
       summary: Approve showroom
       description: |
         Approves only `pending` showrooms.
+        Pending showroom owned by a deleted account is not approvable and returns `409 SHOWROOM_OWNER_DELETED`.
         Backend applies the immutable `pendingSnapshot` to canonical editable fields inside a Firestore transaction,
         appends moderation history, increments `editCount`, clears `pendingSnapshot`, and clears stale `reviewReason`.
         Owner notification is emitted post-commit (best-effort). No analytics event is emitted for approve.
@@ -639,7 +640,7 @@ paths:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "409":
-          description: Pending snapshot missing
+          description: Pending snapshot missing or showroom owner account deleted
           content:
             application/json:
               schema:
@@ -664,6 +665,7 @@ paths:
       summary: Reject showroom
       description: |
         Rejects only `pending` showrooms.
+        Pending showroom owned by a deleted account is not rejectable and returns `409 SHOWROOM_OWNER_DELETED`.
         Backend validates reason (minimum 3 chars), trims it, stores the normalized value in `reviewReason`,
         appends moderation history, increments `editCount`, and clears `pendingSnapshot` in one transaction.
         Owner notification is emitted post-commit (best-effort). No analytics event is emitted for reject.
@@ -707,6 +709,12 @@ paths:
                             $ref: './showrooms.yaml#/components/schemas/ShowroomPrivileged'
         "400":
           description: Validation error or not editable (must be pending)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+        "409":
+          description: Showroom owner account deleted
           content:
             application/json:
               schema:

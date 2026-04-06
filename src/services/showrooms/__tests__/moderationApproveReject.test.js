@@ -240,6 +240,14 @@ describe("approveShowroomService", () => {
         });
     });
 
+    it("blocks approve when showroom owner account is deleted", async () => {
+        state.users["owner-1"].isDeleted = true;
+
+        await expect(approveShowroomService("sr-1", admin)).rejects.toMatchObject({
+            code: "SHOWROOM_OWNER_DELETED",
+        });
+    });
+
     it("clears stale reviewReason on approve", async () => {
         state.showrooms[0].reviewReason = "previous reject reason";
 
@@ -392,6 +400,14 @@ describe("rejectShowroomService", () => {
         });
     });
 
+    it("blocks reject when showroom owner account is deleted", async () => {
+        state.users["owner-1"].isDeleted = true;
+
+        await expect(rejectShowroomService("sr-1", "Reason ok", admin)).rejects.toMatchObject({
+            code: "SHOWROOM_OWNER_DELETED",
+        });
+    });
+
     it("increments editCount on reject", async () => {
         state.showrooms[0].editCount = 3;
 
@@ -422,5 +438,6 @@ describe("moderation service integrity checks", () => {
         expect(getStatusForCode("VALIDATION_ERROR")).toBe(400);
         expect(getStatusForCode("SHOWROOM_NOT_FOUND")).toBe(404);
         expect(getStatusForCode("FORBIDDEN")).toBe(403);
+        expect(getStatusForCode("SHOWROOM_OWNER_DELETED")).toBe(409);
     });
 });

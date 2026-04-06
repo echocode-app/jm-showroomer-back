@@ -287,6 +287,8 @@ async function cleanupOwnedShowrooms(ownerUid) {
                 status: "deleted",
                 deletedAt: showroom.deletedAt || now,
                 updatedAt: now,
+                pendingSnapshot: null,
+                reviewReason: null,
                 deletedBy: { uid: ownerUid, role: "self_delete" },
             };
         });
@@ -308,6 +310,8 @@ async function cleanupOwnedShowrooms(ownerUid) {
             status: "deleted",
             deletedAt: toTimestamp(data.deletedAt)?.toDate() ?? now,
             updatedAt: now,
+            pendingSnapshot: null,
+            reviewReason: null,
             deletedBy: { uid: ownerUid, role: "self_delete" },
         });
         softDeleted += 1;
