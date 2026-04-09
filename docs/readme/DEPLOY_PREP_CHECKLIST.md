@@ -4,6 +4,16 @@
 
 Close the backend before real QA and first production launch without mixing mock/test data with launch data.
 
+## Mandatory Rule For Future Work
+
+- Future features, migrations, QA cycles, cleanup scripts, and release candidates must not use production as the default working environment.
+- Maintain separate `dev`, `stage`, and `prod` environments with separate Firebase/Firestore/Storage configuration.
+- Promote changes only through:
+  - `dev`
+  - `stage`
+  - `prod`
+- Treat missing `stage` isolation as a release/process blocker, not as an acceptable shortcut.
+
 ## 1. Environment
 
 - Set `BASE_URL=https://jm-showroomer-back.onrender.com/api/v1`
@@ -28,6 +38,7 @@ Close the backend before real QA and first production launch without mixing mock
 - `27CuLoJwngVgTwN0aNbnVAecYz22`
 - `zuiJC9FpxRS4KOAzly4GUaNl3Wv2`
 - `v5LBcPFhlBMxWOkfNfJJaVSvslf2`
+- `pV5dpiWmr3bFMUccTjVZJd5VCoh1`
 
 ## 3. Data Cleanup
 
@@ -45,6 +56,20 @@ Close the backend before real QA and first production launch without mixing mock
   - `npm run cleanup:notifications`
 - Dry-run generic test cleanup:
   - `npm run test:cleanup:dry`
+- Dry-run launch reset while preserving listed admins and current lookbook/event owners:
+  - `npm run cleanup:launch-reset:dry`
+- Execute launch reset:
+  - `npm run cleanup:launch-reset`
+- For production execution:
+  - `NODE_ENV=prod node scripts/preprod_reset_preserve_admins_content.js --allow-prod --execute`
+- If showroom media in Storage should also be removed:
+  - add `--with-storage`
+- If non-protected Firebase Auth users should also be deleted:
+  - add `--with-auth`
+- If retained mock lookbooks/events must stay but their current owner user should be removed:
+  - add `--reassign-retained-owner-to=<protected_admin_uid>`
+- If old admin/platform analytics history should also be wiped:
+  - add `--with-analytics`
 
 ## 4. Content Before Launch
 

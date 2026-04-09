@@ -69,6 +69,28 @@ Timestamp storage policy:
 - `TEST_ADMIN_TOKEN`
 - (опційно) `STAGING_BASE_URL`, якщо потрібен override дефолтного staging URL
 
+## 5.2 Обов'язкова політика середовищ перед майбутніми фічами та апдейтами
+
+- Нові фічі, risky refactors, cleanup-скрипти, seed-скрипти, міграції та QA-перевірки не виконуються напряму на `prod`.
+- Для backend, admin panel і mobile integration обов'язково підтримувати окремі середовища:
+  - `dev`
+  - `stage`
+  - `prod`
+- Кожне середовище має використовувати окремий Firebase project:
+  - окремий Firestore
+  - окремий Storage bucket
+  - окремі credentials
+- Будь-які зміни з впливом на дані проходять послідовність:
+  - `dev`
+  - `stage`
+  - `prod`
+- Mock seeds, test fixtures, destructive cleanup і ручні експерименти дозволені тільки в `dev/stage`.
+- `prod` використовується тільки для:
+  - реальних даних
+  - контрольованих міграцій
+  - погоджених cleanup-операцій через guarded scripts
+- Якщо для фічі або релізу ще немає окремого `stage` середовища, задачу не вважати готовою до безпечного rollout.
+
 ## 6) Зони відповідальності по коду
 
 - `src/routes` - HTTP surface.

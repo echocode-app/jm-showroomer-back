@@ -75,6 +75,23 @@ Environment files:
 - `.env.test`
 - `.env.prod`
 
+## Mandatory Environment Policy
+
+Before any future feature work, migrations, data cleanup, or release preparation:
+
+- do not work directly against production Firebase / Firestore / Storage by default;
+- keep separate environments for `dev`, `stage`, and `prod`;
+- each environment must use its own Firebase project, Firestore database, Storage bucket, and backend deployment;
+- all risky changes must be validated in `dev` first, then `stage`, and only then promoted to `prod`;
+- mock seeds, test cleanup, destructive scripts, and exploratory QA writes are forbidden in `prod` except for explicitly approved production maintenance tasks;
+- production data cleanup and migrations must always run through guarded scripts with explicit production flags.
+
+Recommended baseline:
+
+- `dev` — local development, mocks, seeds, destructive experiments;
+- `stage` — pre-release regression, QA, admin panel checks, mobile integration checks;
+- `prod` — real user data only.
+
 ## Documentation Links
 
 - `docs/openapi.yaml` — OpenAPI spec (modular entrypoint)
