@@ -915,7 +915,7 @@ components:
 
     AdminUsersOnboardingUser:
       type: object
-      required: [uid, role, onboardingState, ownerProfileCompleted]
+      required: [uid, role, onboardingState, ownerProfileCompleted, stages]
       properties:
         uid:
           type: string
@@ -943,6 +943,41 @@ components:
           type: string
           format: date-time
           nullable: true
+        stages:
+          $ref: '#/components/schemas/AdminUsersOnboardingUserStages'
+
+    AdminUsersOnboardingStageState:
+      type: string
+      enum: [done, not_done, dropoff, unknown]
+
+    AdminUsersOnboardingUserStages:
+      type: object
+      required:
+        - splash
+        - onboardingStep1
+        - onboardingStep2
+        - onboardingStep3
+        - onboardingStep4
+        - auth
+        - ownerRegistration
+        - ownerRegistrationCompleted
+      properties:
+        splash:
+          $ref: '#/components/schemas/AdminUsersOnboardingStageState'
+        onboardingStep1:
+          $ref: '#/components/schemas/AdminUsersOnboardingStageState'
+        onboardingStep2:
+          $ref: '#/components/schemas/AdminUsersOnboardingStageState'
+        onboardingStep3:
+          $ref: '#/components/schemas/AdminUsersOnboardingStageState'
+        onboardingStep4:
+          $ref: '#/components/schemas/AdminUsersOnboardingStageState'
+        auth:
+          $ref: '#/components/schemas/AdminUsersOnboardingStageState'
+        ownerRegistration:
+          $ref: '#/components/schemas/AdminUsersOnboardingStageState'
+        ownerRegistrationCompleted:
+          $ref: '#/components/schemas/AdminUsersOnboardingStageState'
 
     AdminUsersOnboardingMeta:
       type: object

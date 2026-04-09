@@ -174,6 +174,7 @@ export async function getUsersOnboardingAnalyticsService(filters = {}) {
     const parsed = parseUsersOnboardingFilters(filters);
     const db = getFirestoreInstance();
     const users = db.collection("users");
+    const onboardingAnalytics = await scanUsersOnboardingAnalytics(db, parsed);
 
     const [totalUsers, onboardingCompleted, ownerProfileCompleted] = await Promise.all([
         countQuery(users),
@@ -192,7 +193,7 @@ export async function getUsersOnboardingAnalyticsService(filters = {}) {
             ownerProfileCompleted,
             ownerProfileNotCompleted,
         },
-        journey: await getUsersOnboardingJourneyAnalytics(db, parsed),
+        journey: buildUsersOnboardingJourneyAnalytics(onboardingAnalytics, parsed),
     };
 
     if (!parsed.includeUsers) {
@@ -212,10 +213,11 @@ export async function getUsersOnboardingAnalyticsService(filters = {}) {
 
     response.users = page.map(doc => {
         const data = doc.data() || {};
+        const uid = data.uid || doc.id;
         const onboardingState = String(data.onboardingState || "new");
         const role = String(data.role || "user");
         return {
-            uid: data.uid || doc.id,
+            uid,
             email: data.email || null,
             name: data.name || null,
             role,
@@ -224,6 +226,12 @@ export async function getUsersOnboardingAnalyticsService(filters = {}) {
             country: data.country || null,
             createdAt: toIsoOrNull(data.createdAt),
             updatedAt: toIsoOrNull(data.updatedAt),
+            stages: buildUserOnboardingStages({
+                onboardingState,
+                role,
+                ownerProfileCompleted: role === "owner",
+                analyticsStageIndex: onboardingAnalytics.userStageIndex.get(uid) ?? null,
+            }),
         };
     });
 
@@ -324,6 +332,11 @@ function toIsoOrNull(value) {
 }
 
 async function getUsersOnboardingJourneyAnalytics(db, parsed) {
+    const analytics = await scanUsersOnboardingAnalytics(db, parsed);
+    return buildUsersOnboardingJourneyAnalytics(analytics, parsed);
+}
+
+async function scanUsersOnboardingAnalytics(db, parsed) {
     const fromIso = parsed.from.toISOString();
     const toIso = parsed.to.toISOString();
     const query = db
@@ -333,19 +346,35 @@ async function getUsersOnboardingJourneyAnalytics(db, parsed) {
     const snap = await query.get();
 
     const actorStageIndex = new Map();
+    const userStageIndex = new Map();
 
     for (const doc of snap?.docs || []) {
         const data = doc.data() || {};
-        const actorId = normalizeActorId(data?.user?.actorId);
-        if (!actorId) continue;
         const stageIndex = resolveJourneyStageIndex(data);
         if (stageIndex === null) continue;
-        const prev = actorStageIndex.get(actorId) ?? -1;
-        if (stageIndex > prev) {
-            actorStageIndex.set(actorId, stageIndex);
+
+        const actorId = normalizeActorId(data?.user?.actorId);
+        if (actorId) {
+            const prev = actorStageIndex.get(actorId) ?? -1;
+            if (stageIndex > prev) {
+                actorStageIndex.set(actorId, stageIndex);
+            }
+        }
+
+        const userId = normalizeAnalyticsUserId(data);
+        if (userId) {
+            const prev = userStageIndex.get(userId) ?? -1;
+            if (stageIndex > prev) {
+                userStageIndex.set(userId, stageIndex);
+            }
         }
     }
 
+    return { actorStageIndex, userStageIndex };
+}
+
+function buildUsersOnboardingJourneyAnalytics(analytics, parsed) {
+    const actorStageIndex = analytics.actorStageIndex;
     const reached = new Array(JOURNEY_STAGES.length).fill(0);
     const dropoff = {
         splash: 0,
@@ -373,8 +402,8 @@ async function getUsersOnboardingJourneyAnalytics(db, parsed) {
 
     return {
         range: {
-            from: fromIso,
-            to: toIso,
+            from: parsed.from.toISOString(),
+            to: parsed.to.toISOString(),
         },
         totalActors: actorStageIndex.size,
         completedActors: reached[STAGE_INDEX.ownerRegistrationCompleted],
@@ -384,6 +413,73 @@ async function getUsersOnboardingJourneyAnalytics(db, parsed) {
         })),
         dropoff,
     };
+}
+
+function buildUserOnboardingStages({
+    onboardingState,
+    role,
+    ownerProfileCompleted,
+    analyticsStageIndex,
+}) {
+    const stages = createUnknownStages();
+    const isOnboardingCompleted = onboardingState === "completed";
+    const isOwnerCompleted = ownerProfileCompleted === true || role === "owner";
+
+    if (isOnboardingCompleted) {
+        markStagesDoneThrough(stages, STAGE_INDEX.auth);
+    }
+
+    if (isOwnerCompleted) {
+        markStagesDoneThrough(stages, STAGE_INDEX.ownerRegistrationCompleted);
+        return stages;
+    }
+
+    if (isOnboardingCompleted) {
+        stages.ownerRegistration = analyticsStageIndex === STAGE_INDEX.ownerRegistration ? "dropoff" : "not_done";
+        stages.ownerRegistrationCompleted = "not_done";
+        return stages;
+    }
+
+    if (analyticsStageIndex === null || analyticsStageIndex === undefined) {
+        return stages;
+    }
+
+    for (const stage of JOURNEY_STAGES) {
+        const index = STAGE_INDEX[stage.key];
+        if (index < analyticsStageIndex) {
+            stages[stage.key] = "done";
+        } else if (index === analyticsStageIndex) {
+            stages[stage.key] = analyticsStageIndex === STAGE_INDEX.ownerRegistrationCompleted ? "done" : "dropoff";
+        } else {
+            stages[stage.key] = "not_done";
+        }
+    }
+
+    if (stages.ownerRegistrationCompleted === "done") {
+        stages.ownerRegistration = "done";
+    }
+
+    return stages;
+}
+
+function createUnknownStages() {
+    return {
+        splash: "unknown",
+        onboardingStep1: "unknown",
+        onboardingStep2: "unknown",
+        onboardingStep3: "unknown",
+        onboardingStep4: "unknown",
+        auth: "unknown",
+        ownerRegistration: "unknown",
+        ownerRegistrationCompleted: "unknown",
+    };
+}
+
+function markStagesDoneThrough(stages, maxIndex) {
+    for (const stage of JOURNEY_STAGES) {
+        const index = STAGE_INDEX[stage.key];
+        stages[stage.key] = index <= maxIndex ? "done" : "not_done";
+    }
 }
 
 const JOURNEY_STAGES = [
@@ -459,4 +555,16 @@ function normalizeActorId(actorId) {
     if (!normalized) return null;
     if (normalized === "a:unknown") return null;
     return normalized;
+}
+
+function normalizeAnalyticsUserId(event) {
+    const explicitUserId = typeof event?.user?.userId === "string"
+        ? event.user.userId.trim()
+        : "";
+    if (explicitUserId) return explicitUserId;
+
+    const actorId = normalizeActorId(event?.user?.actorId);
+    if (!actorId || !actorId.startsWith("u:")) return null;
+    const uid = actorId.slice(2).trim();
+    return uid || null;
 }

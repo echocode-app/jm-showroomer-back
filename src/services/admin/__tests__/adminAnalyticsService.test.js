@@ -266,6 +266,8 @@ describe("adminAnalyticsService", () => {
     });
 
     it("returns users onboarding funnel and optional paged users list", async () => {
+        const from = "2026-02-01T00:00:00.000Z";
+        const to = "2026-03-03T10:00:00.000Z";
         const state = {
             counts: new Map([
                 [queryKey("users", []), 10],
@@ -273,6 +275,14 @@ describe("adminAnalyticsService", () => {
                 [queryKey("users", [{ field: "role", op: "==", value: "owner" }]), 2],
             ]),
             docs: new Map([
+                [queryKey("analytics_events", [
+                    { field: "timestamp", op: ">=", value: from },
+                    { field: "timestamp", op: "<", value: to },
+                ]), [
+                    { eventName: "owner_registration_completed", user: { actorId: "u:u-1", userId: "u-1" }, timestamp: "2026-02-10T10:00:00.000Z" },
+                    { eventName: "owner_registration_view", user: { actorId: "u:u-2", userId: "u-2" }, timestamp: "2026-02-11T10:00:00.000Z" },
+                    { eventName: "onboarding_step_view", user: { actorId: "u:u-3", userId: "u-3" }, context: { step: 2 }, timestamp: "2026-02-12T10:00:00.000Z" },
+                ]],
                 [docsQueryKey("users", {
                     orders: [{ field: "__name__", direction: "asc" }],
                     startAfter: null,
@@ -307,7 +317,7 @@ describe("adminAnalyticsService", () => {
         };
         getFirestoreInstanceMock.mockReturnValue(makeDb(state));
 
-        const result = await getUsersOnboardingAnalyticsService({ includeUsers: "true", limit: "2" });
+        const result = await getUsersOnboardingAnalyticsService({ from, to, includeUsers: "true", limit: "2" });
 
         expect(result.funnel).toEqual({
             totalUsers: 10,
@@ -322,12 +332,32 @@ describe("adminAnalyticsService", () => {
             role: "owner",
             onboardingState: "completed",
             ownerProfileCompleted: true,
+            stages: {
+                splash: "done",
+                onboardingStep1: "done",
+                onboardingStep2: "done",
+                onboardingStep3: "done",
+                onboardingStep4: "done",
+                auth: "done",
+                ownerRegistration: "done",
+                ownerRegistrationCompleted: "done",
+            },
         });
         expect(result.users[1]).toMatchObject({
             uid: "u-2",
             role: "user",
             onboardingState: "completed",
             ownerProfileCompleted: false,
+            stages: {
+                splash: "done",
+                onboardingStep1: "done",
+                onboardingStep2: "done",
+                onboardingStep3: "done",
+                onboardingStep4: "done",
+                auth: "done",
+                ownerRegistration: "dropoff",
+                ownerRegistrationCompleted: "not_done",
+            },
         });
         expect(result.meta).toEqual({
             hasMore: true,
@@ -336,8 +366,8 @@ describe("adminAnalyticsService", () => {
         });
         expect(result.journey).toEqual(
             expect.objectContaining({
-                totalActors: 0,
-                completedActors: 0,
+                totalActors: 3,
+                completedActors: 1,
             })
         );
     });
@@ -391,5 +421,52 @@ describe("adminAnalyticsService", () => {
             { key: "ownerRegistration", reached: 2 },
             { key: "ownerRegistrationCompleted", reached: 1 },
         ]);
+    });
+
+    it("builds per-user stages from analytics for incomplete onboarding users", async () => {
+        const from = "2026-02-01T00:00:00.000Z";
+        const to = "2026-03-01T00:00:00.000Z";
+        const state = {
+            counts: new Map([
+                [queryKey("users", []), 1],
+                [queryKey("users", [{ field: "onboardingState", op: "==", value: "completed" }]), 0],
+                [queryKey("users", [{ field: "role", op: "==", value: "owner" }]), 0],
+            ]),
+            docs: new Map([
+                [queryKey("analytics_events", [
+                    { field: "timestamp", op: ">=", value: from },
+                    { field: "timestamp", op: "<", value: to },
+                ]), [
+                    { eventName: "splash_view", user: { actorId: "u:u-3", userId: "u-3" }, timestamp: "2026-02-01T10:00:00.000Z" },
+                    { eventName: "onboarding_step_view", user: { actorId: "u:u-3", userId: "u-3" }, context: { step: 2 }, timestamp: "2026-02-01T10:01:00.000Z" },
+                ]],
+                [docsQueryKey("users", {
+                    orders: [{ field: "__name__", direction: "asc" }],
+                    startAfter: null,
+                    limit: 2,
+                }), [
+                    {
+                        uid: "u-3",
+                        email: "u3@example.com",
+                        role: "user",
+                        onboardingState: "new",
+                    },
+                ]],
+            ]),
+        };
+        getFirestoreInstanceMock.mockReturnValue(makeDb(state));
+
+        const result = await getUsersOnboardingAnalyticsService({ from, to, includeUsers: "true", limit: "1" });
+
+        expect(result.users[0].stages).toEqual({
+            splash: "done",
+            onboardingStep1: "done",
+            onboardingStep2: "dropoff",
+            onboardingStep3: "not_done",
+            onboardingStep4: "not_done",
+            auth: "not_done",
+            ownerRegistration: "not_done",
+            ownerRegistrationCompleted: "not_done",
+        });
     });
 });
