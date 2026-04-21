@@ -137,6 +137,9 @@ async function applyUserStateBatch(uid, { wantToVisitIds, dismissedIds, createdA
     if (!hasWrites) return;
     await db.runTransaction(async tx => {
         await assertUserWritableInTx(tx, uid);
+
+        // Firestore transactions require every read to happen before any write.
+        const wantOps = [];
         for (const eventId of wantToVisitIds) {
             const eventRef = getEventsCollection().doc(eventId);
             const wantRef = userEventCollection(uid, "events_want_to_visit").doc(eventId);
@@ -145,6 +148,22 @@ async function applyUserStateBatch(uid, { wantToVisitIds, dismissedIds, createdA
                 tx.get(eventRef),
                 tx.get(wantRef),
             ]);
+            wantOps.push({ eventId, eventRef, wantRef, dismissedRef, eventSnap, wantSnap });
+        }
+
+        const dismissedOps = [];
+        for (const eventId of dismissedIds) {
+            const eventRef = getEventsCollection().doc(eventId);
+            const dismissedRef = userEventCollection(uid, "events_dismissed").doc(eventId);
+            const wantRef = userEventCollection(uid, "events_want_to_visit").doc(eventId);
+            const [eventSnap, wantSnap] = await Promise.all([
+                tx.get(eventRef),
+                tx.get(wantRef),
+            ]);
+            dismissedOps.push({ eventId, eventRef, dismissedRef, wantRef, eventSnap, wantSnap });
+        }
+
+        for (const { eventRef, wantRef, dismissedRef, eventSnap, wantSnap } of wantOps) {
             const event = eventSnap.exists ? eventSnap.data() : null;
             tx.set(wantRef, { createdAt }, { merge: true });
             tx.delete(dismissedRef);
@@ -155,14 +174,7 @@ async function applyUserStateBatch(uid, { wantToVisitIds, dismissedIds, createdA
             }
         }
 
-        for (const eventId of dismissedIds) {
-            const eventRef = getEventsCollection().doc(eventId);
-            const dismissedRef = userEventCollection(uid, "events_dismissed").doc(eventId);
-            const wantRef = userEventCollection(uid, "events_want_to_visit").doc(eventId);
-            const [eventSnap, wantSnap] = await Promise.all([
-                tx.get(eventRef),
-                tx.get(wantRef),
-            ]);
+        for (const { eventRef, dismissedRef, wantRef, eventSnap, wantSnap } of dismissedOps) {
             const event = eventSnap.exists ? eventSnap.data() : null;
             tx.set(dismissedRef, { createdAt }, { merge: true });
             tx.delete(wantRef);
