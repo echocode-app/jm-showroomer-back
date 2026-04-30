@@ -6,6 +6,7 @@ export const DEFAULT_LIMIT = 20;
 export const COLLECTION_DEFAULT_LIMIT = 100;
 export const MAX_LIMIT = 100;
 export const LIST_CURSOR_VERSION = 1;
+export const COLLECTION_CURSOR_VERSION = 1;
 
 export function parseListFilters(filters = {}) {
     return {
@@ -19,6 +20,7 @@ export function parseListFilters(filters = {}) {
 export function parseCollectionFilters(filters = {}) {
     return {
         limit: parseLimit(filters.limit, COLLECTION_DEFAULT_LIMIT, MAX_LIMIT),
+        cursor: filters.cursor ? decodeCollectionCursor(filters.cursor) : null,
     };
 }
 
@@ -78,6 +80,44 @@ export function decodeListCursor(encoded) {
         return {
             startsAtIso: new Date(ms).toISOString(),
             startsAtTs: Timestamp.fromDate(new Date(ms)),
+            id: parsed.id,
+        };
+    } catch {
+        throw badRequest("CURSOR_INVALID");
+    }
+}
+
+export function encodeCollectionCursor({ createdAtIso, id }) {
+    return Buffer.from(
+        JSON.stringify({
+            v: COLLECTION_CURSOR_VERSION,
+            createdAt: createdAtIso,
+            id,
+        })
+    ).toString("base64");
+}
+
+export function decodeCollectionCursor(encoded) {
+    try {
+        const parsed = JSON.parse(Buffer.from(encoded, "base64").toString("utf8"));
+        if (
+            !parsed ||
+            parsed.v !== COLLECTION_CURSOR_VERSION ||
+            typeof parsed.createdAt !== "string" ||
+            !parsed.createdAt ||
+            typeof parsed.id !== "string" ||
+            !parsed.id
+        ) {
+            throw badRequest("CURSOR_INVALID");
+        }
+
+        const ms = Date.parse(parsed.createdAt);
+        if (!Number.isFinite(ms)) {
+            throw badRequest("CURSOR_INVALID");
+        }
+
+        return {
+            createdAtIso: new Date(ms).toISOString(),
             id: parsed.id,
         };
     } catch {

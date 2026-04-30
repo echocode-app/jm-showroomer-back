@@ -9,7 +9,7 @@ import { shouldNotifyActorAction } from "../notifications/selfAction.js";
 import { assertUserWritableInTx } from "../users/writeGuardService.js";
 import { buildEventResponse, compareByStartsAtAsc, isEventPublished, isFutureEvent } from "./eventResponse.js";
 import { getEventsCollection } from "./firestoreQuery.js";
-import { parseCollectionFilters } from "./parse.js";
+import { encodeCollectionCursor, parseCollectionFilters } from "./parse.js";
 import { buildAnalyticsEvent } from "../analytics/analyticsEventBuilder.js";
 import { record } from "../analytics/analyticsEventService.js";
 import { ANALYTICS_EVENTS } from "../analytics/eventNames.js";
@@ -181,24 +181,38 @@ export async function undismissEvent(eventId, uid) {
 }
 
 export async function listWantToVisitEvents(uid, filters = {}) {
-    const { limit } = parseCollectionFilters(filters);
+    const { limit, cursor } = parseCollectionFilters(filters);
     const nowTs = timestampNow();
-    const ids = await getOrderedCollectionIds(uid, "events_want_to_visit");
-    if (ids.length === 0) {
-        return { events: [], meta: { total: 0, returned: 0 } };
+    const entries = await getOrderedCollectionEntries(uid, "events_want_to_visit");
+    if (entries.length === 0) {
+        return {
+            events: [],
+            meta: buildCollectionPagingMeta({ total: 0, returned: 0, pageEntries: [], hasMore: false }),
+        };
     }
 
-    const events = await getEventsByIds(ids);
+    const events = await getEventsByIds(entries.map(entry => entry.id));
+    const entryById = new Map(entries.map(entry => [entry.id, entry]));
     // Collection can contain stale ids; re-validate visibility rules at read time.
-    const filtered = events
+    const filteredEntries = events
         .filter(event => isEventPublished(event))
         .filter(event => !isCountryBlocked(event.country))
         .filter(event => isFutureEvent(event, nowTs))
-        .sort(compareByStartsAtAsc);
+        .sort(compareByStartsAtAsc)
+        .map(event => ({ ...entryById.get(event.id), event }))
+        .filter(entry => entry.id);
 
-    const page = filtered.slice(0, limit).map(event =>
-        buildEventResponse(event, {
-            wantIds: new Set(ids),
+    const startIndex = cursor
+        ? filteredEntries.findIndex(entry => entry.id === cursor.id && entry.createdAtIso === cursor.createdAtIso) + 1
+        : 0;
+    const normalizedStartIndex = startIndex > 0 ? startIndex : 0;
+    const pageEntries = filteredEntries.slice(normalizedStartIndex, normalizedStartIndex + limit);
+    const hasMore = normalizedStartIndex + limit < filteredEntries.length;
+
+    const wantIds = new Set(entries.map(entry => entry.id));
+    const page = pageEntries.map(entry =>
+        buildEventResponse(entry.event, {
+            wantIds,
             includeDismissed: false,
             dismissedIds: new Set(),
         })
@@ -206,10 +220,12 @@ export async function listWantToVisitEvents(uid, filters = {}) {
 
     return {
         events: page,
-        meta: {
-            total: filtered.length,
+        meta: buildCollectionPagingMeta({
+            total: filteredEntries.length,
             returned: page.length,
-        },
+            pageEntries,
+            hasMore,
+        }),
     };
 }
 
@@ -225,6 +241,17 @@ async function getOrderedCollectionIds(uid, collectionName) {
         .orderBy("createdAt", "asc")
         .get();
     return snap.docs.map(doc => doc.id);
+}
+
+async function getOrderedCollectionEntries(uid, collectionName) {
+    const snap = await userEventCollection(uid, collectionName)
+        .orderBy("createdAt", "asc")
+        .get();
+
+    return snap.docs.map(doc => ({
+        id: doc.id,
+        createdAtIso: normalizeCreatedAt(doc.data()?.createdAt),
+    }));
 }
 
 async function getEventsByIds(ids) {
@@ -255,6 +282,35 @@ function userEventCollection(uid, collectionName) {
         .collection("users")
         .doc(uid)
         .collection(collectionName);
+}
+
+function buildCollectionPagingMeta({ total, returned, pageEntries, hasMore }) {
+    const last = pageEntries[pageEntries.length - 1] ?? null;
+    const nextCursor = hasMore && last
+        ? encodeCollectionCursor({ createdAtIso: last.createdAtIso, id: last.id })
+        : null;
+
+    return {
+        total,
+        returned,
+        hasMore,
+        nextCursor,
+        paging: hasMore ? "enabled" : "end",
+    };
+}
+
+function normalizeCreatedAt(value) {
+    if (value instanceof Timestamp) return value.toDate().toISOString();
+    if (value instanceof Date) return value.toISOString();
+    if (typeof value === "string") {
+        const ms = Date.parse(value);
+        if (Number.isFinite(ms)) return new Date(ms).toISOString();
+    }
+    if (typeof value?.toDate === "function") return value.toDate().toISOString();
+    if (typeof value?._seconds === "number") {
+        return new Date(value._seconds * 1000).toISOString();
+    }
+    return new Date(0).toISOString();
 }
 
 function getWantToVisitCount(event) {

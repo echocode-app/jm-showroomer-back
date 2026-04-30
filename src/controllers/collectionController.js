@@ -40,7 +40,11 @@ export async function listFavoriteLookbooks(req, res, next) {
     try {
         // Public compatibility: guest users get empty collection with stable shape.
         if (!req.auth?.uid) {
-            return ok(res, { items: [] }, { total: 0, returned: 0 });
+            return ok(
+                res,
+                { items: [] },
+                { total: 0, returned: 0, hasMore: false, nextCursor: null, paging: "end" }
+            );
         }
 
         const { lookbooks, meta } = await listFavoriteLookbooksService(req.auth.uid, req.query ?? {});

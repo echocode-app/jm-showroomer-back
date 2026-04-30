@@ -928,6 +928,12 @@ paths:
             default: 100
             minimum: 1
             maximum: 100
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Opaque backend cursor from previous response (`meta.nextCursor`).
       responses:
         "200":
           description: Favorite lookbooks list
@@ -1046,6 +1052,23 @@ paths:
                           returned:
                             type: integer
                             description: Number of items returned in this response.
+                          hasMore:
+                            type: boolean
+                            description: True when another page is available.
+                          nextCursor:
+                            type: string
+                            nullable: true
+                            description: Opaque cursor for the next page, or null at the end.
+                          paging:
+                            type: string
+                            enum: [enabled, end]
+                            description: Cursor paging state for the current response.
+        "400":
+          description: Invalid query params (`QUERY_INVALID`) or cursor (`CURSOR_INVALID`)
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
         "429":
           description: Rate limit exceeded
           content:
