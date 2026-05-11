@@ -141,6 +141,64 @@ export async function ownerHasActiveShowrooms(ownerUid) {
 }
 
 /**
+ * Soft-deletes unfinished owner draft showrooms before destructive account/profile flows.
+ */
+export async function cleanupOwnerDraftShowrooms(ownerUid) {
+    if (!ownerUid) return { softDeleted: 0 };
+    if (useDevMock) {
+        let softDeleted = 0;
+        const now = new Date().toISOString();
+        DEV_STORE.showrooms = DEV_STORE.showrooms.map(showroom => {
+            if (!showroom || showroom.ownerUid !== ownerUid || showroom.status !== "draft") {
+                return showroom;
+            }
+            softDeleted += 1;
+            return {
+                ...showroom,
+                status: "deleted",
+                deletedAt: showroom.deletedAt || now,
+                updatedAt: now,
+                pendingSnapshot: null,
+                reviewReason: null,
+                deletedBy: { uid: ownerUid, role: "draft_cleanup" },
+            };
+        });
+        return { softDeleted };
+    }
+
+    const db = getFirestoreInstance();
+    const now = new Date();
+    let softDeleted = 0;
+
+    while (true) {
+        const snap = await db
+            .collection("showrooms")
+            .where("ownerUid", "==", ownerUid)
+            .where("status", "==", "draft")
+            .limit(DELETE_SCAN_LIMIT)
+            .get();
+
+        if (snap.empty) break;
+
+        for (const doc of snap.docs) {
+            await doc.ref.update({
+                status: "deleted",
+                deletedAt: now,
+                updatedAt: now,
+                pendingSnapshot: null,
+                reviewReason: null,
+                deletedBy: { uid: ownerUid, role: "draft_cleanup" },
+            });
+            softDeleted += 1;
+        }
+
+        if (snap.docs.length < DELETE_SCAN_LIMIT) break;
+    }
+
+    return { softDeleted };
+}
+
+/**
  * Checks if owner has lookbooks.
  */
 export async function ownerHasLookbooks(ownerUid) {

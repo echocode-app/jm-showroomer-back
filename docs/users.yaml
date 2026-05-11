@@ -719,7 +719,8 @@ paths:
         Requires Bearer auth.
         Before owner profile registration, only `appLanguage` and `notificationsEnabled` can be updated.
         After owner registration, `name`, `position`, `country`, and `instagram` can also be updated.
-        Changing country is blocked when the owner already has showrooms.
+        Changing country soft-deletes unfinished own `draft` showrooms first, then remains blocked
+        when the owner still has `pending`, `approved`, or `rejected` showrooms.
       operationId: updateUserProfile
       security:
         - bearerAuth: []
@@ -786,7 +787,7 @@ paths:
               schema:
                 $ref: './common.yaml#/components/schemas/ApiError'
         "409":
-          description: Country change blocked (owner has active showrooms)
+          description: Country change blocked (owner still has non-draft active showrooms)
           content:
             application/json:
               schema:

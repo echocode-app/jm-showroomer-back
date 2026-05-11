@@ -10,6 +10,7 @@ import {
     updateOwnerProfile,
     updateUserProfileDoc,
     ownerHasActiveShowrooms,
+    cleanupOwnerDraftShowrooms,
 } from "../../services/users/profileService.js";
 import { ANALYTICS_EVENTS } from "../../services/analytics/eventNames.js";
 import { buildAnalyticsEvent } from "../../services/analytics/analyticsEventBuilder.js";
@@ -210,6 +211,7 @@ export async function updateUserProfile(req, res) {
             normalizeCountry(trimmedCountry) !== normalizeCountry(currentCountry)
         ) {
             const ownerUid = req.auth?.uid || req.user?.uid;
+            await cleanupOwnerDraftShowrooms(ownerUid);
             const hasShowrooms = await ownerHasActiveShowrooms(ownerUid);
 
             if (hasShowrooms) {

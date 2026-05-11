@@ -10,13 +10,7 @@ load_env
 require_cmd curl jq node
 require_env TEST_USER_TOKEN TEST_ADMIN_TOKEN
 
-ENV_FILE=".env.${NODE_ENV:-dev}"
-if [ -f "$ENV_FILE" ]; then
-  FIREBASE_PRIVATE_KEY=$(grep -v '^#' "$ENV_FILE" | grep -m1 '^FIREBASE_PRIVATE_KEY=' | cut -d= -f2-)
-  FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY#\"}
-  FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY%\"}
-  export FIREBASE_PRIVATE_KEY
-fi
+load_firebase_private_key
 
 BASE_URL="$(resolve_base_url)"
 preflight_server "${BASE_URL}"
@@ -292,6 +286,7 @@ ensure_owner_role
 http_request "GET /users/me (owner)" 200 "" "${AUTH_HEADER[@]}" "${BASE_URL}/users/me"
 USER_UID=$(json_get "$LAST_BODY" '.data.uid // empty')
 assert_non_empty "$USER_UID" "owner uid"
+cleanup_owner_draft_showrooms_fixture "$USER_UID"
 
 http_request "GET /users/me (admin)" 200 "" "${ADMIN_HEADER[@]}" "${BASE_URL}/users/me"
 ADMIN_UID=$(json_get "$LAST_BODY" '.data.uid // empty')

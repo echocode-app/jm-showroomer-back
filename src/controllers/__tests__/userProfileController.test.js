@@ -4,6 +4,7 @@ const okMock = jest.fn();
 const failMock = jest.fn();
 const updateUserProfileDocMock = jest.fn();
 const ownerHasActiveShowroomsMock = jest.fn();
+const cleanupOwnerDraftShowroomsMock = jest.fn();
 const normalizeInstagramUrlMock = jest.fn(value => value);
 const validateInstagramUrlMock = jest.fn();
 const validatePhoneMock = jest.fn(value => ({ e164: value }));
@@ -25,6 +26,7 @@ jest.unstable_mockModule("../../services/users/profileService.js", () => ({
     updateOwnerProfile: jest.fn(),
     updateUserProfileDoc: updateUserProfileDocMock,
     ownerHasActiveShowrooms: ownerHasActiveShowroomsMock,
+    cleanupOwnerDraftShowrooms: cleanupOwnerDraftShowroomsMock,
     ownerHasLookbooks: jest.fn(),
     ownerHasEvents: jest.fn(),
 }));
@@ -55,6 +57,7 @@ describe("user profile controller", () => {
     beforeEach(() => {
         jest.clearAllMocks();
         ownerHasActiveShowroomsMock.mockResolvedValue(false);
+        cleanupOwnerDraftShowroomsMock.mockResolvedValue({ softDeleted: 0 });
     });
 
     it("normalizes profile timestamps before returning /users/me", async () => {
@@ -175,7 +178,30 @@ describe("user profile controller", () => {
         expect(okMock).toHaveBeenCalledWith(res, { message: "Profile updated" });
     });
 
-    it("blocks owner country change only when owner has showrooms", async () => {
+    it("cleans owner drafts before applying country change", async () => {
+        cleanupOwnerDraftShowroomsMock.mockResolvedValue({ softDeleted: 2 });
+        ownerHasActiveShowroomsMock.mockResolvedValue(false);
+        const req = {
+            body: { country: "Poland" },
+            user: { uid: "owner-1", role: "owner", country: "Ukraine" },
+            auth: { uid: "owner-1" },
+        };
+        const res = {};
+
+        await updateUserProfile(req, res, undefined);
+
+        expect(cleanupOwnerDraftShowroomsMock).toHaveBeenCalledWith("owner-1");
+        expect(ownerHasActiveShowroomsMock).toHaveBeenCalledWith("owner-1");
+        expect(updateUserProfileDocMock).toHaveBeenCalledWith(
+            "owner-1",
+            expect.objectContaining({
+                country: "Poland",
+            })
+        );
+        expect(okMock).toHaveBeenCalledWith(res, { message: "Profile updated" });
+    });
+
+    it("blocks owner country change only when owner still has non-draft showrooms", async () => {
         ownerHasActiveShowroomsMock.mockResolvedValue(true);
         const req = {
             body: { country: "Poland" },
@@ -185,6 +211,7 @@ describe("user profile controller", () => {
 
         await updateUserProfile(req, {}, undefined);
 
+        expect(cleanupOwnerDraftShowroomsMock).toHaveBeenCalledWith("owner-1");
         expect(failMock).toHaveBeenCalledWith(
             {},
             "USER_COUNTRY_CHANGE_BLOCKED",

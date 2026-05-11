@@ -22,6 +22,80 @@ load_env() {
   done < <(grep -v '^#' "$ENV_FILE" | grep -v FIREBASE_PRIVATE_KEY)
 }
 
+# load_firebase_private_key
+load_firebase_private_key() {
+  local env_file=".env.${NODE_ENV:-dev}"
+  if [ ! -f "$env_file" ]; then
+    return
+  fi
+
+  local private_key
+  private_key=$(grep -v '^#' "$env_file" | grep -m1 '^FIREBASE_PRIVATE_KEY=' | cut -d= -f2- || true)
+  if [[ -z "$private_key" ]]; then
+    return
+  fi
+
+  private_key=${private_key#\"}
+  private_key=${private_key%\"}
+  export FIREBASE_PRIVATE_KEY="$private_key"
+}
+
+# cleanup_owner_draft_showrooms_fixture
+cleanup_owner_draft_showrooms_fixture() {
+  local owner_uid=$1
+  if [[ -z "$owner_uid" ]]; then
+    return
+  fi
+
+  load_firebase_private_key
+
+  node --input-type=module - "$owner_uid" <<'NODE'
+import { getFirestoreInstance } from "./src/config/firebase.js";
+
+const [ownerUid] = process.argv.slice(2);
+const db = getFirestoreInstance();
+const snap = await db
+    .collection("showrooms")
+    .where("ownerUid", "==", ownerUid)
+    .where("status", "==", "draft")
+    .get();
+
+if (snap.empty) {
+    console.log("[fixture-cleanup] owner draft showrooms soft-deleted=0");
+    process.exit(0);
+}
+
+let batch = db.batch();
+let pending = 0;
+let total = 0;
+const now = new Date();
+
+async function commitIfNeeded(force = false) {
+    if (pending === 0 || (!force && pending < 450)) return;
+    await batch.commit();
+    batch = db.batch();
+    pending = 0;
+}
+
+for (const doc of snap.docs) {
+    batch.update(doc.ref, {
+        status: "deleted",
+        deletedAt: now,
+        updatedAt: now,
+        pendingSnapshot: null,
+        reviewReason: null,
+        deletedBy: { uid: ownerUid, role: "test_fixture_cleanup" },
+    });
+    pending += 1;
+    total += 1;
+    await commitIfNeeded();
+}
+
+await commitIfNeeded(true);
+console.log(`[fixture-cleanup] owner draft showrooms soft-deleted=${total}`);
+NODE
+}
+
 # require_env
 require_env() {
   local var

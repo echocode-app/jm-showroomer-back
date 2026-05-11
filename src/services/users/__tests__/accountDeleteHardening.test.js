@@ -238,6 +238,34 @@ describe("account delete hardening", () => {
         ).toBe(true);
     });
 
+    it("soft-deletes only owner draft showrooms during country-change cleanup", async () => {
+        const state = {
+            users: { u1: { uid: "u1", isDeleted: false } },
+            showrooms: [
+                { id: "draft-1", ownerUid: "u1", status: "draft", name: "Draft A" },
+                { id: "pending-1", ownerUid: "u1", status: "pending", name: "Pending A" },
+                { id: "other-draft", ownerUid: "u2", status: "draft", name: "Draft B" },
+                { id: "deleted-1", ownerUid: "u1", status: "deleted", name: "Deleted A" },
+            ],
+            lookbooks: [],
+            events: [],
+        };
+        getFirestoreInstanceMock.mockReturnValue(makeDb(state));
+
+        const result = await profileService.cleanupOwnerDraftShowrooms("u1");
+
+        expect(result).toEqual({ softDeleted: 1 });
+        expect(state.showrooms.find(item => item.id === "draft-1")).toEqual(
+            expect.objectContaining({
+                status: "deleted",
+                deletedBy: { uid: "u1", role: "draft_cleanup" },
+            })
+        );
+        expect(state.showrooms.find(item => item.id === "pending-1").status).toBe("pending");
+        expect(state.showrooms.find(item => item.id === "other-draft").status).toBe("draft");
+        expect(state.showrooms.find(item => item.id === "deleted-1").status).toBe("deleted");
+    });
+
     it("deletes lookbooks using canonical authorId ownership", async () => {
         const state = {
             users: { u1: { uid: "u1", isDeleted: false } },

@@ -10,7 +10,7 @@ source "$SCRIPT_DIR/../_lib.sh"
 source "$SCRIPT_DIR/../lib/helpers/showrooms_admin_suite.sh"
 
 load_env
-require_cmd curl jq
+require_cmd curl jq node
 require_env TEST_USER_TOKEN
 
 BASE_URL="$(resolve_base_url)"
@@ -71,6 +71,10 @@ if [[ "$USER_ROLE" != "owner" ]]; then
     USER_COUNTRY="Ukraine"
   fi
 fi
+
+USER_UID=$(json_get "$ME_RESPONSE" '.data.uid // empty')
+assert_non_empty "$USER_UID" "user uid"
+cleanup_owner_draft_showrooms_fixture "$USER_UID"
 
 print_section "Profile update"
 http_request "PATCH /users/profile (settings)" 200 "" \
