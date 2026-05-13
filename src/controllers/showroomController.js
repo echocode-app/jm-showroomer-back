@@ -27,15 +27,39 @@ import { classifyError } from "../utils/errorClassifier.js";
 import { shouldEmitFavoriteToggleLog } from "../utils/favoriteToggleLogGuard.js";
 
 function logShowroomCreateFailure(req, err) {
-    const { level } = classifyError(err);
+    const { level, category } = classifyError(err);
     logDomainEvent(req, {
         domain: "showroom",
         event: "create",
         status: "failed",
-        meta: {
-            code: err?.code || "INTERNAL_ERROR",
-        },
+        meta: buildShowroomCreateFailureMeta(req, err, category),
     }, level, err);
+}
+
+function buildShowroomCreateFailureMeta(req, err, category) {
+    const body = req.body || {};
+
+    return {
+        code: err?.code || "INTERNAL_ERROR",
+        errorCategory: category,
+        httpStatus: err?.status ?? err?.statusCode ?? err?.httpStatus,
+        draftMode: req.query?.mode === "draft" || body?.draft === true,
+        userRole: req.user?.role,
+        userCountry: req.user?.country,
+        payloadCountry: body?.country,
+        payloadGeoCountry: body?.geo?.country,
+        payloadType: body?.type,
+        payloadAvailability: body?.availability,
+        hasName: typeof body?.name === "string" && body.name.trim() !== "",
+        hasAddress: typeof body?.address === "string" && body.address.trim() !== "",
+        hasGeo: !!body?.geo,
+        hasGeoCoords: !!body?.geo?.coords,
+        hasContacts: !!body?.contacts,
+        hasPhone: typeof body?.contacts?.phone === "string" && body.contacts.phone.trim() !== "",
+        hasInstagram:
+            typeof body?.contacts?.instagram === "string" &&
+            body.contacts.instagram.trim() !== "",
+    };
 }
 
 function logShowroomSubmitFailure(req, err) {
