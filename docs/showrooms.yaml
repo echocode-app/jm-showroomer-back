@@ -42,7 +42,7 @@ components:
           description: Derived field persisted for city query/index performance. Server-computed; client input ignored.
         country:
           type: string
-          description: Full country name (e.g., Ukraine). Must match showroom.country (case-insensitive). Not ISO2.
+          description: Country string mirrored in geo. Must match showroom.country by normalized country identity. Backend accepts ISO2 (e.g., UA) and full country names (e.g., Ukraine).
         coords:
           $ref: '#/components/schemas/GeoCoords'
         geohash:
@@ -148,7 +148,7 @@ components:
           description: Derived field used by duplicate detection on submit/moderation flow.
         country:
           type: string
-          description: Full country name (e.g., Ukraine). Not ISO2.
+          description: Showroom country string. In owner flows backend compares this to users.me.country by normalized country identity and accepts ISO2 and full country names.
         city:
           type: string
           nullable: true
@@ -560,7 +560,7 @@ components:
               type: string
             country:
               type: string
-              description: Full country name (e.g., Ukraine). Not ISO2.
+              description: Showroom country string. Backend accepts ISO2 and full country names; owner flows compare normalized country identity to users.me.country.
             city:
               type: string
             contacts:
@@ -601,7 +601,7 @@ components:
               type: string
             country:
               type: string
-              description: Full country name (e.g., Ukraine). Not ISO2. russia/belarus blocked.
+              description: Showroom country string. Must match users.me.country by normalized country identity. russia/belarus blocked. Backend accepts ISO2 and full country names.
             city:
               type: string
             contacts:
@@ -641,7 +641,7 @@ components:
           type: string
         country:
           type: string
-          description: Full country name (e.g., Ukraine). Not ISO2. Must match owner country (change blocked).
+          description: Showroom country string. Must match users.me.country by normalized country identity; changing to a different owner country value is blocked. Backend accepts ISO2 and full country names.
         city:
           type: string
         contacts:
@@ -1470,7 +1470,7 @@ paths:
       description: |
         Creates a showroom (status=draft).
         Draft mode is supported via body {"draft": true} or query mode=draft.
-        Showroom country must match owner country.
+        Showroom country must match `users.me.country` by normalized country identity. Backend accepts ISO2 (e.g., UA) and full country names (e.g., Ukraine).
         Backend validates `type` (`multibrand|unique`) and `availability` (`open|appointment`) when provided.
         Owner recreation cooldown applies after soft delete: the same owner cannot recreate the same showroom
         (same normalized name) for 3 calendar months after deletion (`SHOWROOM_RECREATE_COOLDOWN`, 409).
@@ -1570,7 +1570,7 @@ paths:
     post:
       tags: [Showrooms]
       summary: Create or reuse draft showroom
-      description: Showroom country must match owner country.
+      description: Creates or reuses a draft shell. This endpoint has no country payload; later create/update/submit requests must keep showroom.country aligned with `users.me.country` by normalized country identity.
       operationId: createDraftShowroom
       externalDocs:
         description: Showrooms Flutter guide (UA)
@@ -1660,7 +1660,7 @@ paths:
       summary: Update showroom
       description: |
         Only owner can edit, only for draft/rejected/approved. Pending is locked.
-        Showroom country must match owner country.
+        Showroom country must match `users.me.country` by normalized country identity. Backend accepts ISO2 and full country names.
         Backend validates `type` (`multibrand|unique`) and `availability` (`open|appointment`) against the documented contract.
         When `geo` is patched, backend recomputes search fields and updates legacy compatibility mirrors (`city`, `location`) from canonical `geo`.
         Error codes: SHOWROOM_LOCKED_PENDING (409), SHOWROOM_NOT_EDITABLE (400), NO_FIELDS_TO_UPDATE (400).
@@ -1904,7 +1904,7 @@ paths:
         Submits a draft/rejected/approved showroom for moderation.
         Status becomes pending and submittedAt is set.
         Resubmission from `approved` and `rejected` back to `pending` is intentionally allowed.
-        Showroom country must match owner country.
+        Showroom country must match `users.me.country` by normalized country identity. Backend accepts ISO2 and full country names.
         Completeness is evaluated against canonical owner-facing fields; `geo.city` and `geo.coords` are accepted as the source-of-truth for city/location requirements.
         Error codes: SHOWROOM_INCOMPLETE (400), SHOWROOM_NAME_ALREADY_EXISTS (400), SHOWROOM_DUPLICATE (400), SHOWROOM_LOCKED_PENDING (409), SHOWROOM_NOT_EDITABLE (400).
       operationId: submitShowroom

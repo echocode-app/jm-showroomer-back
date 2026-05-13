@@ -32,7 +32,7 @@ components:
         country:
           type: string
           nullable: true
-          description: Full country name (e.g., Ukraine). Not ISO2.
+          description: Stored user country string used by owner/showroom country guards. Backend accepts ISO2 (e.g., UA) and full country names (e.g., Ukraine) and compares normalized country identity.
         appLanguage:
           type: string
           enum: [uk, en]
@@ -95,7 +95,7 @@ components:
       properties:
         country:
           type: string
-          description: Full country name (e.g., Ukraine). Not ISO2. russia/belarus blocked.
+          description: Country string to store on the user profile. Backend accepts ISO2 (e.g., UA) and full country names (e.g., Ukraine). russia/belarus blocked.
 
     CompleteOwnerProfileInput:
       type: object
@@ -110,7 +110,7 @@ components:
           nullable: true
         country:
           type: string
-          description: Full country name (e.g., Ukraine). Not ISO2. russia/belarus blocked.
+          description: Country string to store on the owner profile. Backend accepts ISO2 (e.g., UA) and full country names (e.g., Ukraine). russia/belarus blocked.
         phone:
           type: string
           description: Owner phone number. Optional for owner registration; when present backend normalizes to E.164.
@@ -131,7 +131,7 @@ components:
           description: Owner-only field after owner profile registration. Before that, only appLanguage and notificationsEnabled can be updated.
         country:
           type: string
-          description: Full country name (e.g., Ukraine). Not ISO2. russia/belarus blocked. Owner-only field after owner profile registration.
+          description: Country string stored on the owner profile. Backend accepts ISO2 (e.g., UA) and full country names (e.g., Ukraine). russia/belarus blocked. Owner-only field after owner profile registration.
         phone:
           type: string
           description: Owner-only field after owner profile registration. Backend normalizes to E.164.

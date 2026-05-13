@@ -1,10 +1,10 @@
 import isEqual from "lodash.isequal";
+import { isSameCountryValue } from "../../constants/countries.js";
 import { EDITABLE_FIELDS, HISTORY_LIMIT } from "./_constants.js";
 
 // isSameCountry
 export function isSameCountry(left, right) {
-    if (!left || !right) return false;
-    return String(left).trim().toLowerCase() === String(right).trim().toLowerCase();
+    return isSameCountryValue(left, right);
 }
 
 // buildDiff

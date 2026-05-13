@@ -20,11 +20,13 @@ Base URL:
 
 1. викликати `GET /users/me`
 2. перевірити `data.role === "owner"`
-3. використовувати `data.country` як canonical country для showroom
+3. використовувати `data.country` як owner country source-of-truth і передавати country в одному узгодженому форматі в межах запиту
 
 Важливо:
 
-- showroom country має збігатися з `users.me.country`
+- showroom country має збігатися з `users.me.country` за нормалізованою country identity
+- backend приймає як ISO2 (`UA`), так і full name (`Ukraine`) і порівнює їх як одну країну
+- `country` і `geo.country` в одному showroom payload теж мають описувати ту саму країну
 - `POST /showrooms/create` створює тільки `draft`
 - для відправки на модерацію потрібен окремий `POST /showrooms/{id}/submit`
 
@@ -325,7 +327,7 @@ Flutter має:
 ## 8. Типові помилки owner flow
 
 - `ACCESS_DENIED`
-  - showroom country не збігається з `users.me.country`
+  - showroom country не збігається з `users.me.country` за нормалізованою country identity
 - `COUNTRY_BLOCKED`
   - blocked country policy
 - `VALIDATION_ERROR`
