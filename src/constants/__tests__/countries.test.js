@@ -6,6 +6,11 @@ describe("country identity helpers", () => {
         expect(resolveCountryIdentity("Ukraine")).toBe("ua");
         expect(isSameCountryValue("UA", "Ukraine")).toBe(true);
         expect(isSameCountryValue("PL", "Poland")).toBe(true);
+        expect(resolveCountryIdentity("CZ")).toBe("cz");
+        expect(resolveCountryIdentity("Czechia")).toBe("cz");
+        expect(resolveCountryIdentity("Czech Republic")).toBe("cz");
+        expect(isSameCountryValue("CZ", "Czechia")).toBe(true);
+        expect(isSameCountryValue("CZ", "Czech Republic")).toBe(true);
     });
 
     it("keeps blocked-country policy compatible for ISO2 and full names", () => {

@@ -134,11 +134,10 @@ async function withServer(handler) {
 }
 
 describe("showroom country format compatibility", () => {
-    const ownerUid = "owner-country-1";
     const authMock = {
         verifyIdToken: jest.fn(async token => {
-            if (token !== "owner-token") throw new Error("invalid token");
-            return { uid: ownerUid };
+            if (!token.startsWith("owner-token-")) throw new Error("invalid token");
+            return { uid: token.replace("owner-token-", "") };
         }),
     };
 
@@ -148,31 +147,53 @@ describe("showroom country format compatibility", () => {
         jest.clearAllMocks();
 
         getAuthInstanceMock.mockReturnValue(authMock);
+        getFirestoreInstanceMock.mockReturnValue(makeUserDb({}));
+    });
+
+    it.each([
+        {
+            ownerUid: "owner-country-ua",
+            userCountry: "UA",
+            payloadCountry: "Ukraine",
+        },
+        {
+            ownerUid: "owner-country-cz",
+            userCountry: "CZ",
+            payloadCountry: "Czechia",
+        },
+    ])("allows create and submit for normalized country match %#", async ({ ownerUid, userCountry, payloadCountry }) => {
         getFirestoreInstanceMock.mockReturnValue(
             makeUserDb({
                 [ownerUid]: {
                     uid: ownerUid,
                     role: "owner",
                     roles: ["owner"],
-                    country: "UA",
+                    country: userCountry,
                     isDeleted: false,
                     deleteLock: null,
                 },
             })
         );
-    });
 
-    it("allows create and submit when profile uses ISO2 and payload uses full country name", async () => {
         await withServer(async baseUrl => {
             const headers = {
                 "content-type": "application/json",
-                authorization: "Bearer owner-token",
+                authorization: `Bearer owner-token-${ownerUid}`,
             };
 
             const createRes = await fetch(`${baseUrl}/create`, {
                 method: "POST",
                 headers,
-                body: JSON.stringify(makeCreatePayload()),
+                body: JSON.stringify(
+                    makeCreatePayload({
+                        country: payloadCountry,
+                        geo: {
+                            city: "Prague",
+                            country: payloadCountry,
+                            coords: { lat: 50.45, lng: 30.52 },
+                        },
+                    })
+                ),
             });
             expect(createRes.status).toBe(200);
 
@@ -184,7 +205,7 @@ describe("showroom country format compatibility", () => {
             const submitRes = await fetch(`${baseUrl}/${showroomId}/submit`, {
                 method: "POST",
                 headers: {
-                    authorization: "Bearer owner-token",
+                    authorization: `Bearer owner-token-${ownerUid}`,
                 },
             });
             expect(submitRes.status).toBe(200);
