@@ -24,6 +24,11 @@ info:
       Value: one canonical showroom integration document for Flutter.  
       <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/SHOWROOMS_FLUTTER_UA.md" target="_blank" rel="noopener noreferrer">Open document</a>
 
+    - **VALIDATION.md**  
+      For Flutter + Backend: full backend validation contract, including Joi schemas, service-level rules, phone/Instagram/name/country/category constraints, and error codes.  
+      Value: client-side validation can mirror backend behavior before release.  
+      <a href="https://github.com/echocode-app/jm-showroomer-back/blob/main/docs/readme/VALIDATION.md" target="_blank" rel="noopener noreferrer">Open document</a>
+
     - **PUSH_NOTIFICATIONS_FLUTTER_UA.md**  
       Для Flutter: короткий покроковий flow по push/in-app notifications, device registration і MVP1 scope.  
       Value: no-ambiguity checklist for `POST /users/me/devices` and notifications center integration.  
