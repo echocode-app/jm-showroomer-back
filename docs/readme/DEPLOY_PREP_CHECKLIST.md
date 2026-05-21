@@ -17,6 +17,7 @@ Close the backend before real QA and first production launch without mixing mock
 ## 1. Environment
 
 - Set `BASE_URL=https://jm-showroomer-back.onrender.com/api/v1`
+- Set `UPTIME_PING_ENABLED=true` on Render when UptimeRobot ping monitor is active
 - Set real `APP_DEEPLINK_SCHEME` as app scheme, not `https://...`
 - Replace placeholder store links:
   - `IOS_APP_STORE_URL`
@@ -103,6 +104,7 @@ Close the backend before real QA and first production launch without mixing mock
 ## 7. Render / Production Readiness
 
 - Choose paid Render tier before real launch traffic
+- Configure UptimeRobot against `/api/v1/health/ping`; pause the monitor when keep-alive traffic is not needed
 - Verify cold-start behavior is acceptable
 - Verify logs and rate limits under real admin workflows
 - Keep `PUSH_ENABLED=false` until real push credentials and QA are completed

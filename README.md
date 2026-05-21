@@ -101,6 +101,7 @@ Recommended baseline:
 - `docs/readme/API_VERSIONING_POLICY.md` — API versioning and deprecation policy
 - `docs/readme/CHANGELOG_API.md` — API change log
 - `docs/readme/OPERATIONAL_EXPECTATIONS.md` — operational expectations (timeouts/retry/rate-limit/known limitations)
+- `docs/readme/UPTIME_MONITORING_UA.md` — UptimeRobot + Render keep-alive setup
 - `docs/readme/DEVELOPER_RUNBOOK.md` — developer runbook (start/test/release routine)
 - `docs/readme/ANALYTICS_CONTRACT.md` — analytics contract and client responsibilities
 - `docs/readme/SHOWROOMS_MVP1_SEARCH.md` — showroom search / geo / cursor rules

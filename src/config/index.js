@@ -75,6 +75,7 @@ export const CONFIG = {
   httpBodyLimit: normalizeUrl(process.env.HTTP_BODY_LIMIT || "1mb"),
   httpUrlEncodedLimit: normalizeUrl(process.env.HTTP_URLENCODED_LIMIT || "1mb"),
   enableSwagger: parseBoolean(process.env.ENABLE_SWAGGER, true),
+  uptimePingEnabled: parseBoolean(process.env.UPTIME_PING_ENABLED, true),
   allowGuestLookbookWrites: parseBoolean(process.env.ALLOW_GUEST_LOOKBOOK_WRITES, !isProd),
   serverRequestTimeoutMs: parseInteger(process.env.SERVER_REQUEST_TIMEOUT_MS, 30_000, { min: 5_000 }),
   serverHeadersTimeoutMs: parseInteger(process.env.SERVER_HEADERS_TIMEOUT_MS, 35_000, { min: 5_000 }),

@@ -114,6 +114,8 @@ security:
 paths:
   /health:
     $ref: './common.yaml#/paths/~1health'
+  /health/ping:
+    $ref: './common.yaml#/paths/~1health~1ping'
 
   /auth/oauth:
     $ref: './auth.yaml#/paths/~1auth~1oauth'

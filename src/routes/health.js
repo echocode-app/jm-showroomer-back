@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { CONFIG } from "../config/index.js";
 import { getFirestoreInstance } from "../config/firebase.js";
 
 const router = Router();
@@ -17,6 +18,24 @@ router.get("/", (req, res) => {
 router.get("/live", (req, res) => {
   res.json({
     status: "live",
+    uptimeSec: Math.round(process.uptime()),
+    timestamp: new Date().toISOString(),
+  });
+});
+
+router.get("/ping", (req, res) => {
+  if (!CONFIG.uptimePingEnabled) {
+    return res.status(404).json({
+      status: "disabled",
+      code: "UPTIME_PING_DISABLED",
+      message: "External uptime ping endpoint is disabled",
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  return res.json({
+    status: "pong",
+    service: "jm-showroomer-api",
     uptimeSec: Math.round(process.uptime()),
     timestamp: new Date().toISOString(),
   });

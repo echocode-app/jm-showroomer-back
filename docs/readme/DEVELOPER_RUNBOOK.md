@@ -46,6 +46,7 @@ npm run cleanup:mocks -- --prefix=mvp1_local_seed
 - `NODE_ENV`: `dev|test|prod`
 - `PORT`
 - `BASE_URL`
+- `UPTIME_PING_ENABLED`
 - `PUSH_ENABLED`
 - `MVP_MODE`
 - Firebase credentials (`FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `FIREBASE_STORAGE_BUCKET`)

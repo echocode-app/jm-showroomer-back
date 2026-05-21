@@ -174,7 +174,12 @@ components:
       properties:
         status:
           type: string
-          example: "ok ✅"
+          example: "ok"
+        service:
+          type: string
+          example: "jm-showroomer-api"
+        uptimeSec:
+          type: integer
         env:
           type: string
         timestamp:
@@ -227,6 +232,48 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/ApiError'
+  /health/ping:
+    get:
+      tags: [Health]
+      summary: External uptime ping
+      description: |
+        Lightweight endpoint for external uptime monitors such as UptimeRobot.
+        It does not touch Firestore or other dependencies and is safe for Render keep-alive checks.
+        Set `UPTIME_PING_ENABLED=false` to disable successful responses from this endpoint.
+      operationId: uptimePing
+      security: []
+      responses:
+        "200":
+          description: Ping accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        "404":
+          description: Uptime ping endpoint disabled by `UPTIME_PING_ENABLED=false`
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, code, message, timestamp]
+                properties:
+                  status:
+                    type: string
+                    example: disabled
+                  code:
+                    type: string
+                    example: UPTIME_PING_DISABLED
+                  message:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
         "429":
           description: Rate limit exceeded
           content:
