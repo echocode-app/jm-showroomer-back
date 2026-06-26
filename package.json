@@ -41,6 +41,12 @@
     "cleanup:mocks:dry": "NODE_ENV=dev node scripts/cleanup_mock_content_by_prefix.js --dry-run",
     "migrate:mocks:lookbooks:seasons:dry": "NODE_ENV=dev node scripts/migrate_mock_lookbook_seasons.js --dry-run",
     "migrate:mocks:lookbooks:seasons": "NODE_ENV=dev node scripts/migrate_mock_lookbook_seasons.js",
+    "seed:starter-showrooms:dry": "NODE_ENV=dev node scripts/seed_starter_showrooms.js",
+    "seed:starter-showrooms": "NODE_ENV=dev node scripts/seed_starter_showrooms.js --execute",
+    "seed:starter-lookbooks:dry": "NODE_ENV=dev node scripts/seed_starter_lookbooks.js",
+    "seed:starter-lookbooks": "NODE_ENV=dev node scripts/seed_starter_lookbooks.js --execute",
+    "seed:starter-events:dry": "NODE_ENV=dev node scripts/seed_starter_events.js",
+    "seed:starter-events": "NODE_ENV=dev node scripts/seed_starter_events.js --execute",
     "firebase:migration": "bash scripts/firebase_project_migration.sh",
     "dev": "NODE_ENV=dev nodemon src/core/server.js",
     "start": "NODE_ENV=prod node src/core/server.js"
