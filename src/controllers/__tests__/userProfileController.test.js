@@ -2,6 +2,7 @@ import { jest } from "@jest/globals";
 
 const okMock = jest.fn();
 const failMock = jest.fn();
+const updateOwnerProfileMock = jest.fn();
 const updateUserProfileDocMock = jest.fn();
 const ownerHasActiveShowroomsMock = jest.fn();
 const cleanupOwnerDraftShowroomsMock = jest.fn();
@@ -23,7 +24,7 @@ jest.unstable_mockModule("../../utils/showroomValidation.js", () => ({
 
 jest.unstable_mockModule("../../services/users/profileService.js", () => ({
     updateUserOnboarding: jest.fn(),
-    updateOwnerProfile: jest.fn(),
+    updateOwnerProfile: updateOwnerProfileMock,
     updateUserProfileDoc: updateUserProfileDocMock,
     ownerHasActiveShowrooms: ownerHasActiveShowroomsMock,
     cleanupOwnerDraftShowrooms: cleanupOwnerDraftShowroomsMock,
@@ -51,7 +52,7 @@ jest.unstable_mockModule("../../constants/appLanguage.js", () => ({
     normalizeAppLanguage: normalizeAppLanguageMock,
 }));
 
-const { getMyProfile, updateUserProfile } = await import("../users/profileController.js");
+const { getMyProfile, completeOwnerProfile, updateUserProfile } = await import("../users/profileController.js");
 
 describe("user profile controller", () => {
     beforeEach(() => {
@@ -126,6 +127,37 @@ describe("user profile controller", () => {
         expect(okMock).toHaveBeenCalledWith(res, { message: "Profile updated" });
     });
 
+    it("completes owner profile without instagram", async () => {
+        const req = {
+            body: {
+                name: "Victoria",
+                country: "Ukraine",
+                position: "Founder",
+            },
+            user: { uid: "user-1", role: "user", country: "Ukraine" },
+            auth: { uid: "user-1" },
+        };
+        const res = {};
+
+        await completeOwnerProfile(req, res, undefined);
+
+        expect(validateInstagramUrlMock).not.toHaveBeenCalled();
+        expect(updateOwnerProfileMock).toHaveBeenCalledWith(
+            "user-1",
+            expect.objectContaining({
+                name: "Victoria",
+                country: "Ukraine",
+                ownerProfile: expect.objectContaining({
+                    name: "Victoria",
+                    position: "Founder",
+                    phone: null,
+                    instagram: null,
+                }),
+            })
+        );
+        expect(okMock).toHaveBeenCalledWith(res, { message: "Owner profile completed", role: "owner" });
+    });
+
     it("allows owner identity updates and mirrors name into ownerProfile", async () => {
         const req = {
             body: {
@@ -151,6 +183,28 @@ describe("user profile controller", () => {
                 "ownerProfile.position": "Founder",
                 "ownerProfile.phone": "+380501112233",
                 "ownerProfile.instagram": "https://instagram.com/victoria",
+            })
+        );
+        expect(okMock).toHaveBeenCalledWith(res, { message: "Profile updated" });
+    });
+
+    it("allows owner to clear instagram", async () => {
+        const req = {
+            body: {
+                instagram: "",
+            },
+            user: { uid: "owner-1", role: "owner", country: "Ukraine" },
+            auth: { uid: "owner-1" },
+        };
+        const res = {};
+
+        await updateUserProfile(req, res, undefined);
+
+        expect(validateInstagramUrlMock).not.toHaveBeenCalled();
+        expect(updateUserProfileDocMock).toHaveBeenCalledWith(
+            "owner-1",
+            expect.objectContaining({
+                "ownerProfile.instagram": null,
             })
         );
         expect(okMock).toHaveBeenCalledWith(res, { message: "Profile updated" });

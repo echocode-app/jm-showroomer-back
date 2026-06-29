@@ -8,7 +8,7 @@ export const userProfileUpdateSchema = Joi.object({
     name: Joi.string().trim().min(2).max(15),
     country: Joi.string().trim().min(2).max(60),
     phone: Joi.string().trim().min(3).max(50),
-    instagram: Joi.string().trim().min(2).max(200),
+    instagram: Joi.string().trim().min(2).max(200).allow("", null),
     position: Joi.string().trim().allow("", null).max(100),
     appLanguage: Joi.string().trim().lowercase().valid(
         APP_LANGUAGES.UK,

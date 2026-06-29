@@ -660,7 +660,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Owner Test\",\n  \"country\": \"Ukraine\",\n  \"instagram\": \"https://instagram.com/owner_test\",\n  \"position\": \"Owner\"\n}",
+              "raw": "{\n  \"name\": \"Owner Test\",\n  \"country\": \"Ukraine\",\n  \"position\": \"Owner\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

@@ -88,6 +88,7 @@ components:
               type: string
             instagram:
               type: string
+              nullable: true
 
     CompleteOnboardingInput:
       type: object
@@ -99,7 +100,7 @@ components:
 
     CompleteOwnerProfileInput:
       type: object
-      required: [name, country, instagram]
+      required: [name, country]
       properties:
         name:
           type: string
@@ -116,10 +117,12 @@ components:
           description: Owner phone number. Optional for owner registration; when present backend normalizes to E.164.
         instagram:
           type: string
+          nullable: true
           description: >-
-            Instagram profile URL. Allowed hosts: instagram.com / www.instagram.com.
-            Handle after domain must be 1..30 chars and may contain only letters,
-            digits, dot, underscore.
+            Optional Instagram profile URL. Empty string or null is accepted as
+            no Instagram. When present, allowed hosts are instagram.com /
+            www.instagram.com. Handle after domain must be 1..30 chars and may
+            contain only letters, digits, dot, underscore.
     UserProfileUpdateInput:
       type: object
       minProperties: 1
@@ -137,11 +140,13 @@ components:
           description: Owner-only field after owner profile registration. Backend normalizes to E.164.
         instagram:
           type: string
+          nullable: true
           description: >-
             Owner-only field after owner profile registration. Pre-owner updates
-            return 403 USER_PROFILE_FIELDS_FORBIDDEN. Instagram profile URL must
-            use instagram.com / www.instagram.com; handle after domain must be
-            1..30 chars and may contain only letters, digits, dot, underscore.
+            return 403 USER_PROFILE_FIELDS_FORBIDDEN. Empty string or null clears
+            the saved Instagram. Non-empty Instagram profile URL must use
+            instagram.com / www.instagram.com; handle after domain must be 1..30
+            chars and may contain only letters, digits, dot, underscore.
         position:
           type: string
           nullable: true
@@ -668,7 +673,6 @@ paths:
                   name: "Owner Test"
                   position: "Owner"
                   country: "Ukraine"
-                  instagram: "https://instagram.com/owner_test"
       responses:
         "200":
           description: Owner profile completed
@@ -718,7 +722,7 @@ paths:
       description: |
         Requires Bearer auth.
         Before owner profile registration, only `appLanguage` and `notificationsEnabled` can be updated.
-        After owner registration, `name`, `position`, `country`, and `instagram` can also be updated.
+        After owner registration, `name`, `position`, `country`, and optional `instagram` can also be updated.
         Changing country soft-deletes unfinished own `draft` showrooms first, then remains blocked
         when the owner still has `pending`, `approved`, or `rejected` showrooms.
       operationId: updateUserProfile
@@ -738,7 +742,7 @@ paths:
               owner_fields:
                 value:
                   name: "Victoria"
-                  instagram: "https://instagram.com/owner_profile"
+                  instagram: null
                   position: "Founder"
                   country: "Ukraine"
       responses:

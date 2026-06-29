@@ -78,6 +78,15 @@ export async function completeOnboarding(req, res) {
     }
 }
 
+function normalizeOptionalOwnerInstagram(instagram) {
+    const trimmedInstagram = String(instagram ?? "").trim();
+    if (!trimmedInstagram) return null;
+
+    const normalizedInstagram = normalizeInstagramUrl(trimmedInstagram);
+    validateInstagramUrl(normalizedInstagram);
+    return normalizedInstagram;
+}
+
 /**
  * Validates owner profile fields and upgrades user role to owner.
  */
@@ -87,9 +96,8 @@ export async function completeOwnerProfile(req, res) {
     const trimmedName = String(name ?? "").trim();
     const trimmedCountry = String(country ?? "").trim();
     const trimmedPhone = String(phone ?? "").trim();
-    const trimmedInstagram = String(instagram ?? "").trim();
 
-    if (!trimmedName || !trimmedCountry || !trimmedInstagram) {
+    if (!trimmedName || !trimmedCountry) {
         return fail(res, "VALIDATION_ERROR", "Missing required fields", 400);
     }
 
@@ -99,8 +107,7 @@ export async function completeOwnerProfile(req, res) {
 
     try {
         const wasOwner = req.user?.role === "owner";
-        const normalizedInstagram = normalizeInstagramUrl(trimmedInstagram);
-        validateInstagramUrl(normalizedInstagram);
+        const normalizedInstagram = normalizeOptionalOwnerInstagram(instagram);
         const normalizedPhone = trimmedPhone
             ? validatePhone(trimmedPhone, trimmedCountry).e164
             : null;
@@ -256,14 +263,8 @@ export async function updateUserProfile(req, res) {
     }
 
     if (instagram !== undefined) {
-        const trimmedInstagram = String(instagram ?? "").trim();
-        if (!trimmedInstagram) {
-            return fail(res, "VALIDATION_ERROR", "Instagram is required", 400);
-        }
         try {
-            const normalizedInstagram = normalizeInstagramUrl(trimmedInstagram);
-            validateInstagramUrl(normalizedInstagram);
-            updates["ownerProfile.instagram"] = normalizedInstagram;
+            updates["ownerProfile.instagram"] = normalizeOptionalOwnerInstagram(instagram);
         } catch (err) {
             return fail(res, err.code || "VALIDATION_ERROR", err.message, err.status || 400);
         }

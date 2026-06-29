@@ -83,7 +83,7 @@ Base URL:
 
 ### Instagram format
 
-Для `contacts.instagram` і owner profile Instagram:
+Для `contacts.instagram` і непорожнього owner profile Instagram:
 
 - дозволені тільки `instagram.com` або `www.instagram.com`
 - після домену має бути рівно один handle

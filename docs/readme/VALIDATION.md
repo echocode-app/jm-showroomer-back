@@ -349,7 +349,7 @@ Endpoint: `POST /api/v1/users/complete-owner-profile`
   "position": "string | empty | null",
   "country": "required string",
   "phone": "trimmed string 3..50",
-  "instagram": "required trimmed string 2..200"
+  "instagram": "optional trimmed string 2..200 | empty | null"
 }
 ```
 
@@ -362,7 +362,7 @@ At least one field is required:
   "name": "trimmed string 2..15",
   "country": "trimmed string 2..60",
   "phone": "trimmed string 3..50",
-  "instagram": "trimmed string 2..200",
+  "instagram": "trimmed string 2..200 | empty | null",
   "position": "trimmed string max 100 | empty | null",
   "appLanguage": "uk | en",
   "notificationsEnabled": "strict boolean"

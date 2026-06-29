@@ -2,11 +2,11 @@
 
 import Joi from "joi";
 
-// Owner profile requires name/country/instagram; position is optional.
+// Owner profile requires name/country; phone/instagram/position are optional.
 export const completeOwnerProfileSchema = Joi.object({
     name: Joi.string().trim().min(2).max(15).required(),
     position: Joi.string().allow("", null),
     country: Joi.string().required(),
     phone: Joi.string().trim().min(3).max(50),
-    instagram: Joi.string().trim().min(2).max(200).required(),
+    instagram: Joi.string().trim().min(2).max(200).allow("", null),
 }).unknown(false);
